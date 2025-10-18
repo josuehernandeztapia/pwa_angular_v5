@@ -1,0 +1,62 @@
+<section class="ops-deliveries">
+  <header class="ops-deliveries__header">
+    <div>
+      <h1>Centro de Entregas</h1>
+      <p>Estado operativo con filtros por mercado y status.</p>
+    </div>
+    <div class="ops-deliveries__filters">
+      <nav>
+        <button
+          type="button"
+          *ngFor="let market of markets; trackBy: trackOption"
+          (click)="setMarket(market.value)"
+          [class.is-active]="marketFilter() === market.value"
+        >
+          {{ market.label }}
+        </button>
+      </nav>
+      <select (change)="setStatus($any($event.target).value)">
+        <option *ngFor="let status of statuses; trackBy: trackOption" [value]="status.value" [selected]="statusFilter() === status.value">
+          {{ status.label }}
+        </option>
+      </select>
+    </div>
+  </header>
+
+  <section *ngIf="isLoading()" class="ops-deliveries__state">
+    <app-icon name="spinner" [size]="24" class="spin"></app-icon>
+    <span>Cargando entregas...</span>
+  </section>
+
+  <section *ngIf="!isLoading() && error()" class="ops-deliveries__state ops-deliveries__state--error">
+    <app-icon name="alert-triangle" [size]="24"></app-icon>
+    <span>{{ error() }}</span>
+  </section>
+
+  <section *ngIf="!isLoading() && !error()" class="ops-deliveries__table">
+    <header>
+      <span>ID</span>
+      <span>Cliente</span>
+      <span>SKU</span>
+      <span>Status</span>
+      <span>Mercado</span>
+      <span>ETA</span>
+    </header>
+    <a
+      *ngFor="let order of orders(); trackBy: trackOrder"
+      class="ops-deliveries__row"
+      [routerLink]="['/ops/deliveries', order.id]"
+    >
+      <span>{{ order.id }}</span>
+      <div>
+        <strong>{{ order.client.name }}</strong>
+        <small>{{ order.client.id }}</small>
+      </div>
+      <span>{{ order.sku }}</span>
+      <span class="ops-deliveries__badge">{{ statusDescriptions[order.status].title || order.status }}</span>
+      <span>{{ order.market | uppercase }}</span>
+      <span>{{ order.eta ? (order.eta | date:'shortDate') : 'N/D' }}</span>
+    </a>
+    <p *ngIf="!orders().length" class="ops-deliveries__empty">Sin órdenes en el filtro actual.</p>
+  </section>
+</section>

@@ -1,0 +1,463 @@
+:host {
+  display: block;
+}
+
+.risk-radar {
+  --risk-radar-surface: var(--flat-surface-bg);
+  --risk-radar-surface-muted: var(--token-surface-muted);
+  --risk-radar-surface-strong: var(--token-surface-elevated);
+  --risk-radar-border: var(--border-neutral-weak);
+  --risk-radar-success: var(--accent-primary);
+  --risk-radar-warning: var(--accent-muted);
+  --risk-radar-danger: var(--accent-danger);
+  --risk-radar-critical: var(--token-risk-radar-danger-shade-85);
+  --risk-radar-shadow-strong: 0 24px 48px var(--token-surface-inverse-alpha-18);
+  --risk-radar-shadow-elevated: 0 18px 32px var(--token-surface-inverse-alpha-16);
+  --risk-radar-shadow-soft: 0 12px 24px var(--token-surface-inverse-alpha-14);
+  --risk-radar-action-shadow: 0 16px 36px var(--token-surface-accent-alpha-28);
+  --risk-radar-action-shadow-hover: 0 18px 42px var(--token-surface-accent-alpha-34);
+  --risk-radar-surface-alt: var(--token-surface-flat-alpha-90);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 1.5rem);
+  padding: var(--space-6, 1.5rem);
+  border-radius: var(--radius-2xl, 24px);
+  background: var(--risk-radar-surface);
+  box-shadow: var(--risk-radar-shadow-strong);
+  border: 1px solid var(--risk-radar-border);
+}
+
+.risk-radar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4, 1rem);
+}
+
+.risk-radar__intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.risk-radar__title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.risk-radar__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.risk-radar__legend {
+  display: flex;
+  gap: var(--space-3, 0.75rem);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.risk-radar__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.risk-radar__legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-neutral-400);
+}
+
+.risk-radar__legend-dot--low {
+  background: var(--risk-radar-success);
+}
+
+.risk-radar__legend-dot--medium {
+  background: var(--risk-radar-warning);
+}
+
+.risk-radar__legend-dot--high {
+  background: var(--risk-radar-danger);
+}
+
+.risk-radar__legend-dot--critical {
+  background: var(--risk-radar-critical);
+}
+
+.risk-radar__layout {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 320px);
+}
+
+.risk-radar__grid {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--token-surface-risk-success-alpha-16) 0%,
+    var(--token-surface-risk-warning-alpha-12) 45%,
+    var(--token-risk-radar-danger-alpha-12) 75%
+  );
+  overflow: hidden;
+}
+
+.risk-radar__circle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  border: 1px solid var(--token-border-risk-radar-alpha-45);
+}
+
+.risk-radar__axis {
+  position: absolute;
+  inset: 0;
+  border-color: var(--token-border-risk-radar-alpha-50);
+}
+
+.risk-radar__axis--horizontal {
+  border-top: 1px solid currentColor;
+  top: 50%;
+}
+
+.risk-radar__axis--vertical {
+  border-left: 1px solid currentColor;
+  left: 50%;
+}
+
+.risk-radar__zone {
+  position: absolute;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.risk-radar__zone--safe {
+  top: 12%;
+  left: 0;
+  right: 0;
+}
+
+.risk-radar__zone--attention {
+  top: 50%;
+  right: 12%;
+  margin-top: -0.6em;
+}
+
+.risk-radar__zone--danger {
+  bottom: 12%;
+  left: 0;
+  right: 0;
+}
+
+.risk-radar__zone--critical {
+  top: 50%;
+  left: 12%;
+  margin-top: -0.6em;
+}
+
+.risk-radar__client {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: var(--radius-full, 999px);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--openai-white);
+  box-shadow: var(--risk-radar-shadow-soft);
+  transition: box-shadow 0.2s ease;
+  background: var(--color-neutral-500);
+}
+
+.risk-radar__client:hover,
+.risk-radar__client--selected {
+  box-shadow: var(--risk-radar-shadow-elevated);
+}
+
+.risk-radar__client--low {
+  background: var(--risk-radar-success);
+}
+
+.risk-radar__client--medium {
+  background: var(--risk-radar-warning);
+}
+
+.risk-radar__client--high {
+  background: var(--risk-radar-danger);
+}
+
+.risk-radar__client--critical {
+  background: var(--risk-radar-critical);
+}
+
+.risk-radar__client-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: var(--radius-full, 999px);
+  opacity: 0.45;
+  animation: risk-radar-pulse 2.4s infinite ease-in-out;
+}
+
+.risk-radar__client-pulse--low {
+  background: var(--token-surface-risk-success-alpha-35);
+}
+
+.risk-radar__client-pulse--medium {
+  background: var(--token-surface-risk-warning-alpha-35);
+}
+
+.risk-radar__client-pulse--high {
+  background: var(--token-risk-radar-danger-alpha-35);
+}
+
+.risk-radar__client-pulse--critical {
+  background: var(--token-risk-radar-danger-alpha-45);
+}
+
+.risk-radar__client-initials {
+  position: relative;
+  z-index: 1;
+}
+
+.risk-radar__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+  border-radius: var(--radius-2xl, 24px);
+  border: 1px solid var(--token-border-risk-radar-alpha-40);
+  background: var(--risk-radar-surface-muted);
+  padding: var(--space-5, 1.25rem);
+}
+
+.risk-radar__details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 0.75rem);
+}
+
+.risk-radar__details-name {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.risk-radar__details-close {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full, 999px);
+  border: none;
+  background: var(--token-risk-radar-danger-alpha-12);
+  color: var(--risk-radar-danger);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.risk-radar__details-close:hover {
+  background: var(--token-risk-radar-danger-alpha-18);
+}
+
+.risk-radar__details-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+}
+
+.risk-radar__health {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border-radius: var(--radius-xl, 18px);
+  background: var(--risk-radar-surface-alt);
+}
+
+.risk-radar__healthLabel {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.risk-radar__healthValue {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.risk-radar__healthValue--excellent {
+  color: var(--risk-radar-success);
+}
+
+.risk-radar__healthValue--good {
+  color: var(--token-surface-risk-success-blend-risk-radar-warning-80);
+}
+
+.risk-radar__healthValue--warning {
+  color: var(--risk-radar-warning);
+}
+
+.risk-radar__healthValue--critical {
+  color: var(--risk-radar-danger);
+}
+
+.risk-radar__metrics {
+  display: grid;
+  gap: var(--space-3, 0.75rem);
+  margin: 0;
+}
+
+.risk-radar__metric {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.risk-radar__metric-value {
+  color: var(--color-text-primary);
+}
+
+.risk-radar__issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.risk-radar__issues-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.risk-radar__issues-list {
+  margin: 0;
+  padding-inline-start: var(--space-5, 1.25rem);
+  display: grid;
+  gap: var(--space-1, 0.25rem);
+}
+
+.risk-radar__issues-item {
+  font-size: 0.9rem;
+}
+
+.risk-radar__action {
+  align-self: flex-start;
+  border: none;
+  border-radius: var(--radius-full, 999px);
+  padding: var(--space-3, 0.75rem) var(--space-5, 1.25rem);
+  background: var(--accent-primary);
+  color: var(--openai-white);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--risk-radar-action-shadow);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.risk-radar__action:hover {
+  background: var(--token-surface-accent-blend-accent-primary-85);
+  box-shadow: var(--risk-radar-action-shadow-hover);
+}
+
+.risk-radar__stats {
+  display: grid;
+  gap: var(--space-3, 0.75rem);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.risk-radar__stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+  align-items: center;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border-radius: var(--radius-xl, 18px);
+  border: 1px solid var(--token-border-risk-radar-alpha-35);
+  background: var(--risk-radar-surface-muted);
+}
+
+.risk-radar__stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.risk-radar__stat-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+@keyframes risk-radar-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--token-surface-inverse-alpha-12);
+    opacity: 0.45;
+  }
+  50% {
+    box-shadow: 0 0 0 12px var(--token-surface-inverse-alpha-04);
+    opacity: 0.05;
+  }
+}
+
+@media (max-width: 1024px) {
+  .risk-radar__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-radar__details {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .risk-radar {
+    padding: var(--space-5, 1.25rem) var(--space-4, 1rem);
+  }
+
+  .risk-radar__legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .risk-radar {
+    background: var(--token-overlay-neutral-alpha-92);
+    border-color: var(--token-border-neutral-strong-alpha-55);
+    color: var(--color-neutral-100);
+  }
+
+  .risk-radar__subtitle,
+  .risk-radar__legend-label,
+  .risk-radar__zone {
+    color: var(--color-neutral-300);
+  }
+
+  .risk-radar__details,
+  .risk-radar__stat {
+    background: var(--token-overlay-neutral-alpha-80);
+    border-color: var(--token-border-neutral-strong-alpha-55);
+  }
+
+  .risk-radar__metric,
+  .risk-radar__healthLabel {
+    color: var(--color-neutral-300);
+  }
+}

@@ -1,0 +1,19 @@
+<header class="document-upload__header">
+  <div class="document-upload__header-main">
+    <h2 class="document-upload__title">{{ title }}</h2>
+  </div>
+  <div class="document-upload__meta">
+    <span class="document-upload__progress" data-cy="documents-progress">
+      {{ completionStatus.completedDocs }}/{{ completionStatus.totalDocs }} validados
+      <ng-container *ngIf="completionStatus.totalDocs">
+        ({{ completionStatus.completionPercentage }}%)
+      </ng-container>
+    </span>
+    <span *ngIf="completionStatus.pendingDocs > 0" class="document-upload__pending" data-cy="doc-qa-warning">
+      {{ completionStatus.pendingDocs }} pendientes
+    </span>
+    <span *ngIf="pendingOfflineDocs > 0" class="document-upload__queued" data-cy="doc-queued-count">
+      {{ pendingOfflineDocs }} en cola offline
+    </span>
+  </div>
+</header>

@@ -1,0 +1,113 @@
+<section class="catalog">
+  <header class="catalog__header">
+    <div>
+      <h1 class="catalog__title">Catálogo de productos</h1>
+      <p class="catalog__subtitle">
+        Selección quirúrgica de ofertas activas y pilotos disponibles para escalar en la red de asesores.
+      </p>
+    </div>
+    <div class="catalog__metrics">
+      <div class="catalog__metric">
+        <span class="catalog__metric-label">Activos</span>
+        <strong class="catalog__metric-value">{{ activeOfferings().length }}</strong>
+      </div>
+      <div class="catalog__metric">
+        <span class="catalog__metric-label">Pilotos</span>
+        <strong class="catalog__metric-value">{{ betaOfferings().length }}</strong>
+      </div>
+      <div class="catalog__metric">
+        <span class="catalog__metric-label">Segmentos</span>
+        <strong class="catalog__metric-value">{{ totalSegments() }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <section class="catalog__section" *ngIf="activeOfferings().length">
+    <h2 class="catalog__section-title">
+      <app-icon name="shield" [size]="18"></app-icon>
+      Portafolio activo
+    </h2>
+    <div class="catalog__grid">
+      <article class="catalog-card" *ngFor="let product of activeOfferings(); trackBy: trackById">
+        <header class="catalog-card__header">
+          <h3 class="catalog-card__title">{{ product.name }}</h3>
+          <span class="catalog-card__status catalog-card__status--active">Activo</span>
+        </header>
+        <p class="catalog-card__description">{{ product.description }}</p>
+        <dl class="catalog-card__metrics">
+          <div>
+            <dt>Activación</dt>
+            <dd>{{ product.metrics.activation }}</dd>
+          </div>
+          <div>
+            <dt>NPS</dt>
+            <dd>{{ product.metrics.nps }}</dd>
+          </div>
+          <div>
+            <dt>Margen</dt>
+            <dd>{{ product.metrics.margin }}</dd>
+          </div>
+        </dl>
+        <footer class="catalog-card__footer">
+          <div class="catalog-card__meta">
+            <span>Última actualización • {{ product.lastUpdated }}</span>
+            <span>Owner • {{ product.owner }}</span>
+          </div>
+          <button type="button" class="catalog-card__cta" (click)="requestEnable(product)">
+            Solicitar activación
+          </button>
+        </footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="catalog__section" *ngIf="betaOfferings().length">
+    <h2 class="catalog__section-title">
+      <app-icon name="activity" [size]="18"></app-icon>
+      Pilotos y betas
+    </h2>
+    <div class="catalog__grid">
+      <article class="catalog-card catalog-card--beta" *ngFor="let product of betaOfferings(); trackBy: trackById">
+        <header class="catalog-card__header">
+          <h3 class="catalog-card__title">{{ product.name }}</h3>
+          <span class="catalog-card__status catalog-card__status--beta">Beta controlada</span>
+        </header>
+        <p class="catalog-card__description">{{ product.description }}</p>
+        <p class="catalog-card__audience">Audiencia piloto: {{ product.audience.join(', ') }}</p>
+        <footer class="catalog-card__footer">
+          <div class="catalog-card__meta">
+            <span>Última actualización • {{ product.lastUpdated }}</span>
+            <span>Owner • {{ product.owner }}</span>
+          </div>
+          <button type="button" class="catalog-card__cta" (click)="requestEnable(product)">
+            Levantar caso piloto
+          </button>
+        </footer>
+      </article>
+    </div>
+  </section>
+
+  <section class="catalog__section" *ngIf="sunsetOfferings().length">
+    <h2 class="catalog__section-title">
+      <app-icon name="package" [size]="18"></app-icon>
+      Sunset y reemplazos
+    </h2>
+    <div class="catalog__grid catalog__grid--compact">
+      <article class="catalog-card catalog-card--sunset" *ngFor="let product of sunsetOfferings(); trackBy: trackById">
+        <header class="catalog-card__header">
+          <h3 class="catalog-card__title">{{ product.name }}</h3>
+          <span class="catalog-card__status catalog-card__status--sunset">Sunset</span>
+        </header>
+        <p class="catalog-card__description">{{ product.description }}</p>
+        <footer class="catalog-card__footer">
+          <div class="catalog-card__meta">
+            <span>Owner • {{ product.owner }}</span>
+          </div>
+          <button type="button" class="catalog-card__cta catalog-card__cta--ghost" (click)="requestEnable(product)">
+            Solicitar migración
+          </button>
+        </footer>
+      </article>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,144 @@
+<section class="new-opportunity" aria-labelledby="new-opportunity-title">
+  <header class="new-opportunity__header">
+    <div>
+      <h1 id="new-opportunity-title">Nueva oportunidad</h1>
+      <p class="new-opportunity__subtitle">
+        Configura los datos base del cliente y genera el flujo adecuado antes de continuar con documentos.
+      </p>
+    </div>
+    <div class="new-opportunity__summary" *ngIf="summary() as snapshot">
+      <h2>Resumen rápido</h2>
+      <dl>
+        <div>
+          <dt>Mercado</dt>
+          <dd>{{ snapshot.market | titlecase }}</dd>
+        </div>
+        <div>
+          <dt>Flujo</dt>
+          <dd>{{ snapshot.flow | titlecase }}</dd>
+        </div>
+        <div>
+          <dt>Tipo de cliente</dt>
+          <dd>{{ snapshot.clientType === 'individual' ? 'Individual' : 'Colectivo' }}</dd>
+        </div>
+        <div>
+          <dt>Protección</dt>
+          <dd>{{ snapshot.includeProtection ? 'Activo' : 'Sin protección' }}</dd>
+        </div>
+      </dl>
+    </div>
+  </header>
+
+  <nav class="new-opportunity__steps" aria-label="Pasos de configuración">
+    <button
+      *ngFor="let step of steps; trackBy: trackStep"
+      type="button"
+      class="new-opportunity__step"
+      [class.new-opportunity__step--active]="activeStep() === step.id"
+      [class.new-opportunity__step--completed]="step.id < activeStep()"
+      (click)="goToStep(step.id)"
+    >
+      <span class="new-opportunity__step-index">{{ step.id + 1 }}</span>
+      <span>
+        <strong>{{ step.label }}</strong>
+        <small>{{ step.description }}</small>
+      </span>
+    </button>
+  </nav>
+
+  <form class="new-opportunity__form" [formGroup]="opportunityForm" (ngSubmit)="submit()">
+    <section *ngIf="activeStep() === 0" aria-label="Paso 1">
+      <app-form-field id="market" label="Mercado" helper="Selecciona el mercado donde operará la oportunidad">
+        <select id="market" formControlName="market">
+          <option value="aguascalientes">Aguascalientes</option>
+          <option value="edomex">EdoMex</option>
+          <option value="cdmx">CDMX</option>
+          <option value="otros">Otros</option>
+        </select>
+      </app-form-field>
+
+      <app-form-field id="flow" label="Flujo sugerido" helper="Ajusta el flujo si la recomendación no aplica al caso">
+        <select id="flow" formControlName="flow">
+          <option value="venta_plazo">Venta a plazo</option>
+          <option value="venta_directa">Venta directa</option>
+          <option value="ahorro_programado">Ahorro programado</option>
+          <option value="credito_colectivo">Crédito colectivo</option>
+        </select>
+      </app-form-field>
+
+      <fieldset class="new-opportunity__fieldset">
+        <legend>Tipo de cliente</legend>
+        <label>
+          <input type="radio" formControlName="clientType" value="individual" /> Individual
+        </label>
+        <label>
+          <input type="radio" formControlName="clientType" value="colectivo" /> Colectivo
+        </label>
+      </fieldset>
+
+      <app-form-field
+        id="clientName"
+        label="Nombre del cliente"
+        [error]="showValidationErrors() && opportunityForm.get('clientName')?.invalid ? 'Ingresa al menos 3 caracteres' : ''"
+      >
+        <input id="clientName" type="text" formControlName="clientName" placeholder="Ej. Aurora González" autocomplete="name" />
+      </app-form-field>
+    </section>
+
+    <section *ngIf="activeStep() === 1" aria-label="Paso 2">
+      <app-form-field
+        id="monthlyIncome"
+        label="Ingreso mensual"
+        helper="Considera ingresos comprobables"
+        [error]="showValidationErrors() && opportunityForm.get('monthlyIncome')?.invalid ? 'Ingresa un monto válido' : ''"
+      >
+        <input id="monthlyIncome" type="number" min="0" step="100" formControlName="monthlyIncome" placeholder="15000" />
+      </app-form-field>
+
+      <app-form-field id="voluntaryContribution" label="Aportación voluntaria" helper="Opcional">
+        <input id="voluntaryContribution" type="number" min="0" step="100" formControlName="voluntaryContribution" placeholder="2000" />
+      </app-form-field>
+
+      <app-form-field id="notes" label="Notas internas">
+        <textarea id="notes" rows="3" formControlName="notes" placeholder="Aspectos relevantes del cliente"></textarea>
+      </app-form-field>
+    </section>
+
+    <section *ngIf="activeStep() === 2" aria-label="Paso 3">
+      <label class="new-opportunity__toggle">
+        <input type="checkbox" formControlName="includeProtection" />
+        <span>Activar protección recomendada</span>
+      </label>
+
+      <div class="new-opportunity__reminder">
+        <app-icon name="shield" [size]="24" aria-hidden="true"></app-icon>
+        <p>
+          Si habilitas protección, el flujo asignará automáticamente la evaluación de riesgo y los contratos de protección
+          antes de la entrega.
+        </p>
+      </div>
+    </section>
+
+    <footer class="new-opportunity__actions">
+      <button type="button" class="btn btn-secondary" (click)="previous()" [disabled]="activeStep() === 0">
+        Anterior
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        *ngIf="activeStep() < steps.length - 1"
+        (click)="next()"
+      >
+        Siguiente
+      </button>
+      <button
+        type="submit"
+        class="btn btn-success"
+        *ngIf="activeStep() === steps.length - 1"
+        [disabled]="isSubmitting()"
+      >
+        Crear oportunidad
+      </button>
+    </footer>
+  </form>
+</section>

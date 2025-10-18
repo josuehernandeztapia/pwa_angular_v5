@@ -1,0 +1,521 @@
+/* ===== TAILWIND CSS - ENTERPRISE DESIGN SYSTEM ===== */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* ===== OPENAI DESIGN SYSTEM ===== */
+@import 'styles/design-system-openai.scss';
+@import 'styles/tokens/index.scss';
+@import 'styles/components-openai.scss';
+
+/* OpenAI Design System Helpers */
+@import './app/styles/openai-helpers.scss';
+
+/* Performance-Critical Styles */
+@import 'styles/performance.scss';
+
+/* Removed Premium FinTech Theme imports (migrated to Minimal Dark) */
+
+/* ===== 100% OPENAI AUTHENTIC DESIGN TOKENS ===== */
+/* Token definitions now live under styles/tokens. */
+
+/* ===== GLOBAL RESET & BASE STYLES ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--openai-white);  /* OpenAI white background */
+  color: var(--openai-black);       /* OpenAI black text */
+  line-height: 1.5;                 /* OpenAI line height */
+  font-size: calc(16px * var(--font-scale));
+  font-weight: 400;                 /* OpenAI normal weight */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Senior-First font scale classes */
+html.senior-sm { --font-scale: 1.2; }
+html.senior-lg { --font-scale: 1.45; }
+
+/* High contrast toggle */
+html.hc { --bg:#ffffff; --text:#080808; --muted:#737373; --border:#e5e7eb; } /* OpenAI colors */
+html.hc body { background: var(--bg); color: var(--text); }
+
+/* ===== 100% OPENAI BUTTON SYSTEM ===== */
+
+/* OpenAI Primary Button - Black */
+.btn-primary {
+  background: var(--openai-black);
+  color: var(--openai-white);
+  border: none;
+  padding: var(--space-button-padding);
+  border-radius: var(--radius-md);
+  font-weight: 400;  /* OpenAI uses normal weight */
+  font-size: 16px;   /* OpenAI uses 16px */
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: none;  /* OpenAI no shadows on buttons */
+}
+
+.btn-primary:hover {
+  background: var(--openai-gray-800);  /* Lighter black on hover */
+  transform: none; /* OpenAI no transforms */
+}
+
+/* OpenAI Secondary Button - Outline */
+.btn-secondary {
+  background: transparent;
+  color: var(--openai-black);
+  border: 1px solid var(--openai-gray-300);
+  padding: var(--space-button-padding);
+  border-radius: var(--radius-md);
+  font-weight: 400;
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  background: var(--openai-gray-50);
+  border-color: var(--openai-gray-400);
+  transform: none; /* OpenAI no transforms */
+}
+
+/* OpenAI Cards - Ultra Minimal */
+.premium-card {
+  background: var(--openai-white);
+  border: 1px solid var(--openai-gray-200);
+  border-radius: var(--radius-md);  /* 8px */
+  padding: 24px;  /* OpenAI generous padding */
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-fast);
+}
+
+.premium-card:hover {
+  border-color: var(--openai-gray-300);
+  box-shadow: var(--shadow-elevated);
+  transform: none; /* OpenAI no transforms */
+}
+
+/* Command Center Layout */
+.command-center-layout {
+  min-height: 100vh;
+  background: var(--command-center-bg);
+}
+
+/* Premium form inputs */
+.premium-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--neutral-100);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+  font-size: 1rem;
+}
+
+.premium-input:focus {
+  outline: none;
+  border-color: var(--primary-cyan-400);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+}
+
+.premium-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Status indicators */
+.status-excellent {
+  background: var(--accent-primary);
+  color: var(--openai-white);
+}
+.status-good {
+  background: var(--accent-muted);
+  color: var(--openai-white);
+}
+.status-warning {
+  background: var(--accent-muted);
+  color: var(--openai-white);
+}
+.status-critical {
+  background: var(--accent-danger);
+  color: var(--openai-white);
+}
+
+/* Premium animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: none; /* OpenAI no transforms */
+  }
+  to {
+    opacity: 1;
+    transform: none; /* OpenAI no transforms */
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: none; /* OpenAI no transforms */
+  }
+  to {
+    opacity: 1;
+    transform: none; /* OpenAI no transforms */
+  }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.5s ease-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--neutral-800);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-cyan-600);
+  border-radius: 8px; /* OpenAI standard */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-cyan-500);
+}
+
+/* Utility classes */
+.text-gradient-primary {
+  color: var(--openai-black);  /* OpenAI solid black text */
+}
+
+/* ===== Helpers / Utility classes (global) ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+}
+
+.section-title {
+  font-size: var(--font-h2-size);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.3;
+}
+
+.helper-text {
+  font-size: var(--font-small-size);
+  color: #cbd5e1; /* improve contrast on dark bg */
+}
+
+.error-text {
+  font-size: var(--font-small-size);
+  color: var(--state-error);
+}
+
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+}
+
+.input-sm {
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-24);
+}
+
+.grid-aside {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-24);
+  align-items: start;
+}
+
+.grid-aside > .aside {
+  position: sticky;
+  top: var(--space-24);
+}
+
+/* Layout container helper */
+.container-neutral {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-24);
+  padding-right: var(--space-24);
+}
+
+/* Tap targets minimum size */
+:where(button, a, [role="button"], .btn) {
+  min-height: 44px;
+  min-width: 44px;
+  padding: .75rem 1rem;
+}
+
+/* Table legibility and tabular numbers */
+.table-lg tr { height: 56px; }
+.table-lg td, .table-lg th { font-size: 18px; }
+.table-lg tr:nth-child(even){ background:#f8fafc; } /* OpenAI very light gray */
+.num { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Print large text and hide nav */
+@media print {
+  body { font-size:16pt; }
+  .sidebar, .navigation, .bottom-nav-bar { display:none !important; }
+  .summary-xl { page-break-inside: avoid; }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
+/* Global focus-visible styles for accessibility */
+:where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.15);
+}
+
+/* High-contrast fallback for dark backgrounds */
+@media (forced-colors: active) {
+  :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid Highlight;
+    box-shadow: none;
+  }
+}
+
+/* ===== UX STANDARDIZATION ALIASES ===== */
+/* Unified secondary button style */
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  padding: var(--space-button-padding);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-quick);
+}
+
+.btn-secondary:hover {
+  transform: none; /* OpenAI no transforms */
+  box-shadow: var(--shadow-elevated);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Map common ad-hoc buttons to primary style */
+.btn-edit,
+.btn-enable,
+.btn-test,
+.simulate-button,
+.copy-button,
+.copy-all-button,
+.quick-action-btn,
+.btn-mark-all,
+.mark-all-read-btn,
+.btn-action.primary,
+.start-btn,
+.submit-btn,
+.restart-btn {
+  @extend .btn-primary;
+}
+
+/* Map filter/close/secondary-like to secondary style */
+.filter-btn,
+.btn-dismiss,
+.close-btn,
+.btn-close,
+.clear-filters-btn,
+.btn-clear,
+.export-btn,
+.skip-btn,
+.voice-btn {
+  @extend .btn-secondary;
+}
+
+/* Standardize inputs */
+.form-input,
+.readonly-input,
+.response-input {
+  @extend .premium-input;
+}
+
+/* Standardize cards */
+.profile-card,
+.card,
+.start-card,
+.question-card,
+.analyzing-card,
+.main-score-card,
+.engine-result,
+.consensus-analysis,
+.red-flags-section,
+.category-scores,
+.recommendations-section,
+.technical-metrics {
+  @extend .premium-card;
+}
+
+/* Status badge style */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 8px; /* OpenAI standard */
+  background: var(--flat-surface-bg); /* FIXED (verify-ux) */
+  border: 1px solid var(--neutral-800); /* FIXED (verify-ux) */
+  color: var(--neutral-100);
+}
+
+/* ===== PREMIUM ICONS ANIMATIONS - INTEGRATED FROM DESIGN SYSTEM ===== */
+
+/* Tokens Conductores - Fuente de verdad */
+:root {
+  --icon-stroke: 2.5px;
+}
+
+/* Animaciones Premium para Iconografía */
+@keyframes rotate-gear {
+  0% { transform: none; /* OpenAI no transforms */ }
+  100% { transform: none; /* OpenAI no transforms */ }
+}
+
+@keyframes progress-radial {
+  0% { stroke-dasharray: 0 100; }
+  100% { stroke-dasharray: 75 100; }
+}
+
+@keyframes radial-fill {
+  0% { stroke-dasharray: 0 100; }
+  100% { stroke-dasharray: 100 100; }
+}
+
+@keyframes sequential-illuminate {
+  0% { stroke: var(--muted); }
+  25% { stroke: var(--acc); }
+  50% { stroke: var(--acc); }
+  75% { stroke: var(--acc); }
+  100% { stroke: var(--acc); }
+}
+
+@keyframes shield-ring-fill {
+  0% {
+    stroke: var(--muted);
+    stroke-dasharray: 0 100;
+  }
+  100% {
+    stroke: var(--acc);
+    stroke-dasharray: 100 100;
+  }
+}
+
+@keyframes shield-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px var(--ok));
+    stroke: var(--ok);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px var(--ok));
+    stroke: var(--ok);
+  }
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    stroke: var(--bad);
+    transform: none; /* OpenAI no transforms */
+  }
+  50% {
+    stroke: var(--bad);
+    transform: none; /* OpenAI no transforms */
+    filter: drop-shadow(0 0 8px var(--bad));
+  }
+}
+
+@keyframes toolbox-open {
+  0% { transform: none; /* OpenAI no transforms */ }
+  50% { transform: none; /* OpenAI no transforms */ }
+  100% { transform: none; /* OpenAI no transforms */ }
+}
+
+@keyframes truck-move-forward {
+  0% { transform: none; /* OpenAI no transforms */ }
+  50% { transform: none; /* OpenAI no transforms */ }
+  100% { transform: none; /* OpenAI no transforms */ }
+}
+
+@keyframes truck-delay-shake {
+  0%, 100% { transform: none; /* OpenAI no transforms */ }
+  25% { transform: none; /* OpenAI no transforms */ }
+  75% { transform: none; /* OpenAI no transforms */ }
+}
+
+@keyframes leaf-glow {
+  0% {
+    stroke: var(--muted);
+    filter: none;
+  }
+  100% {
+    stroke: var(--ok);
+    filter: drop-shadow(0 0 8px var(--ok));
+  }
+}
+
+@keyframes wave-pulse {
+  0%, 100% {
+    stroke: var(--acc);
+    stroke-width: var(--icon-stroke);
+  }
+  50% {
+    stroke: var(--acc);
+    stroke-width: calc(var(--icon-stroke) * 1.5);
+    filter: drop-shadow(0 0 6px var(--acc));
+  }
+}
+
+/* Premium Icon System Variables - OpenAI Design Tokens */
+:root {
+  --bg: #080808; /* OpenAI black */
+  --ink: #ffffff; /* OpenAI white */
+  --muted: #737373; /* OpenAI neutral */
+  --card: #1e293b; /* OpenAI very dark text */
+  --line: #525252; /* OpenAI dark gray */
+  --acc: #94a3b8; /* OpenAI muted text */
+  --ok: #737373; /* OpenAI neutral */
+  --warn: #737373; /* OpenAI neutral */
+  --bad: #737373; /* OpenAI neutral */
+  --radius: 16px;
+  --shadow: 0 6px 24px rgba(0,0,0,.25);
+}

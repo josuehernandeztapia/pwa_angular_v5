@@ -1,0 +1,706 @@
+// Import Tracker Component - Minimal Dark compliant
+:host {
+  display: block;
+  color: inherit;
+}
+
+.import-tracker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--neutral-900);
+  border: 1px solid var(--neutral-800);
+  color: var(--neutral-100);
+  overflow: hidden;
+
+  @media (prefers-color-scheme: light) {
+    background: var(--color-bg-primary);
+    border-color: var(--color-border-secondary);
+    color: var(--openai-black);
+  }
+}
+
+.import-tracker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--neutral-600);
+  opacity: 0.35;
+}
+
+.import-tracker__header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.import-tracker__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.import-tracker__heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.import-tracker__lead-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--token-border-neutral-alpha-12);
+  color: var(--neutral-500);
+}
+
+.import-tracker__lead-icon app-icon,
+.import-tracker__milestone-icon app-icon,
+.import-tracker__stat-icon app-icon {
+  color: inherit;
+}
+
+.import-tracker__icon--info {
+  color: var(--accent-primary-hover);
+}
+
+.import-tracker__lead-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.import-tracker__title {
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--font-semibold, 600);
+  margin: 0;
+}
+
+.import-tracker__subtitle {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--neutral-500);
+}
+
+.import-tracker__order-id {
+  margin: 0;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--accent-primary-hover);
+}
+
+.import-tracker__status {
+  display: flex;
+  align-items: center;
+}
+
+.import-tracker__status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+  border: 1px solid transparent;
+  background: var(--token-border-neutral-alpha-10);
+  color: var(--openai-black);
+}
+
+.import-tracker__status-chip--completed {
+  background: var(--token-surface-accent-tint);
+  border-color: var(--token-surface-accent-alpha-35);
+  color: var(--accent-primary);
+}
+
+.import-tracker__status-chip--in-transit {
+  background: var(--token-surface-accent-tint);
+  border-color: var(--token-surface-accent-alpha-35);
+  color: var(--accent-primary);
+}
+
+.import-tracker__status-chip--delayed {
+  background: color-mix(in srgb, var(--token-surface-danger-strong) 12%, transparent);
+  border-color: color-mix(in srgb, var(--token-surface-danger-strong) 35%, transparent);
+  color: var(--token-surface-danger-strong);
+}
+
+.import-tracker__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--neutral-400);
+  transition: opacity 150ms ease;
+}
+
+.import-tracker__status-dot--completed {
+  background: var(--accent-primary);
+}
+
+.import-tracker__status-dot--active {
+  background: var(--accent-primary);
+  animation: trackerPulse 1.2s ease-in-out infinite;
+}
+
+.import-tracker__status-dot--delayed {
+  background: var(--token-surface-danger-strong);
+}
+
+.import-tracker__status-text {
+  white-space: nowrap;
+}
+
+.import-tracker__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.import-tracker__progress {
+  position: relative;
+}
+
+.import-tracker__progress-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--token-border-neutral-alpha-20);
+}
+
+.import-tracker__progress-fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  border-radius: inherit;
+  background: var(--neutral-600);
+  transition: width 0.5s ease-in-out;
+}
+
+.import-tracker__progress-label {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+  color: var(--accent-primary-hover);
+}
+
+.import-tracker__milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.import-tracker__milestone {
+  border: 1px solid var(--token-border-neutral-alpha-18);
+  border-radius: 12px;
+  background: var(--token-surface-neutral-950-alpha-35);
+  padding: 16px;
+  transition: border-color 150ms ease, background-color 150ms ease;
+  cursor: pointer;
+
+  @media (prefers-color-scheme: light) {
+    background: var(--token-border-neutral-alpha-08);
+  }
+}
+
+.import-tracker__milestone--selected {
+  border-color: var(--neutral-600);
+  background: var(--token-surface-neutral-600-alpha-12);
+}
+
+.import-tracker__milestone--completed {
+  border-color: var(--token-surface-accent-alpha-35);
+  background: var(--token-surface-accent-tint);
+}
+
+.import-tracker__milestone--in-progress {
+  border-color: var(--token-surface-warning-alpha-35);
+  background: var(--token-surface-warning-alpha-12);
+}
+
+.import-tracker__milestone-body {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.import-tracker__milestone-circle-wrapper {
+  position: relative;
+}
+
+.import-tracker__milestone-circle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  background: var(--token-border-neutral-alpha-18);
+  border: 2px solid transparent;
+  color: var(--neutral-100);
+}
+
+.import-tracker__milestone-circle--completed {
+  border-color: var(--accent-primary);
+  background: var(--token-surface-accent-soft);
+}
+
+.import-tracker__milestone-circle--in-progress {
+  border-color: var(--accent-muted);
+  background: var(--token-surface-warning-alpha-18);
+}
+
+.import-tracker__milestone-circle--pending {
+  border-color: var(--token-border-neutral-soft);
+}
+
+.import-tracker__milestone-indicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+}
+
+.import-tracker__milestone-indicator--progress {
+  background: var(--token-surface-warning-alpha-60);
+  animation: trackerPulse 1.2s ease-in-out infinite;
+}
+
+.import-tracker__milestone-indicator--completed {
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--openai-white);
+}
+
+.import-tracker__milestone-indicator-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.import-tracker__milestone-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-tracker__milestone-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.import-tracker__milestone-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.import-tracker__milestone-title {
+  margin: 0;
+  font-size: var(--text-base, 1rem);
+  font-weight: var(--font-semibold, 600);
+}
+
+.import-tracker__milestone-description {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--neutral-500);
+}
+
+.import-tracker__milestone-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.import-tracker__milestone-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.import-tracker__milestone-action--update {
+  background: var(--token-surface-accent-alpha-16);
+  color: var(--accent-primary);
+  border-color: var(--token-surface-accent-alpha-35);
+}
+
+.import-tracker__milestone-action--update:hover {
+  background: var(--token-surface-accent-alpha-28);
+}
+
+.import-tracker__milestone-action--complete {
+  background: var(--token-surface-accent-alpha-16);
+  color: var(--accent-primary);
+  border-color: var(--token-surface-accent-alpha-35);
+}
+
+.import-tracker__milestone-action--complete:hover {
+  background: var(--token-surface-accent-alpha-28);
+}
+
+.import-tracker__milestone-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-tracker__milestone-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--neutral-500);
+}
+
+.import-tracker__time-icon {
+  color: var(--accent-primary-hover);
+}
+
+.import-tracker__time-label {
+  color: inherit;
+}
+
+.import-tracker__milestone-completed,
+.import-tracker__milestone-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.import-tracker__milestone-completed {
+  color: var(--accent-primary);
+}
+
+.import-tracker__milestone-progress {
+  color: var(--accent-muted);
+}
+
+.import-tracker__progress-spinner {
+  width: 16px;
+  height: 16px;
+  color: inherit;
+}
+
+.import-tracker__milestone-badge {
+  display: flex;
+  align-items: flex-start;
+}
+
+.import-tracker__status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-medium, 500);
+  border: 1px solid transparent;
+  background: var(--token-border-neutral-alpha-14);
+  color: var(--neutral-500);
+}
+
+.import-tracker__status-badge--completed {
+  background: var(--token-surface-accent-soft);
+  border-color: var(--token-surface-accent-alpha-35);
+  color: var(--accent-primary);
+}
+
+.import-tracker__status-badge--in-progress {
+  background: var(--token-surface-warning-alpha-18);
+  border-color: var(--token-surface-warning-alpha-35);
+  color: var(--accent-muted);
+}
+
+.import-tracker__status-badge--pending {
+  background: var(--token-border-neutral-alpha-18);
+  border-color: var(--token-border-neutral-soft);
+}
+
+.import-tracker__details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--token-border-neutral-alpha-25);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.import-tracker__details-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.import-tracker__detail-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--token-surface-neutral-950-alpha-45);
+  border: 1px solid var(--token-border-neutral-alpha-20);
+
+  @media (prefers-color-scheme: light) {
+    background: var(--token-border-neutral-alpha-10);
+  }
+}
+
+.import-tracker__detail-title {
+  margin: 0 0 8px;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+}
+
+.import-tracker__detail-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--neutral-500);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.import-tracker__detail-item {
+  list-style: disc;
+}
+
+.import-tracker__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--neutral-500);
+}
+
+.import-tracker__contact {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.import-tracker__contact-role {
+  font-weight: var(--font-medium, 500);
+  color: var(--openai-black);
+}
+
+.import-tracker__contact-info {
+  color: inherit;
+}
+
+.import-tracker__actions-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-tracker__actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-tracker__action {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--token-surface-neutral-950-alpha-30);
+  border: 1px solid var(--token-border-neutral-alpha-20);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.import-tracker__action-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.import-tracker__action-text {
+  color: var(--openai-black);
+}
+
+.import-tracker__action-timestamp {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--neutral-500);
+}
+
+.import-tracker__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.import-tracker__stat-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--token-border-neutral-alpha-20);
+  background: var(--token-surface-neutral-950-alpha-30);
+}
+
+.import-tracker__stat-card--info {
+  border-color: var(--token-surface-accent-alpha-35);
+  background: var(--token-surface-accent-tint);
+}
+
+.import-tracker__stat-card--warning {
+  border-color: var(--token-surface-warning-alpha-35);
+  background: var(--token-surface-warning-alpha-12);
+}
+
+.import-tracker__stat-card--success {
+  border-color: var(--token-surface-accent-alpha-35);
+  background: var(--token-surface-accent-tint);
+}
+
+.import-tracker__stat-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.import-tracker__stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--token-surface-neutral-950-alpha-25);
+}
+
+.import-tracker__stat-value {
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: var(--font-bold, 700);
+}
+
+.import-tracker__stat-label {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--neutral-500);
+}
+
+.import-tracker__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.import-tracker__report-button,
+.import-tracker__notify {
+  flex: 1;
+  min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.import-tracker__report-button {
+  background: var(--token-surface-accent-alpha-16);
+  color: var(--accent-primary);
+}
+
+.import-tracker__report-button:hover {
+  background: var(--token-surface-accent-alpha-28);
+}
+
+.import-tracker__notify {
+  background: var(--token-surface-accent-alpha-16);
+  color: var(--accent-primary);
+}
+
+.import-tracker__notify:hover {
+  background: var(--token-surface-accent-alpha-28);
+}
+
+@keyframes trackerPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 900px) {
+  .import-tracker__header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .import-tracker__milestone-body {
+    grid-template-columns: auto 1fr;
+    row-gap: 12px;
+  }
+
+  .import-tracker__milestone-badge {
+    justify-content: flex-start;
+  }
+
+  .import-tracker__milestone-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .import-tracker__milestone-actions {
+    width: 100%;
+  }
+
+  .import-tracker__milestone-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .import-tracker__actions {
+    flex-direction: column;
+  }
+
+  .import-tracker__report-button,
+  .import-tracker__notify {
+    width: 100%;
+  }
+}

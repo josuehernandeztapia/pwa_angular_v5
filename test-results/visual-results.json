@@ -1,0 +1,346 @@
+{
+  "config": {
+    "configFile": "/Users/juanjosuehernandeztapia/pwa_angular_v3/playwright.config.ts",
+    "rootDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "project": "Conductores PWA",
+      "description": "Visual regression tests for UI components and pages",
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/visual-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "iPad",
+        "name": "iPad",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "project": "Conductores PWA",
+          "description": "Visual regression tests for UI components and pages",
+          "actualWorkers": 1
+        },
+        "id": "High DPI",
+        "name": "High DPI",
+        "testDir": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.0",
+    "workers": 5,
+    "webServer": {
+      "command": "npm run serve:testing",
+      "url": "http://localhost:4300",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "business-logic-detection.spec.ts",
+      "file": "business-logic-detection.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Business Logic Detection",
+          "file": "business-logic-detection.spec.ts",
+          "line": 110,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Simulador AGS Ahorro - flujo completo",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 22889,
+                      "error": {
+                        "message": "TimeoutError: page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/simulador/ags-ahorro**\" until \"load\"\n  navigated to \"http://localhost:4300/nueva-oportunidad?market=aguascalientes&clientType=individual&preselectedFlow=SIMULACION&targetSimulator=ags-ahorro&fromHub=true\"\n============================================================",
+                        "stack": "TimeoutError: page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/simulador/ags-ahorro**\" until \"load\"\n  navigated to \"http://localhost:4300/nueva-oportunidad?market=aguascalientes&clientType=individual&preselectedFlow=SIMULACION&targetSimulator=ags-ahorro&fromHub=true\"\n============================================================\n    at /Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e/business-logic-detection.spec.ts:138:16",
+                        "location": {
+                          "file": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e/business-logic-detection.spec.ts",
+                          "column": 16,
+                          "line": 138
+                        },
+                        "snippet": "  136 |     await gotoSimHub(page);\n  137 |     await page.locator('[data-cy=\"sim-ags-ahorro\"]').click();\n> 138 |     await page.waitForURL('**/simulador/ags-ahorro**', { timeout: 20000 });\n      |                ^\n  139 |     await expect(page.locator('[data-cy=\"simulate-btn\"]')).toBeVisible();\n  140 |\n  141 |     await page.fill('[data-cy=\"unit-value\"]', scenario.unitValue.toString());"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e/business-logic-detection.spec.ts",
+                            "column": 16,
+                            "line": 138
+                          },
+                          "message": "TimeoutError: page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/simulador/ags-ahorro**\" until \"load\"\n  navigated to \"http://localhost:4300/nueva-oportunidad?market=aguascalientes&clientType=individual&preselectedFlow=SIMULACION&targetSimulator=ags-ahorro&fromHub=true\"\n============================================================\n\n  136 |     await gotoSimHub(page);\n  137 |     await page.locator('[data-cy=\"sim-ags-ahorro\"]').click();\n> 138 |     await page.waitForURL('**/simulador/ags-ahorro**', { timeout: 20000 });\n      |                ^\n  139 |     await expect(page.locator('[data-cy=\"simulate-btn\"]')).toBeVisible();\n  140 |\n  141 |     await page.fill('[data-cy=\"unit-value\"]', scenario.unitValue.toString());\n    at /Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e/business-logic-detection.spec.ts:138:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-09T23:10:48.811Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual/business-logic-detection-B-5dc19-AGS-Ahorro---flujo-completo-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual/business-logic-detection-B-5dc19-AGS-Ahorro---flujo-completo-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/juanjosuehernandeztapia/pwa_angular_v3/test-results/visual/business-logic-detection-B-5dc19-AGS-Ahorro---flujo-completo-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/juanjosuehernandeztapia/pwa_angular_v3/tests/e2e/business-logic-detection.spec.ts",
+                        "column": 16,
+                        "line": 138
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "ef51a357355eda5b6ba4-0cb273e443e4baad5ab6",
+              "file": "business-logic-detection.spec.ts",
+              "line": 117,
+              "column": 7
+            },
+            {
+              "title": "Simulador EdoMex Individual - cálculo de ahorro",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-09T23:11:11.970Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ef51a357355eda5b6ba4-1377ed740ca6eb1b1088",
+              "file": "business-logic-detection.spec.ts",
+              "line": 198,
+              "column": 7
+            },
+            {
+              "title": "Simulador EdoMex Colectivo - contribución y entregas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-09T23:11:11.970Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ef51a357355eda5b6ba4-bda0a7ded8cd2cefa6e3",
+              "file": "business-logic-detection.spec.ts",
+              "line": 269,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-10-09T23:10:48.278Z",
+    "duration": 23707.417,
+    "expected": 0,
+    "skipped": 2,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

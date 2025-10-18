@@ -1,0 +1,40 @@
+<section class="reportes">
+  <header class="reportes__header">
+    <div>
+      <h1>Reportes y descargas</h1>
+      <p>Genera archivos exportables directamente desde el BFF de reporting.</p>
+    </div>
+  </header>
+
+  <section class="reportes__grid">
+    <article *ngFor="let report of reports" class="reportes__card">
+      <header>
+        <h2>{{ report.name }}</h2>
+        <span>{{ report.format | uppercase }}</span>
+      </header>
+
+      <p>{{ report.description }}</p>
+
+      <button
+        type="button"
+        class="reportes__download"
+        (click)="download(report)"
+        [disabled]="isReportLoading(report.id)"
+      >
+        <app-icon
+          *ngIf="!isReportLoading(report.id); else loadingIcon"
+          name="download"
+          [size]="16"
+        ></app-icon>
+        <ng-template #loadingIcon>
+          <app-icon name="spinner" [size]="16" class="spin"></app-icon>
+        </ng-template>
+        <span>{{ isReportLoading(report.id) ? 'Generando…' : 'Descargar' }}</span>
+      </button>
+
+      <p *ngIf="reportError(report.id)" class="reportes__error">
+        {{ reportError(report.id) }}
+      </p>
+    </article>
+  </section>
+</section>

@@ -1,0 +1,62 @@
+<section class="delivery-detail">
+  <header class="delivery-detail__header">
+    <button type="button" class="delivery-detail__back" (click)="goBack()">
+      <app-icon name="arrow-left"></app-icon>
+      <span>Regresar a Entregas</span>
+    </button>
+    <div *ngIf="delivery() as order" class="delivery-detail__title">
+      <h1>Entrega {{ order.id }}</h1>
+      <span [class]="'delivery-detail__status ' + statusClass(order.status)">
+        {{ order.status | uppercase }}
+        <small *ngIf="statusDescription()">{{ statusDescription() }}</small>
+      </span>
+    </div>
+  </header>
+
+  <section *ngIf="isLoading()" class="delivery-detail__state">
+    <app-icon name="spinner" [size]="24" class="spin"></app-icon>
+    <span>Cargando entrega...</span>
+  </section>
+
+  <section *ngIf="!isLoading() && error()" class="delivery-detail__state delivery-detail__state--error">
+    <app-icon name="alert-triangle" [size]="24"></app-icon>
+    <span>{{ error() }}</span>
+  </section>
+
+  <section *ngIf="!isLoading() && !error() && delivery() as order" class="delivery-detail__content">
+    <article class="delivery-detail__card">
+      <h2>Cliente</h2>
+      <p><strong>{{ order.client.name }}</strong></p>
+      <p>Contrato: {{ order.contract.id || 'N/A' }}</p>
+      <p>Ruta: {{ order.route?.name || 'Sin ruta' }}</p>
+      <p>Mercado: {{ order.market | uppercase }}</p>
+    </article>
+
+    <article class="delivery-detail__card">
+      <h2>Vehículo</h2>
+      <p>SKU: {{ order.sku }}</p>
+      <p>Unidades: {{ order.qty }}</p>
+      <p>ETA: {{ order.eta ? (order.eta | date:'medium') : 'Por confirmar' }}</p>
+      <p>Creado: {{ order.createdAt | date:'medium' }}</p>
+    </article>
+  </section>
+
+  <section class="delivery-detail__timeline">
+    <header>
+      <h2>Timeline de eventos</h2>
+      <span *ngIf="isTimelineLoading()">Actualizando...</span>
+    </header>
+    <ol>
+      <li *ngFor="let event of timeline(); trackBy: trackEvent">
+        <div class="dot"></div>
+        <div class="content">
+          <time>{{ event.at | date:'short' }}</time>
+          <strong>{{ event.event }}</strong>
+          <p>{{ eventDescriptions[event.event] || 'Evento registrado por operaciones.' }}</p>
+          <small *ngIf="event.actorName">{{ event.actorName }}</small>
+        </div>
+      </li>
+    </ol>
+    <p *ngIf="!timeline().length && !isTimelineLoading()" class="delivery-detail__empty">Sin eventos registrados.</p>
+  </section>
+</section>

@@ -1,0 +1,65 @@
+<section class="protection" aria-labelledby="protection-title">
+  <header class="protection__header">
+    <div>
+      <h1 id="protection-title">Orquestación de protección</h1>
+      <p>Ejecuta simulaciones para reestructuras, diferidos y protección colectiva manteniendo la TIR objetivo.</p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="simulate()" [disabled]="isLoading()">
+      <app-icon name="refresh" [size]="16" aria-hidden="true"></app-icon>
+      Recalcular escenarios
+    </button>
+  </header>
+
+  <form class="protection__form" [formGroup]="simulateForm" (ngSubmit)="simulate()">
+    <label>
+      <span>Contrato</span>
+      <input type="text" formControlName="contractId" placeholder="CT-1277" required />
+    </label>
+    <label>
+      <span>Mes actual (k)</span>
+      <input type="number" min="1" formControlName="monthK" />
+    </label>
+    <label>
+      <span>Tipo objetivo (opcional)</span>
+      <select formControlName="requestedType">
+        <option value="">Automático</option>
+        <option value="DEFER">Diferir pagos</option>
+        <option value="RECALENDAR">Recalendario</option>
+        <option value="STEPDOWN">Step-down</option>
+        <option value="COLLECTIVE">Protección colectiva</option>
+      </select>
+    </label>
+    <label class="protection__notes">
+      <span>Notas de disparo</span>
+      <textarea rows="2" formControlName="notes" placeholder="Ej. Estación cerrada 30 días, solicitar diferimiento"></textarea>
+    </label>
+  </form>
+
+  <p *ngIf="feedback()" class="protection__feedback">{{ feedback() }}</p>
+  <p *ngIf="error()" class="protection__error">{{ error() }}</p>
+
+  <div class="protection__grid" *ngIf="scenarios().length; else emptyState">
+    <article
+      *ngFor="let scenario of scenarios()"
+      class="protection__card"
+      [class.protection__card--active]="selectedScenario()?.id === scenario.id"
+      (click)="selectScenario(scenario)"
+    >
+      <header>
+        <h2>{{ scenarioTitle(scenario) }}</h2>
+        <span class="protection__score">{{ scenarioScore(scenario) | number: '1.0-0' }} pts</span>
+      </header>
+      <p class="protection__description">{{ scenarioDescription(scenario) }}</p>
+      <ul class="protection__highlights">
+        <li *ngFor="let highlight of scenarioHighlights(scenario)">{{ highlight }}</li>
+      </ul>
+    </article>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="protection__empty" aria-live="polite">
+      <app-icon name="shield" [size]="24" aria-hidden="true"></app-icon>
+      <p>No se encontraron escenarios. Ajusta los parámetros o ejecuta nuevamente.</p>
+    </div>
+  </ng-template>
+</section>

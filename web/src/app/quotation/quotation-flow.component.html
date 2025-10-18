@@ -1,0 +1,71 @@
+<ng-container *ngIf="isLoading(); else quotationContent">
+  <section class="quotation quotation--loading">
+    <div class="quotation__spinner" aria-hidden="true"></div>
+    <p>Cargando cotización…</p>
+  </section>
+</ng-container>
+
+<ng-template #quotationContent>
+  <section class="quotation" *ngIf="summary() as summary; else quotationFallback">
+    <header class="quotation__header">
+      <div>
+        <h1>Resumen de Cotización</h1>
+        <p class="quotation__generated" *ngIf="summary.generatedAt as generated">
+          Generada el {{ generated | date:'mediumDate' }}
+        </p>
+      </div>
+      <button type="button" class="btn btn-secondary" (click)="goToCotizador()">
+        Regresar al cotizador
+      </button>
+    </header>
+
+    <article class="quotation__card">
+      <h2>{{ summary.title }}</h2>
+      <dl class="quotation__metrics">
+        <div>
+          <dt>Pago mensual</dt>
+          <dd>
+            <ng-container *ngIf="summary.monthlyPayment !== null; else unknownValue">
+              {{ summary.monthlyPayment | currency:'MXN':'symbol':'1.0-0' }}
+            </ng-container>
+          </dd>
+        </div>
+        <div>
+          <dt>Enganche</dt>
+          <dd>
+            <ng-container *ngIf="summary.downPayment !== null; else unknownValue">
+              {{ summary.downPayment | currency:'MXN':'symbol':'1.0-0' }}
+            </ng-container>
+          </dd>
+        </div>
+        <div>
+          <dt>Plazo</dt>
+          <dd>
+            <ng-container *ngIf="summary.term !== null; else unknownValue">
+              {{ summary.term }} meses
+            </ng-container>
+          </dd>
+        </div>
+      </dl>
+    </article>
+  </section>
+</ng-template>
+
+<ng-template #quotationFallback>
+  <section class="quotation quotation--empty">
+    <ng-container *ngIf="errorMessage(); else emptyState">
+      <h2>{{ errorMessage() }}</h2>
+      <button class="btn btn-primary" (click)="goToCotizador()">Ir al cotizador</button>
+    </ng-container>
+  </section>
+</ng-template>
+
+<ng-template #emptyState>
+  <h2>No hay cotización activa</h2>
+  <p>Genera una nueva cotización desde el cotizador para revisar el resumen aquí.</p>
+  <button class="btn btn-primary" (click)="goToCotizador()">Ir al cotizador</button>
+</ng-template>
+
+<ng-template #unknownValue>
+  <span class="quotation__unknown">—</span>
+</ng-template>

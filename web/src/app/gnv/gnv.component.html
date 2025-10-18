@@ -1,0 +1,114 @@
+<section class="gnv" aria-labelledby="gnv-title">
+  <header class="gnv__header">
+    <div>
+      <h1 id="gnv-title">Panel GNV</h1>
+      <p>Analiza consumo, monitorea estaciones activas y anticipa pagos relacionados al programa de gas natural vehicular.</p>
+    </div>
+    <form class="gnv__filters" [formGroup]="filtersForm">
+      <label>
+        <span>Conductor</span>
+        <input type="text" formControlName="driverId" placeholder="driver-id" />
+      </label>
+      <label>
+        <span>Estado</span>
+        <select formControlName="state">
+          <option value="edomex">EdoMex</option>
+          <option value="cdmx">CDMX</option>
+          <option value="aguascalientes">Aguascalientes</option>
+        </select>
+      </label>
+    </form>
+  </header>
+
+  <div class="gnv__overview" *ngIf="summary() as monthly">
+    <article>
+      <header>
+        <app-icon name="fuel" [size]="20" aria-hidden="true"></app-icon>
+        <span>Consumo mensual</span>
+      </header>
+      <strong>{{ totalVolumeFormatted() }}</strong>
+      <small>{{ monthly.transaction_count }} transacciones registradas</small>
+    </article>
+    <article>
+      <header>
+        <app-icon name="currency-dollar" [size]="20" aria-hidden="true"></app-icon>
+        <span>Gasto acumulado</span>
+      </header>
+      <strong>{{ totalCostFormatted() }}</strong>
+      <small>Precio promedio {{ monthly.average_price_per_leq | number: '1.2-2' }} MXN/LEQ</small>
+    </article>
+    <article>
+      <header>
+        <app-icon name="location-marker" [size]="20" aria-hidden="true"></app-icon>
+        <span>Estaciones usadas</span>
+      </header>
+      <strong>{{ monthly.stations_used.length }}</strong>
+      <small>{{ monthly.stations_used.join(', ') || 'Sin datos' }}</small>
+    </article>
+    <article>
+      <header>
+        <app-icon name="credit-card" [size]="20" aria-hidden="true"></app-icon>
+        <span>Estado de pago</span>
+      </header>
+      <strong>{{ monthly.payment_status || 'pendiente' | titlecase }}</strong>
+      <a *ngIf="monthly.payment_link" [href]="monthly.payment_link" target="_blank" rel="noopener">Generar pago</a>
+    </article>
+  </div>
+
+  <div class="gnv__content">
+    <section class="gnv__card" aria-label="Historial de cargas">
+      <header>
+        <h2>Historial de consumo</h2>
+        <span *ngIf="isLoading()" class="gnv__loading">
+          <app-icon name="spinner" [size]="16" aria-hidden="true" class="spin"></app-icon>
+          Sincronizando…
+        </span>
+      </header>
+      <div class="gnv__table" role="region" aria-live="polite">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Estación</th>
+              <th>LEQ</th>
+              <th>Monto</th>
+              <th>Referencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let record of consumption(); trackBy: trackConsumption">
+              <td>{{ record.timestamp | date: 'medium' }}</td>
+              <td>{{ record.station_name }}</td>
+              <td>{{ record.volume_leq | number: '1.2-2' }}</td>
+              <td>{{ record.total_cost | currency: 'MXN':'symbol':'1.0-0' }}</td>
+              <td>{{ record.transaction_reference }}</td>
+            </tr>
+            <tr *ngIf="!consumption().length">
+              <td colspan="5" class="gnv__empty">No hay cargas registradas para el filtro seleccionado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="gnv__card" aria-label="Estaciones disponibles">
+      <header>
+        <h2>Estaciones GNV activas</h2>
+      </header>
+      <ul class="gnv__stations">
+        <li *ngFor="let station of stations(); trackBy: trackStation">
+          <div>
+            <strong>{{ station.name }}</strong>
+            <span>{{ station.city }}, {{ station.state | uppercase }}</span>
+          </div>
+          <span class="gnv__status" [class.gnv__status--inactive]="!station.active">
+            {{ station.active ? 'Operando' : 'Inactiva' }}
+          </span>
+        </li>
+        <li *ngIf="!stations().length" class="gnv__empty">Sin estaciones registradas para el estado seleccionado.</li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="gnv__error" *ngIf="error()">{{ error() }}</p>
+</section>

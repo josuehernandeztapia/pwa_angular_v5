@@ -1,0 +1,76 @@
+<section class="tanda-panel">
+  <header class="tanda-panel__header">
+    <div>
+      <h1>{{ title }}</h1>
+      <p>{{ description }}</p>
+    </div>
+    <div class="tanda-panel__badge">
+      <app-icon name="cube" [size]="18"></app-icon>
+      Laboratorio {{ modeLabel }}
+    </div>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="tanda-panel__form">
+    <div class="tanda-panel__field">
+      <label for="participants">Participantes</label>
+      <input
+        id="participants"
+        type="number"
+        formControlName="participants"
+        min="1"
+        required
+      />
+      <span class="tanda-panel__hint">Rango recomendado: 12 - 120</span>
+    </div>
+    <div class="tanda-panel__field">
+      <label for="monthly">Aportación mensual (MXN)</label>
+      <input
+        id="monthly"
+        type="number"
+        formControlName="monthly"
+        min="100"
+        required
+      />
+    </div>
+    <div class="tanda-panel__field">
+      <label for="startMonth">Mes objetivo</label>
+      <input
+        id="startMonth"
+        type="number"
+        formControlName="startMonth"
+        min="1"
+        required
+      />
+    </div>
+
+    <button type="submit" class="tanda-panel__submit" [disabled]="isLoading()">
+      <app-icon name="arrow-right" [size]="18"></app-icon>
+      {{ isLoading() ? 'Simulando...' : 'Ejecutar simulación' }}
+    </button>
+  </form>
+
+  <section class="tanda-panel__output" *ngIf="result() as outcome">
+    <header>
+      <h2>Resultado</h2>
+      <span class="tanda-panel__chip">Cobertura estimada: {{ outcome.coverage | number:'1.0-2' }}%</span>
+    </header>
+    <div class="tanda-panel__grid">
+      <article class="tanda-panel__card">
+        <h3>Asignación propuesta</h3>
+        <p class="tanda-panel__value">Mes {{ outcome.assignedMonth }}</p>
+        <p class="tanda-panel__description">Resultado calculado por el motor con parámetros actuales.</p>
+      </article>
+      <article class="tanda-panel__card" *ngIf="outcome.warnings?.length">
+        <h3>Alertas</h3>
+        <ul>
+          <li *ngFor="let warning of outcome.warnings">{{ warning }}</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="tanda-panel__error" *ngIf="error() as failure">
+    <app-icon name="alert-triangle" [size]="18"></app-icon>
+    <span>{{ failure }}</span>
+  </section>
+</section>

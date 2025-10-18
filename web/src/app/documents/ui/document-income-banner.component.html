@@ -1,0 +1,7 @@
+<div
+  *ngIf="visible"
+  class="document-upload__banner document-upload__banner--alert"
+  data-cy="income-threshold-banner">
+  <div>{{ message }}</div>
+  <button type="button" class="btn btn-ghost btn-sm" (click)="onDismiss()">Entendido</button>
+</div>

@@ -1,0 +1,85 @@
+<section class="document-upload__telemetry card" data-cy="doc-telemetry-panel">
+  <header class="document-upload__telemetry-header">
+    <h3>Telemetría del flujo</h3>
+    <span class="document-upload__telemetry-count">{{ stats.total }} issues</span>
+  </header>
+
+  <div class="document-upload__telemetry-summary">
+    <span data-cy="telemetry-offline">Offline: {{ stats.offlineQueued }}</span>
+    <span data-cy="telemetry-queued">En cola: {{ stats.queued }}</span>
+    <span data-cy="telemetry-ocr">OCR: {{ stats.ocrFailures }}</span>
+    <span data-cy="telemetry-timeouts">Timeouts: {{ stats.networkTimeouts }}</span>
+  </div>
+
+  <ul class="document-upload__telemetry-list" *ngIf="issues.length; else issuesEmpty">
+    <li
+      *ngFor="let issue of issues; trackBy: trackIssue"
+      class="document-upload__telemetry-item"
+      [attr.data-issue-id]="issue.id">
+      <div class="document-upload__telemetry-row">
+        <strong class="document-upload__telemetry-type">{{ formatType(issue.type) }}</strong>
+        <span class="document-upload__telemetry-status">{{ formatStatus(issue.status) }}</span>
+      </div>
+      <p class="document-upload__telemetry-message">{{ issue.message }}</p>
+      <div class="document-upload__telemetry-actions" *ngIf="issue.actions?.length">
+        <button
+          type="button"
+          class="btn btn-link btn-sm"
+          [disabled]="issue.status === 'processing'"
+          (click)="onRetryIssue(issue.id)"
+          data-cy="telemetry-retry">
+          Reintentar
+        </button>
+        <button
+          type="button"
+          class="btn btn-link btn-sm"
+          (click)="onDismissIssue(issue.id)"
+          data-cy="telemetry-dismiss">
+          Descartar
+        </button>
+      </div>
+    </li>
+  </ul>
+
+  <ng-template #issuesEmpty>
+    <p class="document-upload__telemetry-empty">
+      No hay incidencias activas. Seguimiento en tiempo real listo.
+    </p>
+  </ng-template>
+
+  <div class="document-upload__telemetry-queue" *ngIf="queuedRequests.length">
+    <h4>Documentos en cola ({{ queuedRequests.length }})</h4>
+    <ul class="document-upload__telemetry-list">
+      <li
+        *ngFor="let request of queuedRequests; trackBy: trackQueue"
+        class="document-upload__telemetry-item"
+        [attr.data-queue-id]="request.id">
+        <div class="document-upload__telemetry-row">
+          <strong class="document-upload__telemetry-type">{{ queueLabel(request) }}</strong>
+          <span class="document-upload__telemetry-status">Intentos: {{ request.attempts ?? 0 }}</span>
+        </div>
+        <p class="document-upload__telemetry-message">
+          {{ request.data?.metadata?.queueReason ? ('Motivo: ' + request.data.metadata.queueReason) : 'En cola para sincronización.' }}
+        </p>
+        <div class="document-upload__telemetry-actions">
+          <button
+            type="button"
+            class="btn btn-link btn-sm"
+            [disabled]="isBusy(request.id)"
+            (click)="onRetryQueued(request.id)"
+            data-cy="telemetry-queue-retry">
+            Sincronizar ahora
+          </button>
+          <button
+            type="button"
+            class="btn btn-link btn-sm"
+            [disabled]="isBusy(request.id)"
+            (click)="onDiscardQueued(request.id)"
+            data-cy="telemetry-queue-discard">
+            Descartar
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>

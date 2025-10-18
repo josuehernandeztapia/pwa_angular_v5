@@ -1,0 +1,164 @@
+
+.post-sale {
+  display: grid;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.post-sale__header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+    color: #475569;
+  }
+}
+
+.post-sale__form {
+  display: grid;
+  gap: 1rem;
+  max-width: 480px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  input {
+    border-radius: 0.75rem;
+    border: 1px solid #cbd5f5;
+    padding: 0.75rem 1rem;
+    font: inherit;
+  }
+}
+
+.post-sale__uploads {
+  display: grid;
+  gap: 1.5rem;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  article {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  header {
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    small {
+      color: #475569;
+    }
+  }
+}
+
+.post-sale__dropzone {
+  border: 2px dashed #94a3b8;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  display: grid;
+  place-items: center;
+  gap: 0.75rem;
+  color: #475569;
+  cursor: pointer;
+
+  input {
+    display: none;
+  }
+}
+
+.post-sale__preview img {
+  width: 100%;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  aspect-ratio: 4 / 3;
+}
+
+.post-sale__feedback {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.post-sale__suggestions {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: #fff;
+  display: grid;
+  gap: 1rem;
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    span {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+}

@@ -1,0 +1,62 @@
+<section class="usage">
+  <header class="usage__header">
+    <div>
+      <h1>Uso del Sistema</h1>
+      <p>Insights operativos con datos mock mientras conectamos el BFF.</p>
+    </div>
+    <nav aria-label="Filtrar por mercado" class="usage__filters">
+      <button
+        type="button"
+        *ngFor="let market of markets; trackBy: trackMarket"
+        (click)="setMarket(market.value)"
+        [class.is-active]="selectedMarket() === market.value"
+      >
+        <app-icon name="map" [size]="16"></app-icon>
+        <span>{{ market.label }}</span>
+      </button>
+    </nav>
+  </header>
+
+  <section *ngIf="isLoading()" class="usage__state">
+    <app-icon name="spinner" [size]="24" class="spin"></app-icon>
+    <span>Cargando métricas...</span>
+  </section>
+
+  <section *ngIf="!isLoading() && error()" class="usage__state usage__state--error">
+    <app-icon name="alert-triangle" [size]="24"></app-icon>
+    <span>{{ error() }}</span>
+  </section>
+
+  <section *ngIf="!isLoading() && !error()" class="usage__content">
+    <div class="usage__metrics">
+      <article *ngFor="let metric of metrics(); trackBy: trackMetric" class="usage__metric">
+        <h2>{{ metric.label }}</h2>
+        <strong>{{ metric.value }}</strong>
+        <p>{{ metric.helper }}</p>
+      </article>
+    </div>
+
+    <article class="usage__revenue" *ngIf="revenue() as revenue">
+      <header>
+        <h2>Ingresos Mensuales</h2>
+        <app-icon name="chart" [size]="24"></app-icon>
+      </header>
+      <dl>
+        <div>
+          <dt>Cobrado</dt>
+          <dd>{{ revenue.collected | number:'1.0-0' }} MXN</dd>
+        </div>
+        <div>
+          <dt>Proyectado</dt>
+          <dd>{{ revenue.projected | number:'1.0-0' }} MXN</dd>
+        </div>
+        <div>
+          <dt>Delta</dt>
+          <dd [class.positive]="projectedDelta() >= 0" [class.negative]="projectedDelta() < 0">
+            {{ projectedDelta() | number:'1.0-0' }} MXN
+          </dd>
+        </div>
+      </dl>
+    </article>
+  </section>
+</section>

@@ -1,0 +1,57 @@
+<section class="kyc">
+  <header class="kyc__header">
+    <div>
+      <h1>Verificación biométrica (KYC)</h1>
+      <p>Centro de control para habilitar biometría MetaMap en pilotos controlados.</p>
+    </div>
+    <button type="button" class="kyc__reload" (click)="loadClients()" [disabled]="isLoading()">
+      <app-icon name="refresh" [size]="18"></app-icon>
+      Actualizar lista
+    </button>
+  </header>
+
+  <section class="kyc__section">
+    <label for="client-select">Cliente</label>
+    <select id="client-select" [(ngModel)]="selectedClientId" (ngModelChange)="selectClient($event)">
+      <option [ngValue]="null">Selecciona un cliente</option>
+      <option *ngFor="let client of clients()" [ngValue]="client.id">{{ client.name }}</option>
+    </select>
+  </section>
+
+  <section class="kyc__status" *ngIf="selectedClient() as client">
+    <header>
+      <h2>{{ client.name }}</h2>
+      <span class="kyc__badge" [class.kyc__badge--ready]="kycStatus()?.canStartKyc" [class.kyc__badge--completed]="kycStatus()?.isKycComplete">
+        {{ kycStateLabel() }}
+      </span>
+    </header>
+
+    <div class="kyc__grid">
+      <article class="kyc-card">
+        <h3>Documentos críticos</h3>
+        <ul>
+          <li *ngFor="let item of documentChecklist()" [class.kyc-card__ok]="item.ok">{{ item.label }}</li>
+        </ul>
+      </article>
+
+      <article class="kyc-card">
+        <h3>Acciones</h3>
+        <p>Dispara la verificación biométrica en caliente. Se utilizará mock Metamap si el BFF no responde.</p>
+        <button type="button" class="kyc-card__cta" (click)="startKyc()">
+          <app-icon name="user" [size]="18"></app-icon>
+          Iniciar verificación
+        </button>
+      </article>
+    </div>
+  </section>
+
+  <section class="kyc__empty" *ngIf="!selectedClient() && !isLoading() && !error()">
+    <app-icon name="search" [size]="18"></app-icon>
+    <p>Selecciona un cliente para revisar requisitos de KYC.</p>
+  </section>
+
+  <section class="kyc__error" *ngIf="error() as failure">
+    <app-icon name="alert-circle" [size]="18"></app-icon>
+    <span>{{ failure }}</span>
+  </section>
+</section>

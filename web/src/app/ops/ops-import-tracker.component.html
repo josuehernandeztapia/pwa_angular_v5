@@ -1,0 +1,45 @@
+<section class="import-tracker">
+  <header class="import-tracker__header">
+    <div>
+      <h1>Import Tracker</h1>
+      <p>Seguimiento universal de 77 días con datos mock.</p>
+    </div>
+    <nav>
+      <button
+        type="button"
+        *ngFor="let option of markets; trackBy: trackMarket"
+        (click)="setMarket(option.value)"
+        [class.is-active]="market() === option.value"
+      >
+        {{ option.label }}
+      </button>
+    </nav>
+  </header>
+
+  <section *ngIf="isLoading()" class="import-tracker__state">
+    <app-icon name="spinner" [size]="24" class="spin"></app-icon>
+    <span>Cargando unidades...</span>
+  </section>
+
+  <section *ngIf="!isLoading() && error()" class="import-tracker__state import-tracker__state--error">
+    <app-icon name="alert-triangle" [size]="24"></app-icon>
+    <span>{{ error() }}</span>
+  </section>
+
+  <section *ngIf="!isLoading() && !error()" class="import-tracker__grid">
+    <article *ngFor="let order of orders(); trackBy: trackOrder" class="import-tracker__card">
+      <header>
+        <span>{{ order.id }}</span>
+        <strong>{{ order.market | uppercase }}</strong>
+      </header>
+      <p>{{ order.client.name }}</p>
+      <p>Estado actual: <strong>{{ order.status }}</strong></p>
+      <p>ETA estimado: {{ eta(order) }}</p>
+      <footer>
+        <span>Contrato {{ order.contract.id || 'N/D' }}</span>
+        <span>{{ order.createdAt | date:'shortDate' }}</span>
+      </footer>
+    </article>
+    <p *ngIf="!orders().length" class="import-tracker__empty">Sin unidades listas para entrega.</p>
+  </section>
+</section>

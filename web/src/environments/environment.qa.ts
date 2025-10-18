@@ -1,0 +1,62 @@
+import { createEnvironment } from './environment.base';
+
+export const environment = createEnvironment({
+  production: true,
+  apiUrl: 'https://bff-qa.conductores.com/api',
+  appName: 'Conductores PWA (QA)',
+  version: '1.0.0-qa',
+  features: {
+    enableMockData: false,
+    enableAnalytics: true,
+    enablePushNotifications: true,
+    enableOfflineMode: true,
+    enableDocumentValidationMock: false,
+    forceOfflineQueueMock: false,
+    enableAVISystem: true,
+    enableVoiceRecording: true,
+    enableStressDetection: true,
+    enablePostSalesWizard: true,
+    enableDevKpi: true,
+    enablePostSalesAddToQuote: true,
+    enableOdooQuoteBff: true,
+    enableGnvBff: true,
+    enableTandaLab: true,
+    enableRemoteConfig: false,
+    enableConfigShadowMode: false,
+    enablePerfConfig: true,
+    enableUiMessages: true,
+    enableValidationConfig: true,
+    enableFinancialRates: true,
+    enableCatalogConfig: true,
+    enableLocalizationConfig: true,
+    enableIntegrationsConfig: true,
+    enableAdminConfig: true,
+    enableUsageModule: true,
+    enableGlobalSearch: true,
+    enableSecurityConfig: true,
+    enableKycBff: true,
+    enablePaymentsBff: true,
+    enableContractsBff: true,
+    enableAutomationBff: true,
+    enableAviMicroLocalBff: true,
+    enableLabs: true,
+    enablePostventa: true,
+    enablePostSaleBff: true,
+    enableClaimsModule: true,
+    enableClaimsBff: true,
+    enableAdminBff: true,
+    enableFlowBuilder: true,
+    enablePerfil: true,
+    enableQaTools: true
+  },
+  timeouts: {
+    api: 45000,
+    fileUpload: 180000,
+    auth: 20000
+  },
+  monitoring: {
+    eventsEndpoint: 'monitoring/events',
+    datadogEndpoint: 'monitoring/datadog',
+    slackWebhook: ''
+  }
+});

@@ -1,0 +1,130 @@
+<section class="cliente-detail__layout" *ngIf="client() as cliente">
+  <header class="cliente-detail__header">
+    <div class="cliente-detail__identity">
+      <div class="cliente-detail__avatar" [ngClass]="healthScoreClasses()">
+        {{ cliente.name ? cliente.name.charAt(0) : '?' }}
+      </div>
+      <div class="cliente-detail__info">
+        <h1 class="cliente-detail__name">{{ cliente.name }}</h1>
+        <p class="cliente-detail__sub">{{ cliente.email }} · {{ cliente.phone }}</p>
+      </div>
+      <span class="cliente-detail__status" [ngClass]="getStatusBadgeClasses(cliente.status)">
+        {{ cliente.status }}
+      </span>
+    </div>
+
+    <div class="cliente-detail__actions">
+      <button type="button" class="btn btn-primary" (click)="createQuote()">Crear cotización</button>
+      <button type="button" class="btn btn-secondary" [disabled]="!canGenerateContract()" (click)="generateContract()">Generar contrato</button>
+    </div>
+  </header>
+
+  <section class="cliente-detail__overview">
+    <div class="overview-card">
+      <h2 class="overview-card__title">Resumen financiero</h2>
+      <dl class="overview-card__metrics">
+        <div class="metric">
+          <dt>Health score</dt>
+          <dd [ngClass]="healthScoreClasses()">{{ cliente.healthScore ?? 'N/A' }}</dd>
+        </div>
+        <div class="metric">
+          <dt>Documentos</dt>
+          <dd>{{ documentStats() }}</dd>
+        </div>
+        <div class="metric">
+          <dt>Flujo</dt>
+          <dd>{{ getFlowDisplayName(cliente.flow) }}</dd>
+        </div>
+        <div class="metric">
+          <dt>Mercado</dt>
+          <dd>{{ getMunicipalityName(cliente.market) }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="overview-card">
+      <h2 class="overview-card__title">Progreso</h2>
+      <div class="progress-group">
+        <div class="progress-widget">
+          <div class="progress-widget__header">
+            <span class="progress-widget__label">Ahorro</span>
+            <span class="progress-widget__value">{{ savingsProgress() }} / {{ savingsGoal() | number }}</span>
+          </div>
+          <div class="progress-widget__track">
+            <div
+              class="progress-widget__bar progress-widget__bar--savings"
+              [style.width.%]="(savingsProgress() / savingsGoal()) * 100"
+            ></div>
+          </div>
+        </div>
+
+        <div class="progress-widget">
+          <div class="progress-widget__header">
+            <span class="progress-widget__label">Pagos completados</span>
+            <span class="progress-widget__value">{{ paymentProgress() }} / {{ totalPayments() }}</span>
+          </div>
+          <div class="progress-widget__track">
+            <div
+              class="progress-widget__bar progress-widget__bar--payments"
+              [style.width.%]="(paymentProgress() / totalPayments()) * 100"
+            ></div>
+          </div>
+          <p class="progress-widget__hint">Restantes: {{ remainingPayments() }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cliente-detail__timeline">
+    <h2>Actividad reciente</h2>
+    <div class="event-feed">
+      @for (event of getEventFeed(); track event.id) {
+        <article class="event-feed__item">
+          <div class="event-feed__title">{{ event.message }}</div>
+          <div class="event-feed__timestamp">{{ event.timestamp | date: 'mediumDate' }}</div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="cliente-detail__import" *ngIf="getImportStatus() as importStatus">
+    <h2>Seguimiento de importación</h2>
+    <ul class="import-list">
+      @for (key of getImportStatusKeys(); track key) {
+        <li class="import-list__item">
+          <strong>{{ key | titlecase }}</strong>
+          <span class="import-list__value">
+            {{ getImportStatusItem(key)?.['status'] ?? 'Pendiente' }}
+          </span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="cliente-detail__avi">
+    <h2>Verificación AVI</h2>
+    <button type="button" class="btn btn-outline" [disabled]="!canStartAviVerification()" (click)="startAviVerification()">
+      Iniciar verificación AVI
+    </button>
+  </section>
+
+  @defer (when showAviModal()) {
+    @if (client()) {
+      <app-avi-verification-modal
+        [clientId]="client()?.id ?? ''"
+        [municipality]="aviMunicipality()"
+        (closed)="onAviClosed()"
+        (completed)="onAviCompleted($event)"
+      ></app-avi-verification-modal>
+    }
+  }
+</section>
+
+<section class="cliente-detail__empty" *ngIf="!client()">
+  <div class="empty-state">
+    <app-icon class="empty-state__icon" name="users" [size]="48"></app-icon>
+    <h2>Cliente no encontrado</h2>
+    <p>No pudimos cargar la información solicitada.</p>
+    <a routerLink="/clientes" class="btn btn-primary">Volver a clientes</a>
+  </div>
+</section>

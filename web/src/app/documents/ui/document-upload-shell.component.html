@@ -1,0 +1,214 @@
+<div class="document-upload" *ngIf="flowContext">
+  <section class="document-upload__card card">
+    <app-document-upload-header
+      [completionStatus]="completionStatus"
+      [pendingOfflineDocs]="pendingOfflineDocs"
+    ></app-document-upload-header>
+
+    <p *ngIf="syncMessage" class="document-upload__sync" data-cy="doc-sync-message">
+      {{ syncMessage }}
+    </p>
+
+    <app-document-status-banner
+      [type]="statusBannerType"
+      [pendingOfflineDocs]="pendingOfflineDocs">
+    </app-document-status-banner>
+
+    <app-document-protection-banner
+      [visible]="protectionRequired"
+      [coverageOptions]="protectionCoverageOptions"
+      (dismiss)="dismissProtectionBanner()">
+    </app-document-protection-banner>
+
+    <app-document-tanda-banner
+      [visible]="showTandaBanner"
+      [rules]="tandaRules"
+      [status]="tandaValidationStatus"
+      (dismiss)="dismissTandaBanner()">
+    </app-document-tanda-banner>
+
+    <app-document-income-banner
+      [visible]="showIncomeBanner"
+      [message]="incomeBannerMessage"
+      (dismiss)="dismissIncomeBanner()">
+    </app-document-income-banner>
+
+    <div class="document-upload__dropzone-wrapper">
+      <input
+        type="file"
+        #fileInput
+        class="document-upload__input"
+        id="document-upload"
+        accept="image/*,application/pdf"
+        (change)="onFileSelected($event)"
+      />
+
+      <label
+        for="document-upload"
+        class="document-upload__dropzone"
+        data-cy="document-upload"
+      >
+        <div class="document-upload__dropzone-inner">
+          <app-icon
+            class="document-upload__dropzone-icon"
+            name="cloud-upload"
+            [size]="24"
+            aria-hidden="true"
+          ></app-icon>
+          <p class="document-upload__dropzone-text">Subir documento</p>
+        </div>
+      </label>
+    </div>
+
+    <div *ngIf="showOCRStatus" class="document-upload__status" data-cy="ocr-status">
+      <div
+        *ngIf="ocrStatus === 'processing'"
+        class="document-upload__status-line"
+        [ngClass]="getStatusLineClasses('processing')"
+      >
+        <span class="document-upload__status-dot" [ngClass]="getStatusDotClasses('processing')"></span>
+        <span data-cy="ocr-pendiente">Pendiente</span>
+      </div>
+
+      <div
+        *ngIf="ocrStatus === 'validated'"
+        class="document-upload__status-line"
+        [ngClass]="getStatusLineClasses('validated')"
+      >
+        <span class="document-upload__status-dot" [ngClass]="getStatusDotClasses('validated')"></span>
+        <span data-cy="ocr-validado">Validado</span>
+      </div>
+
+      <div
+        *ngIf="ocrStatus === 'error'"
+        class="document-upload__status-line"
+        [ngClass]="getStatusLineClasses('error')"
+      >
+        <span class="document-upload__status-dot" [ngClass]="getStatusDotClasses('error')"></span>
+        <span data-cy="ocr-error">Error</span>
+      </div>
+    </div>
+
+    <div *ngIf="isProcessingDocument" class="document-upload__loading" data-cy="documents-loading">
+      <span class="document-upload__loading-line document-upload__loading-line--wide"></span>
+      <span class="document-upload__loading-line document-upload__loading-line--narrow"></span>
+    </div>
+
+    <ng-template #documentCard let-doc>
+      <article
+        class="document-card"
+        [attr.data-doc-id]="doc.id"
+        [attr.data-group]="doc.group || null"
+        [attr.data-cy]="'doc-card-' + doc.id">
+        <header class="document-card__header">
+          <div>
+            <h3 class="document-card__title">
+              {{ getDocumentTitle(doc) }}
+              <span *ngIf="doc.isOptional" class="document-card__badge" data-cy="doc-optional-badge">Opcional</span>
+              <span *ngIf="doc.group === 'member'" class="document-card__badge document-card__badge--member" data-cy="doc-member-badge">Integrante</span>
+            </h3>
+            <p *ngIf="doc.tooltip" class="document-card__tooltip">{{ doc.tooltip }}</p>
+          </div>
+          <span
+            class="document-card__status"
+            [ngClass]="getDocumentBadgeClasses(doc)"
+            [attr.data-cy]="'doc-status-' + doc.id">
+            {{ getDocumentBadgeLabel(doc) }}
+          </span>
+        </header>
+
+        <ng-container *ngIf="getDocumentQaHints(doc) as qaHints">
+          <ul *ngIf="qaHints.length" class="document-card__qa" [attr.data-cy]="'doc-qa-list-' + doc.id">
+            <li
+              *ngFor="let hint of qaHints; let idx = index"
+              class="document-card__qa-item"
+              [attr.data-cy]="'doc-qa-hint-' + doc.id + '-' + idx">
+              {{ hint }}
+            </li>
+          </ul>
+        </ng-container>
+
+        <div class="document-card__actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="isUploading(doc)"
+            (click)="uploadDocument(doc)"
+            [attr.data-cy]="getDocUploadDataCy(doc.id)">
+            {{ isUploading(doc) ? 'Cargando…' : 'Subir documento' }}
+          </button>
+
+          <button
+            *ngIf="doc.status === DocumentStatus.Rechazado"
+            type="button"
+            class="btn btn-secondary"
+            (click)="retryDocument(doc)"
+            [attr.data-cy]="'doc-retake-' + doc.id">
+            Reintentar
+          </button>
+
+          <button
+            *ngIf="doc.status === DocumentStatus.EnRevision"
+            type="button"
+            class="btn btn-secondary"
+            (click)="markManualComplete(doc)"
+            [attr.data-cy]="'doc-manual-confirm-' + doc.id">
+            Marcar como validado manualmente
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-ghost"
+            (click)="markManualReview(doc)"
+            [attr.data-cy]="'doc-manual-' + doc.id">
+            Captura manual
+          </button>
+        </div>
+      </article>
+    </ng-template>
+
+    <div class="document-upload__grid" *ngIf="primaryDocuments.length">
+      <ng-container *ngFor="let doc of primaryDocuments">
+        <ng-container *ngTemplateOutlet="documentCard; context: { $implicit: doc }"></ng-container>
+      </ng-container>
+    </div>
+
+    <section
+      *ngFor="let member of memberDocumentSections"
+      class="document-upload__member"
+      [attr.data-member-index]="member.index"
+      [attr.data-cy]="'doc-member-section-' + member.index">
+      <header class="document-upload__member-header">
+        <h3 class="document-upload__member-title">{{ member.label }}</h3>
+        <span class="document-upload__member-count">{{ member.documents.length }} documentos</span>
+      </header>
+      <div class="document-upload__grid document-upload__grid--member">
+        <ng-container *ngFor="let doc of member.documents">
+          <ng-container *ngTemplateOutlet="documentCard; context: { $implicit: doc }"></ng-container>
+        </ng-container>
+      </div>
+    </section>
+
+
+    <div *ngIf="completionStatus.allComplete" class="document-upload__success" data-cy="doc-status-badge-overall">
+      ¡Todos los documentos obligatorios están validados!
+    </div>
+  </section>
+
+  <app-document-telemetry-panel
+    *ngIf="showTelemetryPanel"
+    [stats]="telemetryStats"
+    [issues]="telemetryIssues"
+    [queuedRequests]="queuedRequests"
+    [busyQueueIds]="busyQueueIds"
+    (retryIssue)="retryTelemetryIssue($event)"
+    (dismissIssue)="dismissTelemetryIssue($event)"
+    (retryQueued)="retryQueuedRequest($event)"
+    (discardQueued)="discardQueuedRequest($event)">
+  </app-document-telemetry-panel>
+
+  <app-context-panel
+    class="document-upload__context"
+    [keys]="['documentos', 'cotizador', 'onboarding-wizard']">
+  </app-context-panel>
+</div>

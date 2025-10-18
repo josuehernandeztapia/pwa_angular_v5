@@ -1,0 +1,65 @@
+<section class="triggers">
+  <header class="triggers__header">
+    <div>
+      <h1>Triggers Automáticos</h1>
+      <p>Historial de órdenes generadas automáticamente tras alcanzar 50% de enganche.</p>
+    </div>
+    <button type="button" (click)="refresh()">
+      <app-icon name="refresh"></app-icon>
+      <span>Refrescar</span>
+    </button>
+  </header>
+
+  <section *ngIf="metrics() as metrics" class="triggers__metrics">
+    <article>
+      <span>Total procesados</span>
+      <strong>{{ metrics.totalTriggers }}</strong>
+    </article>
+    <article>
+      <span>Exitosos</span>
+      <strong>{{ metrics.successfulTriggers }}</strong>
+    </article>
+    <article>
+      <span>Fallidos</span>
+      <strong>{{ metrics.failedTriggers }}</strong>
+    </article>
+  </section>
+
+  <section *ngIf="isLoading()" class="triggers__state">
+    <app-icon name="spinner" class="spin"></app-icon>
+    <span>Procesando triggers...</span>
+  </section>
+
+  <section *ngIf="!isLoading() && error()" class="triggers__state triggers__state--error">
+    <app-icon name="alert-triangle"></app-icon>
+    <span>{{ error() }}</span>
+  </section>
+
+  <section *ngIf="!isLoading() && !error()" class="triggers__timeline">
+    <article *ngFor="let event of history(); trackBy: trackEvent" class="triggers__event" [ngClass]="'triggers__event--' + resultBadge(event)">
+      <header>
+        <strong>{{ event.eventType }}</strong>
+        <time>{{ event.triggerDate | date:'short' }}</time>
+      </header>
+      <dl>
+        <div>
+          <dt>Contrato</dt>
+          <dd>{{ event.contractId || 'N/D' }}</dd>
+        </div>
+        <div>
+          <dt>Cliente</dt>
+          <dd>{{ event.clientId }}</dd>
+        </div>
+        <div>
+          <dt>Porcentaje</dt>
+          <dd>{{ event.triggerPercentage | percent:'1.0-0' }}</dd>
+        </div>
+      </dl>
+      <footer>
+        <span *ngIf="event.deliveryOrderCreated">Orden {{ event.deliveryOrderId }} generada automáticamente.</span>
+        <span *ngIf="!event.deliveryOrderCreated">Sin orden generada: {{ event.errorMessage || 'Revisión manual requerida' }}</span>
+      </footer>
+    </article>
+    <p *ngIf="!history().length" class="triggers__empty">Sin triggers registrados aún.</p>
+  </section>
+</section>

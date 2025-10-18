@@ -1,0 +1,108 @@
+.import-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.import-tracker__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.import-tracker__header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.import-tracker__header p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+}
+
+.import-tracker__header nav {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.import-tracker__header button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.import-tracker__header button.is-active {
+  background: #0ea5e9;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 12px 24px -22px rgba(14, 165, 233, 0.75);
+}
+
+.import-tracker__state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.85rem;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+}
+
+.import-tracker__state--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.import-tracker__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.import-tracker__card {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.2rem;
+  box-shadow: 0 18px 36px -24px rgba(15, 23, 42, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.import-tracker__card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: #0f172a;
+}
+
+.import-tracker__card footer {
+  display: flex;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.import-tracker__empty {
+  text-align: center;
+  color: #94a3b8;
+  grid-column: 1 / -1;
+}

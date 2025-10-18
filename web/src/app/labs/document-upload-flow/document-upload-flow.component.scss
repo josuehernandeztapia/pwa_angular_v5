@@ -1,0 +1,17 @@
+.lab-document-upload {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.lab-document-upload__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lab-document-upload__shell {
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.04);
+  padding: 1rem;
+}

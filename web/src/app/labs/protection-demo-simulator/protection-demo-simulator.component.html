@@ -1,0 +1,16 @@
+<section class="lab-protection">
+  <header>
+    <h1>Protection Workflow Demo</h1>
+    <p>Visualiza un escenario de protección con datos de laboratorio.</p>
+    <button class="btn btn-secondary" (click)="reset()">Regenerar escenario</button>
+  </header>
+
+  <div class="lab-protection__card" *ngIf="scenario() as current">
+    <h2>{{ current.title }}</h2>
+    <ul>
+      <li *ngFor="let metric of current.metrics">
+        <strong>{{ metric.label }}:</strong> {{ metric.value }}
+      </li>
+    </ul>
+  </div>
+</section>

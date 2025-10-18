@@ -1,0 +1,44 @@
+<section class="pipeline">
+  <header class="pipeline__header">
+    <div>
+      <h1>Pipeline de Oportunidades</h1>
+      <p>Total de oportunidades activas: <strong>{{ totalOpportunities() }}</strong></p>
+    </div>
+    <nav class="pipeline__markets" aria-label="Mercados">
+      <button
+        *ngFor="let market of markets; trackBy: trackMarket"
+        type="button"
+        (click)="setMarket(market.value)"
+        [class.is-active]="selectedMarket() === market.value"
+      >
+        <app-icon
+          [name]="selectedMarket() === market.value ? 'target' : 'grid'"
+          [size]="selectedMarket() === market.value ? 20 : 16"
+        ></app-icon>
+        <span>{{ market.label }}</span>
+      </button>
+    </nav>
+  </header>
+
+  <section *ngIf="isLoading()" class="pipeline__state">
+    <app-icon name="spinner" [size]="24" class="spin"></app-icon>
+    <span>Cargando pipeline...</span>
+  </section>
+
+  <section *ngIf="!isLoading() && error()" class="pipeline__state pipeline__state--error">
+    <app-icon name="alert-triangle" [size]="24"></app-icon>
+    <span>{{ error() }}</span>
+  </section>
+
+  <div *ngIf="!isLoading() && !error()" class="pipeline__grid">
+    <article *ngFor="let stage of stages(); trackBy: trackStage" class="pipeline__card">
+      <header>
+        <h2>{{ stage.name }}</h2>
+        <span class="pipeline__count">{{ stage.count }}</span>
+      </header>
+      <ul>
+        <li *ngFor="let clientId of stage.clientIds">{{ clientId }}</li>
+      </ul>
+    </article>
+  </div>
+</section>

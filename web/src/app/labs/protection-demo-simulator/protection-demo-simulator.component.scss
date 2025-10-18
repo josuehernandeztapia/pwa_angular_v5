@@ -1,0 +1,11 @@
+.lab-protection {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.lab-protection__card {
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: rgba(22, 163, 74, 0.12);
+}

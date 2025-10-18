@@ -1,0 +1,368 @@
+// Core Business Types for Conductores PWA
+// Ported from React PWA to ensure full compatibility
+
+import { ImportStatus, ImportMilestoneStatus, DocumentFile, LegalDocuments, VehicleUnit, DeliveryChecklistItem, DeliveryData, PlatesData } from './postventa';
+import { CollectiveCreditGroup } from './tanda';
+import { AVICategory, QuestionType, AVIQuestionAnalytics, AVIQuestionEnhanced, AVIResponse, VoiceAnalysis, AVIScore, RedFlag } from './avi';
+import { Quote, ProductPackage, ProductComponent, CompleteBusinessScenario, ClientType, SimulatorMode } from './business';
+import { NotificationBase, NotificationUI, NotificationPayload, NotificationHistory, NotificationResult, WhatsAppNotificationResult } from './notification';
+
+export enum BusinessFlow {
+  VentaPlazo = 'Venta a Plazo',
+  AhorroProgramado = 'Plan de Ahorro',
+  CreditoColectivo = 'Crédito Colectivo',
+  VentaDirecta = 'Venta Directa',
+  Individual = 'Individual'
+}
+
+export enum DocumentStatus {
+  Pendiente = 'Pendiente',
+  EnRevision = 'En Revisión',
+  Aprobado = 'Aprobado',
+  Rechazado = 'Rechazado',
+}
+
+export enum Actor {
+  Asesor = 'Asesor',
+  Cliente = 'Cliente',
+  Sistema = 'Sistema',
+}
+
+export enum EventType {
+  Contribution = 'Contribution',
+  Collection = 'Collection',
+  System = 'System',
+  AdvisorAction = 'AdvisorAction',
+  ClientAction = 'ClientAction',
+  GoalAchieved = 'GoalAchieved',
+  StatusChange = 'StatusChange',
+  DocumentSubmission = 'DocumentSubmission',
+  DocumentReview = 'DocumentReview',
+  KYCCompleted = 'KYCCompleted'
+}
+
+// Shared document name constants used across services/components
+export const DOC_NAME_INE = 'INE Vigente';
+export const DOC_NAME_COMPROBANTE = 'Comprobante de domicilio';
+// KYC doc occurrences may include provider suffix, so services use string includes()
+export const DOC_NAME_KYC_CONTAINS = 'Verificación Biométrica';
+
+export type Market = 'all' | 'aguascalientes' | 'edomex' | 'otros';
+
+export interface Document {
+  id: string;
+  name: string;
+  status: DocumentStatus;
+  isOptional?: boolean;
+  tooltip?: string;
+  group?: string;
+  // Additional properties for API operations (optional for compatibility)
+  uploadedAt?: Date;
+  // Optional expiration for documents that expire
+  expirationDate?: Date;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  updatedAt?: Date;
+  // Extended lifecycle fields used in tests and services
+  reviewedAt?: Date;
+  completedAt?: Date;
+  verificationId?: string;
+  verificationScore?: number;
+  reviewNotes?: string;
+}
+
+export interface EventLog {
+  id: string;
+  timestamp: Date;
+  message: string;
+  actor: Actor;
+  type: EventType;
+  details?: {
+    amount?: number;
+    currency?: 'MXN';
+    plate?: string;
+    paymentMethod?: string;
+    reference?: string;
+    documentName?: string;
+    status?: string;
+  }
+}
+
+export interface CollectionDetails {
+  plates: string[];
+  pricePerLiter: number;
+}
+
+export interface SavingsPlan {
+  progress: number;
+  goal: number;
+  currency: 'MXN';
+  totalValue: number; // Total value of the unit being saved for
+  currentSavings?: number;
+  methods: {
+    collection: boolean;
+    voluntary: boolean;
+  };
+  collectionDetails?: CollectionDetails;
+}
+
+export interface PaymentPlan {
+  monthlyGoal?: number;
+  currentMonthProgress?: number;
+  currency?: 'MXN';
+  methods?: {
+    collection: boolean;
+    voluntary: boolean;
+  };
+  collectionDetails?: CollectionDetails;
+  // Extended fields used by business rules and services
+  downPaymentPercentage?: number;
+  term?: number; // in months
+  monthlyPayment?: number;
+  interestRate?: number; // monthly/annual interest rate as fraction
+}
+
+// TANDA/CollectiveCreditGroup types moved to models/tanda.ts for SSOT
+// Import from: import { CollectiveCreditMember, CollectiveCreditGroup } from '../interfaces/tanda';
+
+// ImportMilestoneStatus moved to models/postventa.ts for SSOT
+// Import from: import { ImportMilestoneStatus } from './postventa';
+
+// DELIVERY AND DOCUMENT TYPES moved to models/postventa.ts for SSOT
+// Import from: import { DeliveryData, DeliveryChecklistItem, LegalDocuments, PlatesData, DocumentFile } from '../interfaces/postventa';
+
+// POST-SALES TYPES moved to models/postventa.ts for SSOT
+// Import from: import { ServicePackage, ServiceType, ContactChannel, ContactPurpose, ContactOutcome } from '../interfaces/postventa';
+
+// PostSalesRecord moved to models/postventa.ts for SSOT
+// Import from: import { PostSalesRecord } from '../interfaces/postventa';
+
+// PostSalesService, ServicePart, PostSalesContact, MaintenanceReminder, PostSalesRevenue moved to models/postventa.ts for SSOT
+// Import from: import { PostSalesService, ServicePart, PostSalesContact, MaintenanceReminder, PostSalesRevenue } from '../interfaces/postventa';
+
+// VehicleDeliveredEvent moved to models/postventa.ts for SSOT
+// Import from: import { VehicleDeliveredEvent } from '../interfaces/postventa';
+
+// PostSalesSurveyResponse moved to models/postventa.ts for SSOT
+// Import from: import { PostSalesSurveyResponse } from '../interfaces/postventa';
+
+// VehicleUnit moved to models/postventa.ts for SSOT
+// Import from: import { VehicleUnit } from '../interfaces/postventa';
+// ImportStatus moved to models/postventa.ts for SSOT
+// Import from: import { ImportStatus } from '../interfaces/postventa';
+
+export interface Ecosystem {
+    id: string;
+    name: string;
+    documents?: Document[];
+    status: 'Activo' | 'Expediente Pendiente' | string;
+    market?: Market;
+    vehicleType?: string;
+    capacity?: number;
+    requirements?: string[];
+    weeklyEarnings?: number;
+    monthlyEarnings?: number;
+    createdAt?: Date;
+    lastModified?: Date;
+}
+
+// Quote interface moved to models/business.ts for SSOT
+// Import from: import { Quote } from './business';
+
+export interface ProtectionPlan {
+  type: 'Esencial' | 'Total';
+  restructuresAvailable: number;
+  restructuresUsed: number;
+  annualResets: number;
+}
+
+// ProtectionScenario moved to models/protection.ts for SSOT
+
+export interface Client {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  flow: BusinessFlow;
+  status: string;
+  savingsPlan?: SavingsPlan;
+  paymentPlan?: PaymentPlan;
+  documents: Document[];
+  events: EventLog[];
+  collectiveCreditGroupId?: string;
+  collectiveGroupName?: string;
+  importStatus?: ImportStatus;
+  remainderAmount?: number;
+  downPayment?: number;
+  healthScore?: number;
+  ecosystemId?: string;
+  protectionPlan?: ProtectionPlan;
+  // Missing properties used by business-rules.service.ts
+  market?: Market;
+  monthlyIncome?: number;
+  birthDate?: Date;
+  groupId?: string;
+  // Additional properties used by components
+  email?: string;
+  phone?: string;
+  rfc?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastPayment?: Date;
+  lastModified?: Date;
+  // Convenience fields for UI components
+  currentSavings?: number;
+  savingsGoal?: number;
+  totalPayments?: number;
+  completedPayments?: number;
+  lastPaymentDate?: Date;
+  nextPaymentDue?: Date;
+  // Optional vehicle info summary for UI
+  vehicleInfo?: {
+    model: string;
+    vin: string;
+  };
+}
+
+// Dashboard data interfaces
+export interface DashboardStats {
+  opportunitiesInPipeline: {
+    nuevas: number;
+    expediente: number;
+    aprobado: number;
+  };
+  pendingActions: {
+    clientsWithMissingDocs: number;
+    clientsWithGoalsReached: number;
+  };
+  activeContracts: number;
+  monthlyRevenue: {
+    collected: number;
+    projected: number;
+  };
+}
+
+export interface ActivityFeedItem {
+  id: string;
+  type: 'new_client' | 'doc_approved' | 'payment_received' | 'goal_reached' | 'contract_signed';
+  timestamp: Date;
+  message: string;
+  clientName?: string;
+  amount?: number;
+  iconType: string;
+}
+
+export interface PaymentLinkDetails {
+    type: 'Conekta' | 'SPEI';
+    amount: number;
+    details: {
+        link?: string;
+        clabe?: string;
+        reference?: string;
+        bank?: string;
+    };
+}
+
+export enum NotificationType {
+    Lead = 'lead',
+    Milestone = 'milestone',
+    Risk = 'risk',
+    System = 'system'
+}
+
+// === AVI SYSTEM TYPES ===
+// AVI System types moved to models/avi.ts for SSOT
+// Import from: import { AVICategory, QuestionType, AVIQuestionAnalytics, AVIQuestionEnhanced, AVIResponse, VoiceAnalysis, AVIScore, RedFlag } from './avi';
+
+export type NotificationAction = {
+    text: string;
+    type: 'convert' | 'assign_unit' | 'configure_plan';
+}
+
+//  Notification interface moved to models/notification.ts as SSOT
+
+export type OpportunityStage = {
+    name: 'Nuevas Oportunidades' | 'Expediente en Proceso' | 'Aprobado' | 'Activo' | 'Completado';
+    clientIds: string[];
+    count: number;
+};
+
+export type ActionableClient = {
+    id: string;
+    name: string;
+    avatarUrl: string;
+    status: string;
+};
+
+export type ActionableGroup = {
+    title: string;
+    description: string;
+    clients: ActionableClient[];
+};
+
+export interface ToastMessage {
+  id: number;
+  message: string;
+  type: 'success' | 'info' | 'error';
+}
+
+// TandaMilestone moved to models/tanda.ts for SSOT
+// Import from: import { TandaMilestone } from '../interfaces/tanda';
+
+export interface NavigationContext {
+  ecosystem?: Ecosystem;
+  group?: CollectiveCreditGroup;
+}
+
+// --- Tanda Simulator Types ---
+
+// TANDA Simulator types moved to models/tanda.ts for SSOT
+// Import from: import { TandaMemberStatus, TandaMember, TandaProduct, TandaGroupSim, TandaEventType, TandaSimEvent, TandaSimConfig, TandaAward, TandaRiskBadge, TandaMonthState, TandaSimulationResult, TandaSimDraft } from '../interfaces/tanda';
+
+// Business/Cotizador types moved to models/business.ts for SSOT
+// Import from: import { ClientType, SimulatorMode, ProductPackage, ProductComponent, CompleteBusinessScenario } from './business';
+
+// Re-exported types for backward compatibility
+export {
+  DocumentFile,
+  LegalDocuments,
+  VehicleUnit,
+  ImportStatus,
+  ImportMilestoneStatus,
+  DeliveryChecklistItem,
+  DeliveryData,
+  PlatesData
+} from './postventa';
+
+export {
+  CollectiveCreditGroup
+} from './tanda';
+
+export {
+  CompleteBusinessScenario,
+  ClientType,
+  SimulatorMode,
+  ProductPackage,
+  ProductComponent,
+  Quote
+} from './business';
+
+export {
+  AVICategory,
+  QuestionType,
+  AVIQuestionAnalytics,
+  AVIQuestionEnhanced,
+  AVIResponse,
+  VoiceAnalysis,
+  AVIScore,
+  RedFlag
+} from './avi';
+
+export {
+  NotificationBase,
+  NotificationUI,
+  NotificationPayload,
+  NotificationHistory,
+  NotificationResult,
+  WhatsAppNotificationResult
+} from './notification';

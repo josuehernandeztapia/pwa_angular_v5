@@ -1,0 +1,123 @@
+<section class="deliveries" aria-labelledby="deliveries-title">
+  <header class="deliveries__header">
+    <div>
+      <h1 id="deliveries-title">Seguimiento de entregas</h1>
+      <p>Monitorea el estado logístico de cada contrato y coordina la entrega final con el cliente.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" (click)="refresh()" [disabled]="isLoading()">
+      <app-icon name="refresh" [size]="16" aria-hidden="true"></app-icon>
+      Actualizar
+    </button>
+  </header>
+
+  <div class="deliveries__content">
+    <aside class="deliveries__list" aria-label="Órdenes de entrega">
+      <div class="deliveries__list-empty" *ngIf="!isLoading() && !cards().length">
+        <p>No hay entregas activas.</p>
+      </div>
+
+      <ng-container *ngIf="cards().length">
+        <article
+          *ngFor="let card of cards(); trackBy: trackCard"
+          class="deliveries__card"
+          [class.deliveries__card--active]="selectedOrder()?.id === card.id"
+          (click)="select(card.id)"
+        >
+          <header>
+            <h2>{{ card.clientName }}</h2>
+            <span class="deliveries__status" [attr.data-status]="card.status">
+              {{ statusDescriptions[card.status].title || card.status }}
+            </span>
+          </header>
+          <dl>
+            <div>
+              <dt>Contrato</dt>
+              <dd>{{ card.id }}</dd>
+            </div>
+            <div>
+              <dt>SKU</dt>
+              <dd>{{ card.sku }}</dd>
+            </div>
+            <div>
+              <dt>Mercado</dt>
+              <dd>{{ card.market | titlecase }}</dd>
+            </div>
+            <div>
+              <dt>ETA estimado</dt>
+              <dd>{{ card.eta | date: 'mediumDate' }}</dd>
+            </div>
+          </dl>
+        </article>
+      </ng-container>
+
+      <div class="deliveries__list-loading" *ngIf="isLoading()">
+        <app-icon name="spinner" [size]="24" aria-hidden="true" class="spin"></app-icon>
+        <span>Cargando entregas…</span>
+      </div>
+
+      <p class="deliveries__warning" *ngIf="error()">{{ error() }}</p>
+    </aside>
+
+    <section class="deliveries__detail" *ngIf="selectedOrder() as order" aria-label="Detalle de entrega">
+      <header>
+        <h2>{{ order.client.name }}</h2>
+        <span class="deliveries__status" [attr.data-status]="order.status">
+          {{ statusDescriptions[order.status].title || order.status }}
+        </span>
+      </header>
+
+      <article class="deliveries__panel">
+        <h3>Resumen logístico</h3>
+        <dl>
+          <div>
+            <dt>Contrato</dt>
+            <dd>{{ order.contract.id }}</dd>
+          </div>
+          <div>
+            <dt>Mercado</dt>
+            <dd>{{ order.market | titlecase }}</dd>
+          </div>
+          <div>
+            <dt>SKU</dt>
+            <dd>{{ order.sku }}</dd>
+          </div>
+          <div>
+            <dt>Creado</dt>
+            <dd>{{ order.createdAt | date: 'medium' }}</dd>
+          </div>
+          <div>
+            <dt>ETA</dt>
+            <dd>{{ order.eta || (order.createdAt | date: 'medium') }}</dd>
+          </div>
+        </dl>
+        <p class="deliveries__description" *ngIf="currentStatusDescription() as description">
+          {{ description.description }}
+        </p>
+      </article>
+
+      <article class="deliveries__timeline">
+        <header>
+          <h3>Bitácora de eventos</h3>
+          <div class="deliveries__timeline-meta">
+            <span>{{ timeline().length }} eventos</span>
+            <span *ngIf="isTimelineLoading()" class="deliveries__timeline-loading">
+              <app-icon name="spinner" [size]="16" aria-hidden="true" class="spin"></app-icon>
+              Sincronizando…
+            </span>
+          </div>
+        </header>
+
+        <ol>
+          <li *ngFor="let event of timeline()">
+            <span class="deliveries__event-dot"></span>
+            <div>
+              <strong>{{ eventDescriptions[event.event].title || event.event }}</strong>
+              <time [dateTime]="event.at">{{ event.at | date: 'medium' }}</time>
+              <p *ngIf="event.meta?.notes">{{ event.meta?.notes }}</p>
+            </div>
+          </li>
+        </ol>
+      </article>
+    </section>
+  </div>
+</section>

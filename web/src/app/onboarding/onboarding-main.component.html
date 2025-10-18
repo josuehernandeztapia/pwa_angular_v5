@@ -1,0 +1,97 @@
+<section class="onboarding" aria-labelledby="onboarding-title">
+  <header class="onboarding__header">
+    <div>
+      <h1 id="onboarding-title">Onboarding acelerado</h1>
+      <p>Genera oportunidades listadas con checklist inteligente en minutos.</p>
+    </div>
+  </header>
+
+  <section class="onboarding__steps" aria-label="Pasos del flujo">
+    <article *ngFor="let step of onboardingSteps" class="onboarding__step">
+      <app-icon [name]="step.icon" [size]="20" aria-hidden="true"></app-icon>
+      <div>
+        <h2>{{ step.title }}</h2>
+        <p>{{ step.description }}</p>
+      </div>
+    </article>
+  </section>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="onboarding__form" novalidate>
+    <div class="onboarding__field">
+      <label for="onboarding-name">Nombre del cliente</label>
+      <input
+        id="onboarding-name"
+        type="text"
+        formControlName="name"
+        placeholder="Ej. María Hernández"
+        [attr.aria-invalid]="form.controls.name.invalid && form.controls.name.touched"
+      />
+      <p class="onboarding__error" *ngIf="form.controls.name.invalid && form.controls.name.touched">
+        Ingresa un nombre válido (mínimo 3 caracteres).
+      </p>
+    </div>
+
+    <div class="onboarding__grid">
+      <div class="onboarding__field">
+        <label for="onboarding-market">Mercado</label>
+        <select id="onboarding-market" formControlName="market">
+          <option *ngFor="let option of markets" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+
+      <div class="onboarding__field">
+        <label for="onboarding-sale">Tipo de flujo</label>
+        <select id="onboarding-sale" formControlName="saleType">
+          <option *ngFor="let option of saleTypes" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+
+      <div class="onboarding__field">
+        <label for="onboarding-client-type">Tipo de cliente</label>
+        <select id="onboarding-client-type" formControlName="clientType">
+          <option *ngFor="let option of clientTypes" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="onboarding__field">
+      <label for="onboarding-ecosystem">Ecosistema (opcional)</label>
+      <input id="onboarding-ecosystem" type="text" formControlName="ecosystemId" placeholder="Ej. edomex-001" />
+    </div>
+
+    <div class="onboarding__actions">
+      <button type="submit" class="btn btn-primary" [disabled]="isLoading()">
+        <app-icon name="trending-up" [size]="18" aria-hidden="true"></app-icon>
+        Generar oportunidad
+      </button>
+      <button type="button" class="btn btn-ghost" (click)="resetForm()" [disabled]="isLoading()">
+        Limpiar formulario
+      </button>
+    </div>
+
+    <p class="onboarding__error" *ngIf="creationState() === 'error' && errorMessage()">
+      {{ errorMessage() }}
+    </p>
+
+    <div class="onboarding__success" *ngIf="creationState() === 'success' && lastCreatedClient() as client">
+      <app-icon name="check-circle" [size]="22" aria-hidden="true"></app-icon>
+      <div>
+        <h3>Oportunidad creada</h3>
+        <p>
+          {{ client.name }} · {{ client.flow }} · {{ client.documents.length }} documentos asignados.
+        </p>
+      </div>
+    </div>
+  </form>
+
+  <section *ngIf="lastCreatedClient() as client" aria-label="Detalle de la última oportunidad" class="onboarding__result">
+    <h2>Checklist generado</h2>
+    <ul>
+      <li *ngFor="let doc of client.documents | slice:0:5">
+        <app-icon name="check" [size]="16" aria-hidden="true"></app-icon>
+        {{ doc.name }}
+      </li>
+    </ul>
+    <p class="onboarding__hint">Mostrando los primeros documentos. Consulta el expediente del cliente para ver la lista completa.</p>
+  </section>
+</section>

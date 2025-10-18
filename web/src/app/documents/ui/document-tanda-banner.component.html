@@ -1,0 +1,20 @@
+<div
+  *ngIf="visible && rules as tanda"
+  class="document-upload__banner document-upload__banner--info"
+  data-cy="tanda-rules-banner">
+  <div>
+    <strong>Validación colectiva.</strong>
+    Configura la tanda con {{ tanda.minMembers }}-{{ tanda.maxMembers }} integrantes,
+    aportes entre {{ (tanda.minContribution || 0) | currency:'MXN':'symbol-narrow':'1.0-0' }} y
+    {{ (tanda.maxContribution || 0) | currency:'MXN':'symbol-narrow':'1.0-0' }},
+    duración {{ tanda.minRounds || 0 }}-{{ tanda.maxRounds || 0 }} rondas.
+    <span
+      *ngIf="status"
+      class="document-upload__badge document-upload__badge--status"
+      [attr.data-status]="status"
+      data-cy="tanda-validation-status">
+      Validación: {{ statusLabel }}
+    </span>
+  </div>
+  <button type="button" class="btn btn-ghost btn-sm" (click)="onDismiss()">Entendido</button>
+</div>

@@ -1,0 +1,140 @@
+<!-- Skip Link for Accessibility -->
+<a class="skip-link" href="#main-content">Saltar al contenido</a>
+
+<div class="app-shell">
+  <app-navigation class="app-shell__navigation"></app-navigation>
+
+  <div class="app-shell__layout">
+    <header class="app-shell__topbar" role="banner">
+      <div class="app-shell__topbar-start">
+        <div class="app-shell__org" aria-live="polite">
+          Organización: <span data-cy="org-name">mvpcoductores</span>
+        </div>
+        <nav
+          class="app-shell__breadcrumbs"
+          *ngIf="(breadcrumbs$ | async) as breadcrumbs"
+          aria-label="Breadcrumb"
+          aria-live="polite"
+        >
+          <ng-container *ngIf="breadcrumbs.length">
+            <span
+              class="app-shell__breadcrumb"
+              *ngFor="let crumb of breadcrumbs; let last = last; trackBy: trackBreadcrumb"
+            >
+              {{ crumb }}
+              <span *ngIf="!last" class="app-shell__breadcrumb-separator">/</span>
+            </span>
+          </ng-container>
+        </nav>
+      </div>
+
+      <app-global-search
+        *ngIf="isGlobalSearchEnabled"
+        class="app-shell__global-search"
+      ></app-global-search>
+
+      <div class="app-shell__topbar-actions">
+        <app-update-banner class="app-shell__update-banner"></app-update-banner>
+        <ng-container *ngIf="offlineState$ | async as offlineState">
+          <button
+            *ngIf="offlineState.isOffline || offlineState.pending > 0"
+            type="button"
+            class="app-shell__offline-btn"
+            (click)="flushOfflineQueue()"
+            [disabled]="offlineState.pending === 0 || offlineState.isOffline"
+            data-cy="offline-queue-flush-now"
+            [attr.aria-live]="offlineState.isOffline ? 'polite' : null"
+            [attr.aria-label]="offlineState.isOffline ? 'Sin conexión. Espera para sincronizar.' : 'Sincronizar acciones pendientes'"
+            [attr.title]="offlineState.isOffline ? 'Sin conexión. Espera para sincronizar.' : 'Sincronizar acciones pendientes'"
+          >
+            <span class="app-shell__offline-dot" [class.is-offline]="offlineState.isOffline"></span>
+            <span class="app-shell__offline-label">
+              {{ offlineState.isOffline ? 'Sin conexión' : 'Cola offline' }}
+            </span>
+            <span class="app-shell__offline-count" *ngIf="offlineState.pending > 0">{{ offlineState.pending }}</span>
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="quickActions$ | async as quickActions">
+          <div
+            class="app-shell__quick-actions"
+            role="group"
+            aria-label="Acciones rápidas"
+            *ngIf="quickActions.length"
+          >
+            <button
+              type="button"
+              class="app-shell__quick-action"
+              *ngFor="let action of quickActions; trackBy: trackQuickAction"
+              [attr.data-color]="action.color || 'secondary'"
+              (click)="onQuickAction(action)"
+              [disabled]="action.disabled"
+              [attr.aria-disabled]="action.disabled"
+              [attr.aria-label]="action.tooltip || action.label"
+              [attr.title]="action.tooltip || action.label"
+              [attr.aria-current]="action.active ? 'page' : null"
+              [attr.aria-pressed]="action.active ? 'true' : null"
+              [class.app-shell__quick-action--active]="action.active"
+              [attr.data-cy]="'quick-action-' + action.id"
+            >
+              <ng-container *ngIf="action.iconType">
+                <app-icon [name]="action.iconType" [size]="16" aria-hidden="true"></app-icon>
+              </ng-container>
+              {{ action.label }}
+              <span *ngIf="action.badge !== null" class="app-shell__quick-action-badge">{{ action.badge }}</span>
+            </button>
+          </div>
+        </ng-container>
+        <button class="btn btn-secondary btn-sm" data-cy="date-range">Rango de fechas</button>
+        <button class="btn btn-primary btn-sm" data-cy="export">
+          Exportar
+        </button>
+        <button
+          class="btn btn-ghost btn-sm"
+          (click)="toggleDarkMode()"
+          data-cy="dark-toggle"
+          [attr.aria-label]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        >
+          <app-icon
+            *ngIf="!isDarkMode"
+            name="moon"
+            [size]="16"
+            aria-hidden="true"
+          ></app-icon>
+          <app-icon
+            *ngIf="isDarkMode"
+            name="sun"
+            [size]="16"
+            aria-hidden="true"
+          ></app-icon>
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content" class="app-shell__content" role="main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<!-- Mobile Bottom Navigation -->
+@defer (on idle) {
+  <app-bottom-nav-bar
+    class="app-shell__mobile-nav"
+    role="navigation"
+    aria-label="Navegación móvil"
+  >
+  </app-bottom-nav-bar>
+}
+
+<!-- Offline Status Indicator -->
+@defer (on idle) {
+  <app-offline-indicator></app-offline-indicator>
+}
+
+<!-- PWA Install Prompt -->
+@defer (on idle) {
+  <app-pwa-install-prompt></app-pwa-install-prompt>
+}
+
+<app-keyboard-shortcuts-modal></app-keyboard-shortcuts-modal>

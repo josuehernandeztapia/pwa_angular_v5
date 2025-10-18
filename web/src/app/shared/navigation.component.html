@@ -1,0 +1,202 @@
+<nav class="app-nav" [ngClass]="getNavStateClasses()">
+  <header class="app-nav__header">
+    <div class="app-nav__logo" [ngClass]="{ 'app-nav__logo--collapsed': isCollapsed }">
+      <div class="app-nav__logo-icon" aria-hidden="true">
+        <app-icon class="icon-24" name="chevrons-vertical" [size]="24"></app-icon>
+      </div>
+      <span class="app-nav__logo-text" *ngIf="!isCollapsed">Conductores PWA</span>
+    </div>
+
+    <div class="app-nav__header-actions">
+      <button
+        type="button"
+        class="app-nav__notifications" data-testid="nav-item-notifications"
+        (click)="toggleNotifications()"
+        [ngClass]="{ 'app-nav__notifications--has': (unreadCount$ | async)! > 0 }"
+        aria-label="Abrir notificaciones"
+        title="Notificaciones"
+      >
+        <app-icon class="icon-20" name="alert-circle" aria-hidden="true"></app-icon>
+        <span class="app-nav__notifications-badge" *ngIf="(unreadCount$ | async) as count">
+          {{ count > 99 ? '99+' : count }}
+        </span>
+      </button>
+
+      <div class="app-nav__a11y">
+        <button type="button" class="app-nav__a11y-btn" [ngClass]="{ 'is-active': fontScale === 'base' }" (click)="setFontScale('base')" aria-label="Tamaño de fuente base">A</button>
+        <button type="button" class="app-nav__a11y-btn" [ngClass]="{ 'is-active': fontScale === 'sm' }" (click)="setFontScale('sm')" aria-label="Tamaño de fuente pequeño">A</button>
+        <button type="button" class="app-nav__a11y-btn" [ngClass]="{ 'is-active': fontScale === 'lg' }" (click)="setFontScale('lg')" aria-label="Tamaño de fuente grande">A</button>
+        <button type="button" class="app-nav__contrast" [ngClass]="{ 'is-active': highContrast }" (click)="toggleHighContrast()" title="Alto contraste" aria-label="Alternar alto contraste">
+          <app-icon class="app-nav__contrast-icon" name="badge-check" [size]="16" aria-hidden="true"></app-icon>
+        </button>
+      </div>
+
+      <button type="button" class="app-nav__collapse" (click)="toggleCollapse()" aria-label="Alternar navegación" title="Alternar navegación">
+        <app-icon class="icon-16" [name]="isCollapsed ? 'arrow-right' : 'arrow-left'" [size]="16"></app-icon>
+      </button>
+    </div>
+  </header>
+
+  <section class="app-nav__user" *ngIf="!isCollapsed">
+    <div class="app-nav__avatar" aria-hidden="true" (click)="showUserProfileDropdown = !showUserProfileDropdown">
+      <span>{{ userInitials }}</span>
+    </div>
+    <div class="app-nav__user-info">
+      <div class="app-nav__user-name">{{ userName }}</div>
+      <div class="app-nav__user-role">{{ userRole }}</div>
+    </div>
+    <button
+      type="button"
+      class="app-nav__user-menu-toggle"
+      aria-label="Menu de usuario"
+      data-cy="user-menu-toggle"
+      (click)="showUserProfileDropdown = !showUserProfileDropdown"
+    >
+      <app-icon name="chevron-down" [size]="16" aria-hidden="true"></app-icon>
+    </button>
+
+    <!-- User Profile Dropdown -->
+    <div *ngIf="showUserProfileDropdown" class="app-nav__user-dropdown">
+      <div class="app-nav__user-dropdown-header">
+        <div class="app-nav__user-dropdown-avatar">
+          <span>{{ userInitials }}</span>
+        </div>
+        <div class="app-nav__user-dropdown-info">
+          <div class="app-nav__user-dropdown-name">{{ userName }}</div>
+          <div class="app-nav__user-dropdown-role">{{ userRole }}</div>
+        </div>
+      </div>
+      <div class="app-nav__user-dropdown-actions">
+        <button
+          type="button"
+          class="app-nav__user-dropdown-action"
+          (click)="navigateToProfile()"
+          data-cy="nav-user-profile"
+        >
+          <app-icon name="user" [size]="16" aria-hidden="true"></app-icon>
+          <span>Mi Perfil</span>
+        </button>
+        <button
+          type="button"
+          class="app-nav__user-dropdown-action"
+          (click)="navigateToSettings()"
+          data-cy="nav-user-settings"
+        >
+          <app-icon name="settings" [size]="16" aria-hidden="true"></app-icon>
+          <span>Configuración</span>
+        </button>
+        <button
+          type="button"
+          class="app-nav__user-dropdown-action"
+          (click)="showHelp()"
+          data-cy="nav-user-help"
+        >
+          <app-icon name="help" [size]="16" aria-hidden="true"></app-icon>
+          <span>Ayuda</span>
+        </button>
+        <div class="app-nav__user-dropdown-divider"></div>
+        <button
+          type="button"
+          class="app-nav__user-dropdown-action app-nav__user-dropdown-action--danger"
+          (click)="logout()"
+          data-cy="nav-user-logout"
+        >
+          <app-icon name="logout" [size]="16" aria-hidden="true"></app-icon>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="app-nav__cta">
+    <button type="button" class="app-nav__cta-button" data-testid="nav-item-create-opportunity" [ngClass]="{ 'app-nav__cta-button--collapsed': isCollapsed }" (click)="createNewOpportunity()" aria-label="Nueva oportunidad">
+      <span class="app-nav__cta-icon" aria-hidden="true">
+        <app-icon class="icon-16" name="plus" [size]="16"></app-icon>
+      </span>
+      <span *ngIf="!isCollapsed" class="app-nav__cta-text">Nueva Oportunidad</span>
+    </button>
+  </div>
+
+  <nav class="app-nav__menu">
+    <a
+      *ngFor="let item of navigationItems"
+      class="app-nav__item"
+      [ngClass]="getNavItemClasses(item)"
+      (click)="navigate(item)"
+      [routerLink]="item.route"
+      [attr.data-testid]="getNavTestId(item.route)"
+      [attr.aria-label]="isCollapsed ? item.label : null"
+      [attr.data-cy]="item.dataCy || null"
+      routerLinkActive="is-active"
+    >
+      <span class="app-nav__item-icon" aria-hidden="true">
+        <app-icon class="icon-20" [name]="item.iconType"></app-icon>
+      </span>
+      <span class="app-nav__item-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+      <span class="app-nav__item-badge" *ngIf="item.badge && !isCollapsed">{{ item.badge }}</span>
+
+      <div class="app-nav__submenu" *ngIf="item.children && !isCollapsed && isActive(item.route)">
+        <a
+          *ngFor="let child of item.children"
+          class="app-nav__subitem"
+          [ngClass]="{ 'is-active': isActive(child.route) }"
+          (click)="navigate(child); $event.stopPropagation()"
+          [routerLink]="child.route"
+          [attr.data-testid]="getNavTestId(child.route)"
+          [attr.data-cy]="child.dataCy || null"
+        >
+          <span class="app-nav__subitem-icon" aria-hidden="true">
+            <app-icon class="icon-16" [name]="child.iconType" [size]="16"></app-icon>
+          </span>
+          <span class="app-nav__subitem-label">{{ child.label }}</span>
+          <span class="app-nav__item-badge" *ngIf="child.badge">{{ child.badge }}</span>
+        </a>
+      </div>
+    </a>
+  </nav>
+
+  <footer class="app-nav__footer">
+    <button type="button" class="app-nav__item" (click)="showHelp()" data-testid="nav-item-help">
+      <span class="app-nav__item-icon" aria-hidden="true">
+        <app-icon class="icon-20" name="help"></app-icon>
+      </span>
+      <span class="app-nav__item-label" *ngIf="!isCollapsed">Ayuda</span>
+    </button>
+
+    <button type="button" class="app-nav__item" (click)="showSettings()" data-testid="nav-item-settings">
+      <span class="app-nav__item-icon" aria-hidden="true">
+        <app-icon class="icon-20" name="settings"></app-icon>
+      </span>
+      <span class="app-nav__item-label" *ngIf="!isCollapsed">Configuración</span>
+    </button>
+
+    <button type="button" class="app-nav__item app-nav__item--logout" (click)="logout()" data-testid="nav-item-logout">
+      <span class="app-nav__item-icon" aria-hidden="true">
+        <app-icon class="icon-20" name="logout"></app-icon>
+      </span>
+      <span class="app-nav__item-label" *ngIf="!isCollapsed">Salir</span>
+    </button>
+  </footer>
+
+  
+</nav>
+
+<div
+  class="app-nav__overlay"
+  *ngIf="showMobileMenu"
+  (click)="closeMobileMenu()"
+  aria-hidden="true"
+></div>
+
+<button
+  type="button"
+  class="app-nav__mobile-trigger"
+  *ngIf="isMobileView"
+  (click)="toggleMobileMenu()"
+  aria-label="Abrir menú"
+  title="Menú"
+>
+  <app-icon class="icon-24" name="menu" [size]="24" aria-hidden="true"></app-icon>
+</button>
+
+<app-notification-center #notificationCenter></app-notification-center>

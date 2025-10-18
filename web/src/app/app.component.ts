@@ -1,0 +1,244 @@
+import { CommonModule, DOCUMENT } from '@angular/common';
+import { Component, Inject, OnDestroy, OnInit, ViewChild, Optional, Renderer2 } from '@angular/core';
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
+import { LucideAngularModule } from 'lucide-angular';
+import { BottomNavBarComponent } from './shared/bottom-nav-bar.component';
+import { UpdateBannerComponent } from './shared/update-banner.component';
+import { OfflineIndicatorComponent } from './shared/offline-indicator.component';
+import { PwaInstallPromptComponent } from './shared/pwa-install-prompt.component';
+import { MediaPermissionsService } from '@core-services/media-permissions.service';
+import { SwUpdateService } from '@core-services/sw-update.service';
+import { IconComponent } from '@shared/icon/icon.component';
+import { GlobalSearchComponent } from './shared/global-search.component';
+import { FlowContextService } from '@core-services/flow-context.service';
+import { KeyboardShortcutsModalComponent } from './shared/keyboard-shortcuts-modal.component';
+import { KeyboardShortcutsService } from '@core-services/keyboard-shortcuts.service';
+import { Observable, combineLatest, of } from 'rxjs';
+import { map, distinctUntilChanged } from 'rxjs/operators';
+import { OfflineService } from '@core-services/offline.service';
+import { environment } from '@environments/environment';
+import { NavigationService, QuickAction } from '@core-services/navigation.service';
+import { NavigationComponent } from './shared/navigation.component';
+import { ThemeService } from '@core-services/theme.service';
+
+interface OfflineShellState {
+  isOffline: boolean;
+  pending: number;
+  endpoints: string[];
+  lastUpdated: number | null;
+}
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+    RouterOutlet,
+    BottomNavBarComponent,
+    UpdateBannerComponent,
+    OfflineIndicatorComponent,
+    PwaInstallPromptComponent,
+    LucideAngularModule,
+    IconComponent,
+    GlobalSearchComponent,
+    KeyboardShortcutsModalComponent,
+    NavigationComponent
+  ],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss'
+})
+export class AppComponent implements OnInit, OnDestroy {
+  @ViewChild(GlobalSearchComponent) globalSearch?: GlobalSearchComponent;
+
+  title = 'conductores-pwa';
+
+  // Dark mode state
+  readonly isDarkMode = this.theme.isDarkMode;
+  breadcrumbs$: Observable<string[]>;
+  readonly isGlobalSearchEnabled = environment.features.enableGlobalSearch ?? false;
+  readonly quickActions$ = this.navigation.getQuickActions();
+  readonly offlineState$ = this.createOfflineStateStream();
+
+  constructor(
+    private mediaPermissions: MediaPermissionsService,
+    _sw: SwUpdateService,
+    @Inject(DOCUMENT) private readonly documentRef: Document,
+    private readonly flowContext: FlowContextService,
+    private readonly router: Router,
+    private readonly shortcuts: KeyboardShortcutsService,
+    private readonly navigation: NavigationService,
+    private readonly theme: ThemeService,
+    private readonly renderer: Renderer2,
+    @Optional() private readonly offlineService: OfflineService | null
+  ) {
+    this.breadcrumbs$ = this.flowContext.breadcrumbs$;
+    this.exposeTestingHelpers();
+  }
+
+  private removeGlobalShortcutListener?: () => void;
+
+  async ngOnInit() {
+    // Media permissions will be requested just-in-time when needed (voice/camera flows)
+
+    this.ensureDocumentLang();
+
+    if (typeof window !== 'undefined') {
+      this.handleResize();
+      window.addEventListener('resize', this.handleResize, { passive: true });
+      this.removeGlobalShortcutListener = this.renderer.listen('window', 'keydown', event =>
+        this.handleGlobalShortcuts(event)
+      );
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.handleResize);
+      this.removeGlobalShortcutListener?.();
+      this.removeGlobalShortcutListener = undefined;
+      if (!environment.production) {
+        const w = window as any;
+        if (w.__offlineService === this.offlineService) {
+          delete w.__offlineService;
+        }
+        if (w.__flowContextService === this.flowContext) {
+          delete w.__flowContextService;
+        }
+      }
+    }
+  }
+
+  private exposeTestingHelpers(): void {
+    if (environment.production || typeof window === 'undefined') {
+      return;
+    }
+    const w = window as any;
+    if (this.offlineService) {
+      w.__offlineService = this.offlineService;
+    }
+    w.__flowContextService = this.flowContext;
+  }
+
+  private ensureDocumentLang(): void {
+    const html = this.documentRef?.documentElement;
+    if (!html) {
+      return;
+    }
+    html.setAttribute('lang', 'es-MX');
+  }
+
+  /**
+   * Dark mode management
+   */
+  onQuickAction(action: QuickAction): void {
+    this.navigation.executeQuickAction(action.id);
+  }
+
+  trackQuickAction(_: number, action: QuickAction): string {
+    return action.id;
+  }
+
+  trackBreadcrumb(index: number, crumb: string): string {
+    return `${index}-${crumb}`;
+  }
+
+  toggleDarkMode(): void {
+    this.theme.toggle();
+  }
+
+  async flushOfflineQueue(): Promise<void> {
+    if (!this.offlineService) {
+      return;
+    }
+
+    await this.offlineService.flushQueueNow();
+  }
+
+  private handleResize = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    this.documentRef?.body?.style.setProperty('--viewport-height', `${window.innerHeight}px`);
+  };
+
+  private handleGlobalShortcuts(event: KeyboardEvent): void {
+    const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+
+    if (!isCtrlOrMeta && this.isTypingContext(event)) {
+      return;
+    }
+
+    if (isCtrlOrMeta) {
+      const key = event.key.toLowerCase();
+      switch (key) {
+        case 'k':
+          event.preventDefault();
+          this.globalSearch?.focusInput();
+          return;
+        case 'n':
+          event.preventDefault();
+          this.router.navigate(['/cotizador'], { queryParams: { source: 'shortcut', view: 'new-quote' } });
+          return;
+        case 'c':
+          event.preventDefault();
+          this.router.navigate(['/clientes', 'nuevo'], { queryParams: { source: 'shortcut' } });
+          return;
+        case 'd':
+          event.preventDefault();
+          this.router.navigate(['/documentos'], { queryParams: { source: 'shortcut' } });
+          return;
+        default:
+          return;
+      }
+    }
+
+    if (event.key === '?' && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      this.shortcuts.open();
+      return;
+    }
+  }
+
+  private isTypingContext(event: KeyboardEvent): boolean {
+    const target = event.target as HTMLElement | null;
+    if (!target) {
+      return false;
+    }
+
+    const tagName = target.tagName;
+    return tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable;
+  }
+
+  private createOfflineStateStream(): Observable<OfflineShellState> {
+    if (!this.offlineService) {
+      return of({ isOffline: false, pending: 0, endpoints: [], lastUpdated: null });
+    }
+
+    const offlineQueue$ = this.flowContext.contexts$.pipe(
+      map(entries =>
+        entries.find(entry => entry.key === 'offlineQueue')?.data as
+          | { pending?: number; endpoints?: string[]; lastUpdated?: number }
+          | undefined
+      )
+    );
+
+    return combineLatest([
+      this.offlineService.online$.pipe(map(isOnline => !isOnline)),
+      offlineQueue$
+    ]).pipe(
+      map(([isOffline, queue]) => ({
+        isOffline,
+        pending: queue?.pending ?? 0,
+        endpoints: queue?.endpoints ?? [],
+        lastUpdated: queue?.lastUpdated ?? null
+      })),
+      distinctUntilChanged((prev, curr) =>
+        prev.isOffline === curr.isOffline &&
+        prev.pending === curr.pending &&
+        prev.lastUpdated === curr.lastUpdated
+      )
+    );
+  }
+}

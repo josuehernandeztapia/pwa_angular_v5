@@ -1,0 +1,232 @@
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 2rem 0 3rem;
+}
+
+.catalog__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.catalog__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.catalog__subtitle {
+  margin: 0.75rem 0 0;
+  color: var(--openai-gray-500);
+  max-width: 46rem;
+}
+
+.catalog__metrics {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  background: rgba(13, 17, 23, 0.04);
+  border: 1px solid rgba(13, 17, 23, 0.06);
+}
+
+.catalog__metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 6rem;
+}
+
+.catalog__metric-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--openai-gray-500);
+}
+
+.catalog__metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--openai-black);
+}
+
+.catalog__section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.catalog__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--openai-black);
+}
+
+.catalog__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1.5rem;
+}
+
+.catalog__grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(13, 17, 23, 0.08);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+  min-height: 14rem;
+}
+
+.catalog-card--beta {
+  border: 1px dashed rgba(67, 56, 202, 0.4);
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.catalog-card--sunset {
+  border: 1px dashed rgba(120, 53, 15, 0.4);
+  background: rgba(234, 179, 8, 0.05);
+}
+
+.catalog-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.catalog-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.catalog-card__status {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--openai-black);
+}
+
+.catalog-card__status--active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.catalog-card__status--beta {
+  background: rgba(79, 70, 229, 0.15);
+  color: #4338ca;
+}
+
+.catalog-card__status--sunset {
+  background: rgba(234, 179, 8, 0.2);
+  color: #92400e;
+}
+
+.catalog-card__description {
+  margin: 0;
+  color: var(--openai-gray-600);
+  line-height: 1.4;
+}
+
+.catalog-card__audience {
+  margin: 0;
+  color: var(--openai-gray-500);
+  font-size: 0.875rem;
+}
+
+.catalog-card__metrics {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+}
+
+.catalog-card__metrics div {
+  flex: 1 1 0;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(13, 17, 23, 0.04);
+  text-align: center;
+}
+
+.catalog-card__metrics dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--openai-gray-500);
+}
+
+.catalog-card__metrics dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--openai-black);
+}
+
+.catalog-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.catalog-card__meta {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--openai-gray-500);
+  gap: 0.25rem;
+}
+
+.catalog-card__cta {
+  padding: 0.6rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: var(--openai-black);
+  color: #ffffff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.catalog-card__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.catalog-card__cta--ghost {
+  background: transparent;
+  color: var(--openai-black);
+  border: 1px solid rgba(15, 23, 42, 0.24);
+}
+
+@media (max-width: 960px) {
+  .catalog__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .catalog__metrics {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

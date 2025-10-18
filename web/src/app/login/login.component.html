@@ -1,0 +1,182 @@
+<!-- Skip Link for Accessibility -->
+<a class="skip-link" href="#login-form">Saltar al formulario de inicio de sesión</a>
+
+<!-- Minimalista Enterprise Login Container -->
+<div class="login-shell">
+
+  <!-- Login Card - Enterprise Style -->
+  <div class="card card-spacious login-card" data-testid="main-card">
+
+    <!-- Header -->
+    <div class="login-header">
+      <div class="login-brand-icon">
+        <app-icon class="login-logo-icon" name="badge-check-solid" [size]="24" aria-hidden="true"></app-icon>
+      </div>
+      <h1 class="login-title" id="login-title">
+        Conductores
+      </h1>
+      <p class="login-subtitle">
+        Sistema de Gestión Empresarial
+      </p>
+    </div>
+
+    <!-- Login Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" id="login-form" role="form" aria-labelledby="login-title">
+
+      <!-- Email Field -->
+      <div class="field-block">
+        <label for="email" class="label" [class.label--required]="true">
+          Correo electrónico
+        </label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="input"
+            [class.input-error]="isFieldInvalid('email')"
+            placeholder="usuario@empresa.com"
+            autocomplete="email"
+            required
+            aria-required="true"
+            data-cy="login-email"
+            (paste)="onEmailPaste($event)"
+          >
+        <div *ngIf="isFieldInvalid('email')" class="error-text" role="alert">
+          <span *ngIf="loginForm.get('email')?.errors?.['required']">
+            El correo electrónico es requerido
+          </span>
+          <span *ngIf="loginForm.get('email')?.errors?.['email']">
+            Formato de correo inválido
+          </span>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="field-block field-block--spaced">
+        <label for="password" class="label" [class.label--required]="true">
+          Contraseña
+        </label>
+        <div class="password-field">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            class="input"
+            [class.input-error]="isFieldInvalid('password')"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+            aria-required="true"
+            data-cy="login-password"
+            (paste)="onPasswordPaste($event)"
+            spellcheck="false"
+          >
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePassword()"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            data-cy="password-toggle"
+          >
+            <app-icon
+              class="password-toggle-icon"
+              [name]="showPassword() ? 'eye-off' : 'eye'"
+              [size]="24"
+              aria-hidden="true"
+            ></app-icon>
+          </button>
+        </div>
+        <div *ngIf="isFieldInvalid('password')" class="error-text" role="alert">
+          <span *ngIf="loginForm.get('password')?.errors?.['required']">
+            La contraseña es requerida
+          </span>
+          <span *ngIf="loginForm.get('password')?.errors?.['minlength']">
+            Mínimo 6 caracteres
+          </span>
+        </div>
+      </div>
+
+      <!-- Form Options -->
+      <div class="form-options">
+        <label class="remember-option">
+          <input
+            type="checkbox"
+            formControlName="rememberMe"
+            class="remember-checkbox"
+            data-cy="remember-me"
+          >
+          Recordarme
+        </label>
+        <button
+          type="button"
+          class="link-button"
+          data-cy="forgot-password"
+        >
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="btn btn-primary submit-button"
+        [disabled]="loginForm.invalid || isLoading()"
+        data-cy="login-submit" data-testid="login-submit"
+      >
+        <span *ngIf="!isLoading()">Iniciar Sesión</span>
+        <span *ngIf="isLoading()" class="loading-indicator">
+          <div class="spinner spinner--sm"></div>
+          Iniciando sesión...
+        </span>
+      </button>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage()" class="alert alert--error form-error" role="alert">
+        {{ errorMessage() }}
+      </div>
+    </form>
+
+    <!-- Footer -->
+    <div class="login-footer">
+
+      <!-- Register Link -->
+      <div class="footer-note">
+        ¿Nuevo usuario?
+        <a href="/register" class="footer-link" data-cy="register-link">
+          Crear cuenta
+        </a>
+      </div>
+
+      <!-- Demo Users Section -->
+      <div class="alert alert--info login-tip">
+        <div class="tip-title">Usuarios de prueba disponibles:</div>
+        <div class="demo-users-grid">
+          <button
+            *ngFor="let user of demoUsers(); let i = index"
+            type="button"
+            class="demo-user-card"
+            (click)="selectDemoUser(user)"
+            [attr.aria-label]="'Seleccionar usuario demo: ' + user.name + ' (' + user.role + ')'"
+            [attr.data-cy]="'demo-user-' + user.role + '-' + i"
+          >
+            <div class="demo-user-avatar">
+              <app-icon
+                [name]="user.role === 'admin' ? 'shield' : user.role === 'supervisor' ? 'users' : 'user'"
+                [size]="20"
+                aria-hidden="true"
+              ></app-icon>
+            </div>
+            <div class="demo-user-info">
+              <div class="demo-user-name">{{ user.name }}</div>
+              <div class="demo-user-role">{{ user.role | titlecase }}</div>
+              <div class="demo-user-email">{{ user.email }}</div>
+            </div>
+          </button>
+        </div>
+        <div class="tip-note">
+          <small>Haz click en cualquier usuario para llenar el formulario automáticamente</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

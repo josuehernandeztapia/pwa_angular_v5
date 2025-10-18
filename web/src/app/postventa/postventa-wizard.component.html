@@ -1,0 +1,58 @@
+<section class="post-sale" aria-labelledby="post-sale-title">
+  <header class="post-sale__header">
+    <div>
+      <h1 id="post-sale-title">Wizard postventa 4 fotos</h1>
+      <p>Sube evidencia, obtén sugerencias y arma la cotización para upselling post entrega.</p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="analyze()" [disabled]="isAnalyzing()">
+      <app-icon name="camera" [size]="16" aria-hidden="true"></app-icon>
+      Analizar fotografías
+    </button>
+  </header>
+
+  <form class="post-sale__form" [formGroup]="wizardForm">
+    <label>
+      <span>Cliente</span>
+      <input type="text" formControlName="customerId" placeholder="CL-001" />
+    </label>
+    <label>
+      <span>Cotización draft</span>
+      <input type="text" formControlName="quoteId" readonly placeholder="Pendiente" />
+    </label>
+  </form>
+
+  <section class="post-sale__uploads" aria-label="Captura de fotografías">
+    <article *ngFor="let kind of requiredKinds">
+      <header>
+        <h2>{{ kind.label }}</h2>
+        <small>{{ kind.helper }}</small>
+      </header>
+      <label class="post-sale__dropzone">
+        <input type="file" (change)="onAddPhotos(kind.value, $any($event.target).files)" accept="image/*" multiple />
+        <app-icon name="cloud-upload" [size]="24" aria-hidden="true"></app-icon>
+        <span>Arrastra o selecciona imágenes</span>
+      </label>
+      <div class="post-sale__preview" *ngFor="let photo of photosByKind(kind.value); trackBy: trackPhoto">
+        <img [src]="photo.previewUrl" [alt]="'Foto ' + kind.label" />
+      </div>
+    </article>
+  </section>
+
+  <p class="post-sale__feedback" *ngIf="feedback()">{{ feedback() }}</p>
+
+  <section class="post-sale__suggestions" aria-label="Sugerencias de upsell" *ngIf="suggestions().length">
+    <header>
+      <h2>Conceptos sugeridos</h2>
+      <span>{{ suggestions().length }} recomendación(es)</span>
+    </header>
+    <ul>
+      <li *ngFor="let suggestion of suggestions(); trackBy: trackSuggestion">
+        <div>
+          <strong>{{ suggestion.name }}</strong>
+          <small>Cantidad: {{ suggestion.qty }}</small>
+        </div>
+        <span>{{ suggestion.price ? (suggestion.price | currency: 'MXN':'symbol':'1.0-0') : 'Consultar' }}</span>
+      </li>
+    </ul>
+  </section>
+</section>

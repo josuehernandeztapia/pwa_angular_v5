@@ -1,0 +1,58 @@
+<section class="client-tracking" *ngIf="clientId() as clientId">
+  <header class="client-tracking__header">
+    <h1>Tracking de Cliente</h1>
+    <p>Pedidos y entregas para el cliente: <strong>{{ clientId }}</strong></p>
+  </header>
+
+  <section *ngIf="isLoading()" class="client-tracking__loading">
+    <app-icon name="spinner" [size]="24" class="spin"></app-icon>
+    <span>Cargando información de tracking...</span>
+  </section>
+
+  <section *ngIf="error() && !isLoading()" class="client-tracking__error">
+    <app-icon name="alert-triangle" [size]="24"></app-icon>
+    <p>{{ error() }}</p>
+  </section>
+
+  <section *ngIf="!isLoading() && !error() && orders().length > 0" class="client-tracking__orders">
+    <div class="client-tracking__orders-grid">
+      <article
+        *ngFor="let order of orders(); trackBy: trackOrder"
+        class="client-tracking__order"
+      >
+        <header class="client-tracking__order-header">
+          <h3>Pedido #{{ order.orderId }}</h3>
+          <span class="client-tracking__order-status">{{ order.status }}</span>
+        </header>
+
+        <div class="client-tracking__order-flags">
+          <span
+            class="client-tracking__flag"
+            [ngClass]="order.isDelivered ? 'client-tracking__flag--delivered' : 'client-tracking__flag--progress'"
+          >
+            {{ order.isDelivered ? 'Entregada' : 'En proceso' }}
+          </span>
+          <span
+            class="client-tracking__flag client-tracking__flag--handover"
+            [ngClass]="order.canScheduleHandover ? 'client-tracking__flag--handover-available' : 'client-tracking__flag--handover-pending'"
+          >
+            {{ order.canScheduleHandover ? 'Agenda disponible' : 'Agenda pendiente' }}
+          </span>
+        </div>
+
+        <div class="client-tracking__order-details">
+          <p><strong>Estado:</strong> {{ order.status }}</p>
+          <p><strong>Mensaje:</strong> {{ order.message }}</p>
+          <p><strong>Fecha estimada:</strong> {{ order.estimatedDate }}</p>
+          <p><strong>Agenda:</strong> {{ order.canScheduleHandover ? 'Disponible' : 'Pendiente' }}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section *ngIf="!isLoading() && !error() && orders().length === 0" class="client-tracking__empty">
+    <app-icon name="package" [size]="48"></app-icon>
+    <h2>Sin pedidos</h2>
+    <p>No se encontraron pedidos para este cliente.</p>
+  </section>
+</section>

@@ -1,0 +1,108 @@
+
+<div class="claims">
+  <header class="claims__header">
+    <div>
+      <h1>Claims & Service</h1>
+      <p>Monitoring de solicitudes activas y backlog operativo.</p>
+    </div>
+    <div class="claims__toggles" *ngIf="hasPendingSync()">
+      <app-icon name="refresh" [size]="16"></app-icon>
+      <span>Sincronización pendiente</span>
+    </div>
+  </header>
+
+  <section class="claims__summary" *ngIf="summary() as stats">
+    <article class="claims__summary-card">
+      <span>Total</span>
+      <strong>{{ stats.total }}</strong>
+    </article>
+    <article class="claims__summary-card">
+      <span>Abiertas</span>
+      <strong>{{ stats.open }}</strong>
+    </article>
+    <article class="claims__summary-card">
+      <span>En revisión</span>
+      <strong>{{ stats.inReview }}</strong>
+    </article>
+    <article class="claims__summary-card">
+      <span>Cerradas</span>
+      <strong>{{ stats.closed }}</strong>
+    </article>
+    <article class="claims__summary-card">
+      <span>Monto promedio</span>
+      <strong>{{ stats.avgAmount | currency:'MXN':'symbol':'1.0-0' }}</strong>
+    </article>
+  </section>
+
+  <section class="claims__filters">
+    <nav class="claims__chips" aria-label="Estado">
+      <button
+        type="button"
+        *ngFor="let option of statuses; trackBy: trackOption"
+        (click)="setStatusFilter(option.value)"
+        [class.is-active]="statusFilter() === option.value"
+      >
+        {{ option.label }}
+      </button>
+    </nav>
+
+    <div class="claims__search">
+      <select (change)="setMarketFilter($any($event.target).value)">
+        <option
+          *ngFor="let option of markets; trackBy: trackOption"
+          [value]="option.value"
+          [selected]="marketFilter() === option.value"
+        >
+          {{ option.label }}
+        </option>
+      </select>
+      <input
+        type="search"
+        placeholder="Buscar por folio, cliente o VIN"
+        [value]="search()"
+        (input)="setSearch($any($event.target).value)"
+      />
+    </div>
+  </section>
+
+  <div class="claims__state" *ngIf="isLoading()">
+    <app-icon name="spinner" [size]="16" class="spin"></app-icon>
+    <span>Cargando solicitudes de servicio…</span>
+  </div>
+
+  <div class="claims__state claims__state--error" *ngIf="error() as err">
+    <app-icon name="alert-triangle" [size]="16"></app-icon>
+    <span>{{ err }}</span>
+  </div>
+
+  <section class="claims__table" *ngIf="!isLoading() && !error()" aria-live="polite">
+    <header>
+      <span>Folio</span>
+      <span>Cliente</span>
+      <span>Monto</span>
+      <span>Mercado</span>
+      <span>Tipo</span>
+      <span>Estado</span>
+      <span>Actualizado</span>
+    </header>
+
+    <article class="claims__row" *ngFor="let claim of records(); trackBy: trackClaim">
+      <span>{{ claim.folio }}</span>
+      <span class="claims__client">
+        <strong>{{ claim.clientName }}</strong>
+        <small>{{ claim.vehicleVin }}</small>
+      </span>
+      <span>{{ claim.amount | currency:'MXN':'symbol':'1.0-0' }}</span>
+      <span>{{ claim.market | titlecase }}</span>
+      <span>{{ typeLabel(claim.type) }}</span>
+      <span class="claims__status claims__status--{{ statusBadge(claim.status) }}">
+        {{ statusLabel(claim.status) }}
+      </span>
+      <span>{{ claim.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+    </article>
+
+    <div class="claims__empty" *ngIf="records().length === 0">
+      No se encontraron solicitudes con los filtros actuales.
+    </div>
+  </section>
+</div>

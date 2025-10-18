@@ -1,0 +1,104 @@
+<section class="integration" aria-labelledby="integration-title">
+  <header class="integration__header">
+    <div>
+      <h1 id="integration-title" class="integration__title">Integraciones externas</h1>
+      <p class="integration__subtitle">
+        Seguimiento consolidado del flujo de importación para el cliente {{ clientId() || 'sin cliente' }}.
+      </p>
+    </div>
+    <button type="button" class="btn btn-secondary" (click)="reload()" [disabled]="isLoading() || !clientId()">
+      <app-icon name="refresh" [size]="18" aria-hidden="true"></app-icon>
+      Recargar
+    </button>
+  </header>
+
+  <div *ngIf="error()" class="integration__banner" role="status">
+    <app-icon name="exclamation-triangle" [size]="18" aria-hidden="true"></app-icon>
+    {{ error() }}
+  </div>
+
+  <ng-container *ngIf="!isLoading(); else loadingState">
+    <ng-container *ngIf="status() as current; else emptyState">
+      <div class="integration__summary">
+        <div class="integration__card">
+          <h2 class="integration__card-title">Estado sincronizado</h2>
+          <div class="integration__card-body">
+            <span class="integration__sync-label">Sincronización</span>
+            <span [class]="syncBadgeClass()">{{ current.syncStatus ?? 'pending' | titlecase }}</span>
+            <dl class="integration__meta">
+              <div>
+                <dt>Última sincronización</dt>
+                <dd>{{ formatDate(current.lastSyncDate) }}</dd>
+              </div>
+              <div>
+                <dt>Entrega estimada</dt>
+                <dd>{{ formatDate(current.estimatedDeliveryDate) }}</dd>
+              </div>
+              <div>
+                <dt>Entrega real</dt>
+                <dd>{{ formatDate(current.actualDeliveryDate) }}</dd>
+              </div>
+              <div *ngIf="current.nextAction as action; else noAction">
+                <dt>Próxima acción</dt>
+                <dd>{{ action }}</dd>
+              </div>
+            </dl>
+            <ng-template #noAction>
+              <div>
+                <dt>Próxima acción</dt>
+                <dd>Sin asignar</dd>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="integration__card">
+          <h2 class="integration__card-title">Último evento</h2>
+          <div class="integration__card-body" *ngIf="current.triggerHistory?.length; else noEvents">
+            <p class="integration__event-title">{{ current.triggerHistory![0].eventType | titlecase }}</p>
+            <p class="integration__event-meta">
+              {{ formatDate(current.triggerHistory![0].triggerDate) }} ·
+              {{ current.triggerHistory![0].processedBy === 'system' ? 'Sistema' : 'Manual' }}
+            </p>
+            <p class="integration__event-notes" *ngIf="current.triggerHistory![0].errorMessage">
+              {{ current.triggerHistory![0].errorMessage }}
+            </p>
+          </div>
+          <ng-template #noEvents>
+            <p class="integration__muted">Sin disparadores registrados para este cliente.</p>
+          </ng-template>
+        </div>
+      </div>
+
+      <section class="integration__milestones" aria-label="Seguimiento de hitos">
+        <h2 class="integration__section-title">Hitos de importación</h2>
+        <ul class="integration__milestone-list">
+          <li *ngFor="let milestone of milestones" class="integration__milestone">
+            <div class="integration__milestone-info">
+              <span class="integration__milestone-label">{{ milestone.label }}</span>
+              <span [class]="milestoneStatusClass(milestone.key)">
+                {{ formatMilestoneStatus(milestone.key) }}
+              </span>
+            </div>
+            <div class="integration__milestone-date">{{ milestoneDate(milestone.key) }}</div>
+          </li>
+        </ul>
+      </section>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #loadingState>
+    <div class="integration__loading" role="status" aria-live="polite">
+      <span class="integration__spinner"></span>
+      Cargando información de integraciones…
+    </div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="integration__empty">
+      <app-icon name="inbox" [size]="28" aria-hidden="true"></app-icon>
+      <h2>Sin datos disponibles</h2>
+      <p>Activa la sincronización de importaciones para ver el progreso detallado.</p>
+    </div>
+  </ng-template>
+</section>

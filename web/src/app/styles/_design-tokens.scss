@@ -1,0 +1,52 @@
+/**
+ * Sass proxy variables for consuming CSS custom properties defined under
+ * `web/src/styles/tokens`. This keeps component-level styles free from
+ * hard-coded values while letting us reuse the design-system variables.
+ */
+
+// Spacing scale (4px grid)
+$spacing-xs: var(--space-2);
+$spacing-sm: var(--space-3);
+$spacing-md: var(--space-4);
+$spacing-lg: var(--space-6);
+
+// Border radii
+$radius-md: var(--radius-md);
+
+// Breakpoints (aligned with design-system tokens)
+$breakpoint-mobile: 768px;
+$breakpoint-tablet: 1024px;
+$breakpoint-desktop: 1200px;
+
+// Color surfaces
+$surface-1: var(--token-surface-default);
+$surface-2: var(--token-surface-muted);
+
+// Border
+$border: var(--color-border-primary);
+
+// Text colors
+$text-primary: var(--color-text-primary);
+$text-secondary: var(--color-text-secondary);
+
+// Brand palette
+$primary-50: var(--color-primary-50);
+$primary-100: var(--color-primary-100);
+$primary-300: var(--color-primary-300);
+$primary-500: var(--color-primary-500);
+$primary-600: var(--color-primary-600);
+$primary-700: var(--color-primary-700);
+
+// Success palette
+$success-500: var(--color-success-500);
+$success-700: var(--color-success-600);
+
+// Danger palette
+$danger-500: var(--color-error-500);
+$danger-700: var(--color-error-600);
+
+// Typography helpers
+$font-size-xs: var(--text-xs);
+$font-size-sm: var(--text-sm);
+$font-weight-medium: var(--font-medium);
+$font-weight-semibold: var(--font-weight-semibold);

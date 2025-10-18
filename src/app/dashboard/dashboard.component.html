@@ -1,0 +1,328 @@
+<div class="dashboard-shell">
+  <app-connection-indicator></app-connection-indicator>
+
+  <header class="dashboard-header">
+    <div class="dashboard-header-content">
+      <div class="dashboard-header-info">
+        <h1 class="dashboard-title">Dashboard</h1>
+        <p class="dashboard-subtitle">Vista general de tu negocio, {{ userName }}</p>
+      </div>
+
+      <div class="dashboard-actions">
+        <button class="btn btn-secondary dashboard-action-btn">
+          <app-icon
+            class="dashboard-action-icon"
+            name="download"
+            [size]="24"
+            aria-hidden="true"
+          ></app-icon>
+          Exportar
+        </button>
+        <button class="btn btn-primary dashboard-action-btn" (click)="createNewOpportunity()">
+          <app-icon
+            class="dashboard-action-icon"
+            name="plus"
+            [size]="24"
+            aria-hidden="true"
+          ></app-icon>
+          Nueva Oportunidad
+        </button>
+      </div>
+
+      <div class="dashboard-mobile-toggle">
+        <button class="btn btn-secondary dashboard-mobile-button" (click)="toggleMobileActions()">
+          <app-icon
+            class="dashboard-action-icon"
+            name="menu"
+            [size]="24"
+            aria-hidden="true"
+          ></app-icon>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="showMobileActions" class="dashboard-mobile-actions">
+      <button class="btn btn-secondary">Exportar</button>
+      <button class="btn btn-primary" (click)="createNewOpportunity()">Nueva Oportunidad</button>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <section class="dashboard-section">
+      <h2 class="section-title">Métricas Principales</h2>
+      <div class="dashboard-quick-access-section">
+        <h3 class="section-subtitle">Acceso Rápido a Componentes</h3>
+        <div class="dashboard-quick-access-grid">
+          <!-- Hidden Components Access -->
+          <div class="quick-access-card card" data-cy="quick-access-productos">
+            <div class="quick-access-content">
+              <div class="quick-access-icon-wrapper quick-access-icon--productos">
+                <app-icon
+                  class="quick-access-icon"
+                  name="cube"
+                  [size]="24"
+                  aria-hidden="true"
+                ></app-icon>
+              </div>
+              <div class="quick-access-info">
+                <span class="quick-access-title">Productos</span>
+                <span class="quick-access-subtitle">Catálogo y configuración</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="navigateToRoute('/productos')"
+              data-cy="dashboard-productos-access"
+            >
+              Acceder
+            </button>
+          </div>
+
+          <div class="quick-access-card card" data-cy="quick-access-expedientes">
+            <div class="quick-access-content">
+              <div class="quick-access-icon-wrapper quick-access-icon--expedientes">
+                <app-icon
+                  class="quick-access-icon"
+                  name="folder"
+                  [size]="24"
+                  aria-hidden="true"
+                ></app-icon>
+              </div>
+              <div class="quick-access-info">
+                <span class="quick-access-title">Expedientes</span>
+                <span class="quick-access-subtitle">Gestión documental</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="navigateToRoute('/expedientes')"
+              data-cy="dashboard-expedientes-access"
+            >
+              Acceder
+            </button>
+          </div>
+
+          <div class="quick-access-card card" data-cy="quick-access-reportes">
+            <div class="quick-access-content">
+              <div class="quick-access-icon-wrapper quick-access-icon--reportes">
+                <app-icon
+                  class="quick-access-icon"
+                  name="document-text"
+                  [size]="24"
+                  aria-hidden="true"
+                ></app-icon>
+              </div>
+              <div class="quick-access-info">
+                <span class="quick-access-title">Reportes</span>
+                <span class="quick-access-subtitle">Análisis y estadísticas</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="navigateToRoute('/reportes')"
+              data-cy="dashboard-reportes-access"
+            >
+              Acceder
+            </button>
+          </div>
+
+          <div class="quick-access-card card" data-cy="quick-access-pipeline">
+            <div class="quick-access-content">
+              <div class="quick-access-icon-wrapper quick-access-icon--pipeline">
+                <app-icon
+                  class="quick-access-icon"
+                  name="trending-up"
+                  [size]="24"
+                  aria-hidden="true"
+                ></app-icon>
+              </div>
+              <div class="quick-access-info">
+                <span class="quick-access-title">Pipeline</span>
+                <span class="quick-access-subtitle">Oportunidades de venta</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="navigateToRoute('/oportunidades')"
+              data-cy="dashboard-pipeline-access"
+            >
+              Acceder
+            </button>
+          </div>
+
+          <div class="quick-access-card card" data-cy="quick-access-usage">
+            <div class="quick-access-content">
+              <div class="quick-access-icon-wrapper quick-access-icon--usage">
+                <app-icon
+                  class="quick-access-icon"
+                  name="activity"
+                  [size]="24"
+                  aria-hidden="true"
+                ></app-icon>
+              </div>
+              <div class="quick-access-info">
+                <span class="quick-access-title">Uso del Sistema</span>
+                <span class="quick-access-subtitle">Métricas de uso</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="navigateToRoute('/usage')"
+              data-cy="dashboard-usage-access"
+            >
+              Acceder
+            </button>
+          </div>
+
+          <div class="quick-access-card card" data-cy="quick-access-flow-builder">
+            <div class="quick-access-content">
+              <div class="quick-access-icon-wrapper quick-access-icon--flow-builder">
+                <app-icon
+                  class="quick-access-icon"
+                  name="activity"
+                  [size]="24"
+                  aria-hidden="true"
+                ></app-icon>
+              </div>
+              <div class="quick-access-info">
+                <span class="quick-access-title">Flow Builder</span>
+                <span class="quick-access-subtitle">Constructor de flujos</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="navigateToRoute('/configuracion/flow-builder')"
+              data-cy="dashboard-flow-builder-access"
+            >
+              Acceder
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-kpi-grid">
+        <div *ngFor="let kpi of kpiCards" class="dashboard-kpi-card card">
+          <div class="kpi-card-header">
+            <div class="kpi-info">
+              <span class="kpi-label">{{ kpi.title }}</span>
+              <span class="kpi-value" [attr.data-cy]="kpi.dataCy">{{ kpi.value }}</span>
+              <span *ngIf="kpi.subValue" class="kpi-subvalue">{{ kpi.subValue }}</span>
+            </div>
+            <div class="kpi-icon-wrapper" [ngClass]="kpi.iconClass">
+              <app-icon
+                class="kpi-icon"
+                [name]="kpi.iconName"
+                [size]="28"
+                aria-hidden="true"
+              ></app-icon>
+            </div>
+          </div>
+          <div
+            *ngIf="kpi.trend"
+            class="kpi-trend"
+            [ngClass]="{
+              'kpi-trend--up': kpi.trend === 'up',
+              'kpi-trend--down': kpi.trend === 'down',
+              'kpi-trend--stable': kpi.trend === 'stable'
+            }"
+          >
+            <app-icon
+              class="kpi-trend-indicator"
+              [name]="getTrendIcon(kpi.trend)"
+              [size]="16"
+              aria-hidden="true"
+            ></app-icon>
+            <span class="kpi-trend-value">{{ kpi.trendValue }}</span>
+            <span class="kpi-trend-caption">vs semana anterior</span>
+          </div>
+          <div *ngIf="kpi.primaryAction || kpi.secondaryAction" class="kpi-actions">
+            <button
+              *ngIf="kpi.primaryAction"
+              type="button"
+              class="btn"
+              [ngClass]="kpi.primaryAction.variant === 'primary' ? 'btn-primary' : 'btn-secondary'"
+              (click)="handleKpiAction(kpi.primaryAction)"
+              [attr.data-cy]="kpi.primaryAction.dataCy"
+            >
+              {{ kpi.primaryAction.label }}
+            </button>
+            <button
+              *ngIf="kpi.secondaryAction"
+              type="button"
+              class="btn"
+              [ngClass]="kpi.secondaryAction.variant === 'primary' ? 'btn-primary' : 'btn-secondary'"
+              (click)="handleKpiAction(kpi.secondaryAction)"
+              [attr.data-cy]="kpi.secondaryAction.dataCy"
+            >
+              {{ kpi.secondaryAction.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <div class="dashboard-chart-grid">
+        <div class="dashboard-chart-card card">
+          <h3 class="section-subtitle">Evolución PMT (Últimos 6 meses)</h3>
+          <div class="chart-container">
+            <canvas #pmtChart data-cy="chart-pmt"></canvas>
+          </div>
+        </div>
+
+        <div class="dashboard-chart-card card">
+          <h3 class="section-subtitle">Proyección de Ingresos</h3>
+          <div class="chart-container">
+            <canvas #revenueChart data-cy="chart-revenue"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="actionableGroups.length > 0" class="dashboard-section">
+      <h2 class="section-title">Acciones Requeridas</h2>
+      <div class="dashboard-action-grid">
+        <div *ngFor="let group of actionableGroups" class="action-card card">
+          <div class="action-card-header">
+            <div>
+              <h3 class="action-title">{{ group.title }}</h3>
+              <p class="action-description">{{ group.description }}</p>
+            </div>
+            <span class="action-count">{{ group.clients.length }}</span>
+          </div>
+          <div class="action-clients">
+            <div *ngFor="let client of group.clients.slice(0, 3)" class="action-client">
+              <span class="client-name">{{ client.name }}</span>
+              <span class="client-status">{{ client.status }}</span>
+            </div>
+            <button *ngIf="group.clients.length > 3" class="action-more" (click)="navigateToClients()">
+              Ver {{ group.clients.length - 3 }} más...
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="activityFeed.length > 0" class="dashboard-section">
+      <h2 class="section-title">Actividad Reciente</h2>
+      <div class="dashboard-activity-card card">
+        <div *ngFor="let activity of activityFeed.slice(0, 5); let last = last" class="activity-item" [class.activity-item--last]="last">
+          <div class="activity-icon">
+            <app-icon class="activity-icon-symbol" name="grid" [size]="24" aria-hidden="true"></app-icon>
+          </div>
+          <div class="activity-content">
+            <p class="activity-message">{{ activity.message }}</p>
+            <p class="activity-timestamp">{{ formatTimeAgo(activity.timestamp) }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>

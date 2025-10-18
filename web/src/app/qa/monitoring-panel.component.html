@@ -1,0 +1,72 @@
+<section class="monitoring">
+  <header class="monitoring__header">
+    <div>
+      <h1>QA Monitoring</h1>
+      <p>Eventos capturados por el MonitoringService con métricas en vivo.</p>
+    </div>
+    <div class="monitoring__metrics" *ngIf="metrics() as metrics">
+      <article>
+        <span>Eventos</span>
+        <strong>{{ metrics.totalEvents }}</strong>
+      </article>
+      <article>
+        <span>Error rate</span>
+        <strong>{{ metrics.errorRate | percent:'1.0-1' }}</strong>
+      </article>
+      <article>
+        <span>Health score</span>
+        <strong>{{ metrics.serviceHealthScore | number:'1.0-0' }}%</strong>
+      </article>
+      <article>
+        <span>Uptime</span>
+        <strong>{{ metrics.uptime | percent:'1.0-2' }}</strong>
+      </article>
+    </div>
+  </header>
+
+  <section class="monitoring__filters">
+    <nav class="monitoring__levels" aria-label="Nivel">
+      <button type="button" [class.is-active]="levelFilter() === 'all'" (click)="levelFilter.set('all')">Todos</button>
+      <button type="button" [class.is-active]="levelFilter() === 'error'" (click)="levelFilter.set('error')">Errores</button>
+      <button type="button" [class.is-active]="levelFilter() === 'warn'" (click)="levelFilter.set('warn')">Warnings</button>
+      <button type="button" [class.is-active]="levelFilter() === 'info'" (click)="levelFilter.set('info')">Info</button>
+      <button type="button" [class.is-active]="levelFilter() === 'debug'" (click)="levelFilter.set('debug')">Debug</button>
+    </nav>
+
+    <div class="monitoring__search">
+      <label>
+        <span>Servicio</span>
+        <select #serviceSelect (change)="serviceFilter.set(serviceSelect.value)">
+          <option value="all" [selected]="serviceFilter() === 'all'">Todos</option>
+          <option *ngFor="let service of services(); trackBy: trackService" [value]="service" [selected]="serviceFilter() === service">
+            {{ service }}
+          </option>
+        </select>
+      </label>
+      <label>
+        <span>Buscar</span>
+        <input type="search" placeholder="mensaje, operación o servicio" [value]="search()" #searchInput (input)="search.set(searchInput.value)" />
+      </label>
+    </div>
+  </section>
+
+  <section class="monitoring__events" aria-live="polite">
+    <article *ngFor="let event of filteredEvents(); trackBy: trackEvent" class="monitoring__event" [ngClass]="'monitoring__event--' + event.level">
+      <header>
+        <span class="monitoring__event-meta">
+          <app-icon [name]="event.level === 'error' ? 'alert-triangle' : event.level === 'warn' ? 'bell' : 'info'"></app-icon>
+          <strong>{{ event.service }}</strong>
+          <small>{{ event.operation }}</small>
+        </span>
+        <time>{{ event.timestamp | date:'short' }}</time>
+      </header>
+      <p>{{ event.message }}</p>
+      <pre *ngIf="event.metadata">{{ event.metadata | json }}</pre>
+      <footer>
+        <span>Impacto: {{ event.businessImpact ?? 'low' }}</span>
+        <span *ngIf="event.correlationId">Correlation: {{ event.correlationId }}</span>
+      </footer>
+    </article>
+    <p *ngIf="!filteredEvents().length" class="monitoring__empty">Sin eventos registrados con el filtro actual.</p>
+  </section>
+</section>

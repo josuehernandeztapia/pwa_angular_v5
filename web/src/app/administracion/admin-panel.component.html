@@ -1,0 +1,40 @@
+<section class="admin" aria-labelledby="admin-title">
+  <header class="admin__header">
+    <div>
+      <h1 id="admin-title">Panel de administración</h1>
+      <p>Revisa los feature flags activos y la configuración habilitada en la PWA / BFF.</p>
+    </div>
+    <label class="admin__search" aria-label="Buscar feature flag">
+      <app-icon name="search" [size]="18" aria-hidden="true"></app-icon>
+      <input type="search" placeholder="Buscar flag" #searchInput (input)="setSearch(searchInput.value)" />
+    </label>
+  </header>
+
+  <section class="admin__table" aria-live="polite">
+    <table>
+      <thead>
+        <tr>
+          <th>Flag</th>
+          <th>Categoría</th>
+          <th>Estado</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let flag of filteredFlags()">
+          <td>{{ flag.key }}</td>
+          <td>{{ flag.category }}</td>
+          <td>
+            <span class="admin__badge" [class.admin__badge--disabled]="!flag.enabled">
+              {{ flag.enabled ? 'Activo' : 'Deshabilitado' }}
+            </span>
+          </td>
+          <td>{{ flag.description }}</td>
+        </tr>
+        <tr *ngIf="!filteredFlags().length">
+          <td colspan="4" class="admin__empty">Sin resultados para el criterio de búsqueda.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</section>

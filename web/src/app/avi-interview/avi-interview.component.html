@@ -1,0 +1,109 @@
+<section class="avi-interview" data-qa="avi-interview">
+  <header class="avi-interview__header">
+    <div>
+      <h1 class="avi-interview__title">Entrevista de Validación AVI</h1>
+      <p class="avi-interview__subtitle">
+        Cliente: <span class="avi-interview__highlight">{{ clientId || 'No asignado' }}</span>
+      </p>
+    </div>
+    <div class="avi-interview__progress" *ngIf="totalQuestions() > 0">
+      <span>{{ answeredCount() }}/{{ totalQuestions() }} contestadas</span>
+      <progress [value]="answeredCount()" [max]="totalQuestions()"></progress>
+    </div>
+  </header>
+
+  <p class="avi-interview__info" *ngIf="informativeMessage()">{{ informativeMessage() }}</p>
+
+  <div class="avi-interview__error" *ngIf="errorMessage()">
+    <span aria-live="polite">{{ errorMessage() }}</span>
+  </div>
+
+  <ng-container [ngSwitch]="status()">
+    <ng-container *ngSwitchCase="'idle'">
+      <section class="avi-interview__preflight">
+        <h2>Antes de comenzar</h2>
+        <ul>
+          <li>Revisa las preguntas clave para este cliente.</li>
+          <li>Confirma que el asesor <strong>{{ advisorId || 'No asignado' }}</strong> se encuentra disponible.</li>
+          <li>Tiempo mínimo estimado: {{ minDurationSeconds }} segundos.</li>
+        </ul>
+        <button type="button" class="avi-interview__primary" (click)="startInterview()">
+          Iniciar entrevista
+        </button>
+      </section>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'recording'">
+      <section class="avi-interview__session" aria-live="polite">
+        <header class="avi-interview__session-header">
+          <h2>Sesión en curso</h2>
+          <div class="avi-interview__session-meta">
+            <span>Progreso: {{ completionProgress() }}%</span>
+            <span>Preguntas contestadas: {{ answeredCount() }}</span>
+          </div>
+        </header>
+
+        <ul class="avi-interview__questions">
+          <li
+            *ngFor="let question of questions(); trackBy: trackByQuestion"
+            [class.is-answered]="question.answered"
+            [class.is-mandatory]="question.mandatory"
+          >
+            <div class="avi-interview__question-line">
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="question.answered"
+                  (change)="onQuestionCheckboxChange(question.id, $event)"
+                />
+                <span class="avi-interview__question-text">{{ question.text }}</span>
+              </label>
+              <span class="avi-interview__badge" *ngIf="question.mandatory">Obligatoria</span>
+            </div>
+
+            <textarea
+              class="avi-interview__response"
+              [disabled]="!question.answered"
+              [ngModel]="question.response"
+              (ngModelChange)="updateQuestionResponse(question.id, $event)"
+              rows="2"
+              placeholder="Notas o respuestas clave"
+            ></textarea>
+          </li>
+        </ul>
+
+        <footer class="avi-interview__actions">
+          <button type="button" class="avi-interview__ghost" (click)="cancelInterview()">
+            Cancelar entrevista
+          </button>
+          <button type="button" class="avi-interview__ghost" (click)="markAllAnswered()" *ngIf="completionProgress() < 100">
+            Marcar todo como contestado
+          </button>
+          <button type="button" class="avi-interview__primary" (click)="completeInterview()">
+            Finalizar entrevista
+          </button>
+        </footer>
+      </section>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'completed'">
+      <section class="avi-interview__completed" role="status">
+        <h2>Entrevista completada</h2>
+        <p>Se registró la entrevista con un avance de {{ completionProgress() }}%.</p>
+        <button type="button" class="avi-interview__primary" (click)="startInterview()">
+          Iniciar nueva entrevista
+        </button>
+      </section>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'cancelled'">
+      <section class="avi-interview__cancelled" role="status">
+        <h2>Entrevista cancelada</h2>
+        <p>Puedes reiniciar la entrevista cuando el cliente esté listo.</p>
+        <button type="button" class="avi-interview__primary" (click)="startInterview()">
+          Reanudar entrevista
+        </button>
+      </section>
+    </ng-container>
+  </ng-container>
+</section>

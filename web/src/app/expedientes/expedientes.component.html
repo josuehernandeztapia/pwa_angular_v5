@@ -1,0 +1,78 @@
+<section class="expedientes">
+  <header class="expedientes__header">
+    <div>
+      <h1>Expedientes</h1>
+      <p>Gestión de documentos y completitud de expedientes de clientes.</p>
+    </div>
+    <button type="button" class="expedientes__reload" (click)="reload()" [disabled]="isLoading()">
+      <app-icon name="refresh" [size]="16"></app-icon>
+      Actualizar
+    </button>
+  </header>
+
+  <div class="expedientes__state" *ngIf="isLoading()">
+    <app-icon name="spinner" [size]="20" class="spin"></app-icon>
+    <span>Cargando expedientes...</span>
+  </div>
+
+  <div class="expedientes__state expedientes__state--error" *ngIf="!isLoading() && error()">
+    <app-icon name="alert-triangle" [size]="20"></app-icon>
+    <span>{{ error() }}</span>
+  </div>
+
+  <section class="expedientes__list" *ngIf="!isLoading() && !error()">
+    <article
+      *ngFor="let expediente of expedientes(); trackBy: trackExpediente"
+      class="expedientes__card"
+    >
+      <header class="expedientes__card-header">
+        <div>
+          <h3>{{ expediente.client }}</h3>
+          <span class="expedientes__card-id">{{ expediente.id }}</span>
+        </div>
+        <div class="expedientes__completeness">
+          <span>{{ (expediente.completeness * 100) | number:'1.0-0' }}% completo</span>
+          <div class="expedientes__progress">
+            <div class="expedientes__progress-bar" [style.width.%]="expediente.completeness * 100"></div>
+          </div>
+        </div>
+      </header>
+
+      <div class="expedientes__card-content">
+        <p><strong>Última actualización:</strong> {{ expediente.updatedAt | date:'dd/MM/yyyy HH:mm' }}</p>
+
+        <div *ngIf="expediente.missingDocs.length > 0" class="expedientes__missing">
+          <h4>Documentos faltantes:</h4>
+          <ul>
+            <li *ngFor="let doc of expediente.missingDocs">
+              <app-icon name="alert-triangle" [size]="16"></app-icon>
+              {{ doc }}
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="expediente.missingDocs.length === 0" class="expedientes__complete">
+          <app-icon name="check-circle" [size]="16"></app-icon>
+          <span>Expediente completo</span>
+        </div>
+      </div>
+
+      <footer class="expedientes__card-actions">
+        <button type="button" class="expedientes__button--secondary">
+          <app-icon name="document-text" [size]="16"></app-icon>
+          Ver detalles
+        </button>
+        <button type="button" class="expedientes__button--primary">
+          <app-icon name="plus" [size]="16"></app-icon>
+          Cargar documento
+        </button>
+      </footer>
+    </article>
+
+    <div *ngIf="expedientes().length === 0" class="expedientes__empty">
+      <app-icon name="document" [size]="48"></app-icon>
+      <h2>Sin expedientes</h2>
+      <p>No hay expedientes registrados en el sistema.</p>
+    </div>
+  </section>
+</section>

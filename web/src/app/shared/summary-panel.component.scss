@@ -1,0 +1,110 @@
+.summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  border-radius: 20px;
+  background: var(--flat-surface-bg, var(--openai-white));
+  padding: var(--space-6, 24px);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(8, 8, 8, 0.08));
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--neutral-700, var(--openai-gray-600));
+  }
+
+  &__metrics {
+    display: grid;
+    gap: var(--space-4, 16px);
+  }
+
+  &__metric {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4, 16px);
+  }
+
+  &__metric-label {
+    font-size: 0.875rem;
+    color: var(--neutral-500, var(--openai-gray-400));
+  }
+
+  &__metric-value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3, 12px);
+  }
+
+  &__metric-primary {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--neutral-800, var(--openai-gray-700));
+  }
+
+  &__metric-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-semibold, 600);
+    text-transform: uppercase;
+  }
+
+  &__metric-badge--success {
+    background: var(--accent-primary);
+    color: var(--accent-primary-hover);
+  }
+
+  &__metric-badge--warning {
+    background: var(--accent-muted);
+    color: var(--accent-muted);
+  }
+
+  &__metric-badge--error {
+    background: var(--accent-danger);
+    color: var(--accent-danger);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3, 12px);
+  }
+
+  &__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--neutral-300, var(--openai-gray-200));
+    background: var(--neutral-100, var(--openai-gray-50));
+    color: var(--neutral-600, var(--openai-gray-500));
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-semibold, 600);
+    cursor: pointer;
+    transition: background var(--transition-quick, 0.2s ease), border-color var(--transition-quick, 0.2s ease);
+
+    &:hover {
+      background: var(--neutral-200, var(--openai-gray-100));
+      border-color: var(--neutral-400, var(--openai-gray-300));
+    }
+  }
+}
+
+@media (max-width: 40rem) {
+  .summary-panel {
+    padding: var(--space-5, 20px);
+  }
+}

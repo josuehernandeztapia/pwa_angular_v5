@@ -1,0 +1,504 @@
+/**
+ *  Premium Animations & Micro-Interactions
+ * World-class mobility tech visual polish
+ */
+
+/* ===== KEYFRAME DEFINITIONS ===== */
+
+/* Fluid Entry Animations */
+@keyframes fluidSlideIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes staggeredSlideIn {
+  0% {
+    opacity: 0;
+    transform: none; /* OpenAI no transforms */
+  }
+  100% {
+    opacity: 1;
+    transform: none; /* OpenAI no transforms */
+  }
+}
+
+@keyframes morphicEntry {
+  0% {
+    opacity: 0;
+    transform: none; /* OpenAI no transforms */
+    border-radius: 8px; /* OpenAI standard */
+  }
+  50% {
+    opacity: 0.7;
+    transform: none; /* OpenAI no transforms */
+    border-radius: 8px; /* OpenAI standard */
+  }
+  100% {
+    opacity: 1;
+    transform: none; /* OpenAI no transforms */
+    border-radius: 8px;  /* OpenAI standard */
+  }
+}
+
+/*  Success & Status Animations */
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--token-surface-accent-alpha-70);
+    transform: none; /* OpenAI no transforms */
+  }
+  50% {
+    box-shadow: 0 0 0 12px transparent;
+    transform: none; /* OpenAI no transforms */
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    transform: none; /* OpenAI no transforms */
+  }
+}
+
+@keyframes paymentSuccess {
+  0% {
+    transform: none; /* OpenAI no transforms */
+  }
+  30% {
+    transform: none; /* OpenAI no transforms */
+    background: var(--flat-surface-bg); /* FIXED (verify-ux) */
+  }
+  70% {
+    transform: none; /* OpenAI no transforms */
+    background: var(--flat-surface-bg); /* FIXED (verify-ux) */
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+    background: var(--flat-surface-bg); /* FIXED (verify-ux) */
+  }
+}
+
+@keyframes contractSigned {
+  0% {
+    transform: none; /* OpenAI no transforms */
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    transform: none; /* OpenAI no transforms */
+    filter: hue-rotate(90deg);
+  }
+  75% {
+    transform: none; /* OpenAI no transforms */
+    filter: hue-rotate(270deg);
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+    filter: hue-rotate(360deg);
+  }
+}
+
+/*  Interactive States */
+@keyframes buttonPress {
+  0% {
+    transform: none; /* OpenAI no transforms */
+  }
+  50% {
+    transform: none; /* OpenAI no transforms */
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+  }
+}
+
+@keyframes cardHover {
+  0% {
+    transform: none; /* OpenAI no transforms */
+    filter: brightness(1);
+  }
+  100% {
+    /* OpenAI: no transform effects */
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes iconBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: none; /* OpenAI no transforms */
+  }
+  40% {
+    /* OpenAI: no transform effects */
+  }
+  60% {
+    /* OpenAI: no transform effects */
+  }
+}
+
+/*  Loading States */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes pulsingDot {
+  0%, 80%, 100% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 0.5;
+  }
+  40% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 1;
+  }
+}
+
+@keyframes loadingSpinner {
+  0% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 1;
+  }
+  50% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 0.8;
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 1;
+  }
+}
+
+/*  Premium Data Visualization */
+@keyframes chartGrow {
+  0% {
+    transform: none; /* OpenAI no transforms */
+    transform-origin: bottom;
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+    transform-origin: bottom;
+  }
+}
+
+@keyframes kpiCountUp {
+  0% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 0;
+  }
+  50% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 0.8;
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+    opacity: 1;
+  }
+}
+
+@keyframes healthScorePulse {
+  0% {
+    transform: none; /* OpenAI no transforms */
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: none; /* OpenAI no transforms */
+    filter: drop-shadow(0 0 20px var(--token-surface-accent-alpha-60));
+  }
+  100% {
+    transform: none; /* OpenAI no transforms */
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+/* ===== ANIMATION UTILITY CLASSES ===== */
+
+/* Entry Animations */
+.animate-fluid-enter {
+  animation: fluidSlideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-staggered-enter {
+  animation: staggeredSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-morphic-enter {
+  animation: morphicEntry 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/*  Interactive States */
+.animate-button-press {
+  animation: buttonPress 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.animate-card-hover {
+  animation: cardHover 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-icon-bounce {
+  animation: iconBounce 1s ease-in-out;
+}
+
+/*  Success States */
+.animate-success-pulse {
+  animation: successPulse 2s ease-in-out infinite;
+}
+
+.animate-payment-success {
+  animation: paymentSuccess 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.animate-contract-signed {
+  animation: contractSigned 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/*  Loading States */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--token-surface-inverse-light-alpha-10),
+    transparent
+  );
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-loading-spinner {
+  animation: loadingSpinner 1.5s linear infinite;
+}
+
+.animate-pulsing-dots {
+  animation: pulsingDot 1.4s ease-in-out infinite both;
+}
+
+.animate-pulsing-dots:nth-child(2) { animation-delay: 0.2s; }
+.animate-pulsing-dots:nth-child(3) { animation-delay: 0.4s; }
+
+/*  Data Visualization */
+.animate-chart-grow {
+  animation: chartGrow 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-kpi-count-up {
+  animation: kpiCountUp 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-health-score-pulse {
+  animation: healthScorePulse 3s ease-in-out infinite;
+}
+
+/* ===== HOVER & INTERACTION MICRO-STATES ===== */
+
+/* Premium Button Interactions */
+.btn-premium-hover {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-premium-hover::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: var(--token-surface-inverse-light-alpha-10);
+  border-radius: 8px; /* OpenAI standard */
+  transform: none; /* OpenAI no transforms */
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-premium-hover:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-premium-hover:active {
+  transform: none; /* OpenAI no transforms */
+}
+
+/* Card Micro-Interactions */
+.card-premium-interact {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-origin: center;
+}
+
+.card-premium-interact:hover {
+  transform: none; /* OpenAI no transforms */
+  box-shadow: 
+    0 20px 40px var(--token-surface-inverse-alpha-40),
+    0 0 0 1px var(--token-surface-accent-alpha-20);
+}
+
+.card-premium-interact:active {
+  transform: none; /* OpenAI no transforms */
+}
+
+/* Input Focus Animations */
+.input-premium-focus {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+}
+
+.input-premium-focus:focus {
+  transform: none; /* OpenAI no transforms */
+  box-shadow: 
+    0 0 0 3px var(--token-surface-accent-alpha-10),
+    0 8px 16px var(--token-surface-inverse-alpha-20);
+}
+
+/* Icon State Animations */
+.icon-contextual {
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.icon-contextual:hover {
+  transform: none; /* OpenAI no transforms */
+  filter: brightness(1.2);
+}
+
+.icon-status-success {
+  color: var(--color-text-secondary);
+  filter: drop-shadow(0 0 8px var(--token-surface-accent-alpha-40));
+}
+
+.icon-status-warning {
+  color: var(--color-text-secondary);
+  filter: drop-shadow(0 0 8px var(--token-surface-warning-alpha-40));
+}
+
+.icon-status-error {
+  color: var(--color-text-secondary);
+  filter: drop-shadow(0 0 8px var(--token-surface-danger-alpha-40));
+}
+
+/* ===== STAGGERED ANIMATIONS ===== */
+
+.stagger-container .stagger-item {
+  opacity: 0;
+  transform: none; /* OpenAI no transforms */
+  animation: fluidSlideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.stagger-container .stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-container .stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-container .stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-container .stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-container .stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-container .stagger-item:nth-child(6) { animation-delay: 0.6s; }
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+
+/* GPU Acceleration Hints */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: none; /* OpenAI no transforms */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Smooth Scrolling Performance */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+}
+
+/* ===== ACCESSIBILITY CONSIDERATIONS ===== */
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fluid-enter,
+  .animate-staggered-enter,
+  .animate-morphic-enter,
+  .animate-card-hover,
+  .animate-icon-bounce,
+  .animate-success-pulse,
+  .animate-payment-success,
+  .animate-contract-signed,
+  .animate-shimmer,
+  .animate-loading-spinner,
+  .animate-pulsing-dots,
+  .animate-chart-grow,
+  .animate-kpi-count-up,
+  .animate-health-score-pulse {
+    animation: none;
+  }
+  
+  .btn-premium-hover,
+  .card-premium-interact,
+  .input-premium-focus,
+  .icon-contextual {
+    transition: none;
+  }
+  
+  .btn-premium-hover:hover,
+  .card-premium-interact:hover,
+  .input-premium-focus:focus,
+  .icon-contextual:hover {
+    transform: none; /* OpenAI no transforms */
+  }
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, var(--token-surface-inverse-light-alpha-30), transparent);
+  }
+  
+  .icon-status-success,
+  .icon-status-warning,
+  .icon-status-error {
+    filter: none;
+  }
+}
+
+/* ===== CONTEXTUAL ANIMATION TRIGGERS ===== */
+
+/* Dashboard load sequence */
+.dashboard-load-sequence .dashboard-card:nth-child(odd) {
+  animation: staggeredSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 0.1s);
+}
+
+.dashboard-load-sequence .dashboard-card:nth-child(even) {
+  animation: morphicEntry 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 0.15s);
+}
+
+/* Quote generation celebration */
+.quote-celebration {
+  animation: 
+    successPulse 2s ease-in-out,
+    kpiCountUp 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Payment flow states */
+.payment-processing {
+  animation: loadingSpinner 1.5s linear infinite;
+  filter: hue-rotate(0deg);
+}
+
+.payment-processing.processing {
+  filter: hue-rotate(120deg);
+}
+
+.payment-processing.success {
+  animation: paymentSuccess 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .animate-fluid-enter {
+    animation-duration: 0.4s;
+  }
+  
+  .animate-morphic-enter {
+    animation-duration: 0.6s;
+  }
+  
+  .card-premium-interact:hover {
+    transform: none; /* OpenAI no transforms */
+  }
+}

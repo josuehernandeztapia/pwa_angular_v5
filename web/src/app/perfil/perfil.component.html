@@ -1,0 +1,76 @@
+<section class="profile">
+  <header class="profile__header">
+    <div class="profile__avatar">{{ initials() }}</div>
+    <div class="profile__identity" *ngIf="user() as current">
+      <h1 class="profile__name">{{ current.name }}</h1>
+      <p class="profile__meta">
+        {{ current.email }} • {{ current.role | titlecase }}
+      </p>
+    </div>
+  </header>
+
+  <section class="profile__section">
+    <h2>
+      <app-icon name="settings" [size]="18"></app-icon>
+      Preferencias de visualización
+    </h2>
+    <div class="profile__grid">
+      <article class="profile-card">
+        <header>
+          <h3>Tamaño de tipografía</h3>
+          <p>Selecciona la escala que optimiza tu contexto operativo.</p>
+        </header>
+        <ul class="profile-card__options">
+          <li *ngFor="let option of availableFontScales">
+            <label class="profile-card__option">
+              <input
+                type="radio"
+                name="font-scale"
+                [value]="option.id"
+                [checked]="fontScale() === option.id"
+                (change)="setFontScale(option.id)"
+              />
+              <div>
+                <span class="profile-card__option-title">{{ option.label }}</span>
+                <span class="profile-card__option-description">{{ option.description }}</span>
+              </div>
+            </label>
+          </li>
+        </ul>
+      </article>
+
+      <article class="profile-card">
+        <header>
+          <h3>Contraste alto</h3>
+          <p>Activa un tema accesible optimizado para ambientes con baja visibilidad.</p>
+        </header>
+        <button type="button" class="profile-card__toggle" [class.profile-card__toggle--active]="isHighContrast()" (click)="toggleHighContrast()">
+          <span>{{ isHighContrast() ? 'Activo' : 'Desactivado' }}</span>
+          <app-icon [name]="isHighContrast() ? 'eye' : 'eye-off'" [size]="18"></app-icon>
+        </button>
+      </article>
+
+      <article class="profile-card">
+        <header>
+          <h3>Modo oscuro</h3>
+          <p>Sincroniza la interfaz con ambientes nocturnos o cabinas con poca iluminación.</p>
+        </header>
+        <button type="button" class="profile-card__toggle" [class.profile-card__toggle--active]="isDarkMode()" (click)="toggleDarkMode()">
+          <span>{{ isDarkMode() ? 'Activo' : 'Desactivado' }}</span>
+          <app-icon [name]="isDarkMode() ? 'moon' : 'sun'" [size]="18"></app-icon>
+        </button>
+      </article>
+    </div>
+  </section>
+
+  <section class="profile__section" *ngIf="user() as current">
+    <h2>
+      <app-icon name="shield" [size]="18"></app-icon>
+      Permisos operativos
+    </h2>
+    <p class="profile__meta">Accesos vigentes para la identidad autenticada.</p>
+    <ul class="profile__permissions">
+      <li *ngFor="let permission of current.permissions">{{ permission }}</li>
+    </ul>
+  </section>
+</section>

@@ -1,0 +1,15 @@
+<section class="lab-document-upload">
+  <header class="lab-document-upload__header">
+    <div>
+      <h1>Document Upload Lab</h1>
+      <p>Sandbox para validar flujos de OCR, Tanda y banners de protección.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" (click)="exit()">
+      Salir del laboratorio
+    </button>
+  </header>
+
+  <section class="lab-document-upload__shell" *ngIf="showShell()">
+    <app-document-upload-shell></app-document-upload-shell>
+  </section>
+</section>

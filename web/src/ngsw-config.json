@@ -1,0 +1,113 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.ico",
+          "/index.html",
+          "/manifest.webmanifest",
+          "/*.css",
+          "/*.js"
+        ]
+      }
+    },
+    {
+      "name": "assets-critical",
+      "installMode": "prefetch",
+      "updateMode": "lazy",
+      "resources": {
+        "files": [
+          "/assets/icons/icon-192x192.png",
+          "/assets/icons/icon-512x512.png",
+          "/assets/icons/icon-192x192.webp",
+          "/assets/icons/icon-512x512.webp"
+        ]
+      }
+    },
+    {
+      "name": "assets-lazy",
+      "installMode": "lazy",
+      "updateMode": "lazy",
+      "resources": {
+        "files": [
+          "/assets/**",
+          "/*.(eot|svg|cur|jpg|jpeg|png|webp|avif|gif|otf|ttf|woff|woff2|ani)"
+        ]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "api-critical",
+      "urls": [
+        "/api/auth/**",
+        "/api/dashboard/**",
+        "/api/user/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 20,
+        "maxAge": "5m",
+        "timeout": "2s"
+      }
+    },
+    {
+      "name": "api-performance",
+      "urls": [
+        "/api/clients",
+        "/api/clients/**",
+        "/api/quotes",
+        "/api/quotes/**",
+        "/api/reports",
+        "/api/reports/**",
+        "/api/products/**",
+        "/api/configurations/**"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 150,
+        "maxAge": "6h"
+      }
+    },
+    {
+      "name": "api-fresh",
+      "urls": [
+        "https://api.conductores-pwa.com/public/**",
+        "http://localhost:3000/api/public/**",
+        "/api/post-sales/**",
+        "/api/documents/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 75,
+        "maxAge": "30m",
+        "timeout": "3s"
+      }
+    },
+    {
+      "name": "api-external",
+      "urls": [
+        "https://api.mifiel.com/**",
+        "https://api.metamap.com/**",
+        "https://api.kinban.com/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 30,
+        "maxAge": "15m",
+        "timeout": "5s"
+      }
+    }
+  ],
+  "navigationUrls": [
+    "/**",
+    "!/**/*.*",
+    "!/**/*__*",
+    "!/**/*__*/**"
+  ]
+}

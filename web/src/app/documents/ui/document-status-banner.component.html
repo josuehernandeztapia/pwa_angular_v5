@@ -1,0 +1,17 @@
+<div
+  *ngIf="type"
+  class="document-upload__alert"
+  data-cy="doc-error-banner"
+  [attr.data-banner-type]="type">
+  <ng-container [ngSwitch]="type">
+    <span *ngSwitchCase="'offline'">
+      Sin conexión. Guardaremos tus cargas y las enviaremos al reconectar.
+    </span>
+    <span *ngSwitchCase="'queued'">
+      {{ pendingOfflineDocs }} documento(s) pendientes de sincronizar. Se enviarán automáticamente.
+    </span>
+    <span *ngSwitchCase="'error'">
+      Algunos documentos requieren atención. Reintenta la subida o utiliza captura manual.
+    </span>
+  </ng-container>
+</div>
