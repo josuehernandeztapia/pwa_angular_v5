@@ -2,11 +2,13 @@ import { createEnvironment } from './environment.base';
 
 export const environment = createEnvironment({
   production: true,
+  testing: true,
+  bypassAuth: true,
   apiUrl: 'https://api.conductores-pwa.com/v1',
   appName: 'Conductores PWA',
   version: '1.0.0',
   features: {
-    enableMockData: false,
+    enableMockData: true,
     enableAnalytics: true,
     enablePushNotifications: true,
     enableOfflineMode: true,

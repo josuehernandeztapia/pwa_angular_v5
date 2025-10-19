@@ -5,7 +5,7 @@ const path = require('path');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 4200);
-const DIST_DIR = path.resolve(__dirname, '..', 'dist', 'conductores-pwa', 'browser');
+const DIST_DIR = path.resolve(__dirname, '..', 'web', 'dist', 'conductores-pwa', 'browser');
 
 if (!fs.existsSync(DIST_DIR)) {
   console.error(`[serve-prod] Dist directory not found: ${DIST_DIR}`);
