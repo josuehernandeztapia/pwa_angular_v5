@@ -15,7 +15,7 @@
         </div>
         <div>
           <dt>Flujo</dt>
-          <dd>{{ snapshot.flow | titlecase }}</dd>
+          <dd>{{ getFlowLabel(snapshot.flow) }}</dd>
         </div>
         <div>
           <dt>Tipo de cliente</dt>
@@ -58,21 +58,17 @@
       </app-form-field>
 
       <app-form-field id="flow" label="Flujo sugerido" helper="Ajusta el flujo si la recomendación no aplica al caso">
-        <select id="flow" formControlName="flow">
-          <option value="venta_plazo">Venta a plazo</option>
-          <option value="venta_directa">Venta directa</option>
-          <option value="ahorro_programado">Ahorro programado</option>
-          <option value="credito_colectivo">Crédito colectivo</option>
+        <select id="flow" formControlName="flow" [disabled]="flowOptions().length === 0">
+          <option *ngFor="let option of flowOptions(); trackBy: trackFlowOption" [value]="option.value">
+            {{ option.label }}
+          </option>
         </select>
       </app-form-field>
 
       <fieldset class="new-opportunity__fieldset">
         <legend>Tipo de cliente</legend>
-        <label>
-          <input type="radio" formControlName="clientType" value="individual" /> Individual
-        </label>
-        <label>
-          <input type="radio" formControlName="clientType" value="colectivo" /> Colectivo
+        <label *ngFor="let option of clientTypeOptions(); trackBy: trackClientTypeOption">
+          <input type="radio" formControlName="clientType" [value]="option.value" /> {{ option.label }}
         </label>
       </fieldset>
 
@@ -89,7 +85,7 @@
       <app-form-field
         id="monthlyIncome"
         label="Ingreso mensual"
-        helper="Considera ingresos comprobables"
+        [helper]="isIncomeRequired() ? 'Considera ingresos comprobables' : 'Opcional · solo si aplica al caso'"
         [error]="showValidationErrors() && opportunityForm.get('monthlyIncome')?.invalid ? 'Ingresa un monto válido' : ''"
       >
         <input id="monthlyIncome" type="number" min="0" step="100" formControlName="monthlyIncome" placeholder="15000" />

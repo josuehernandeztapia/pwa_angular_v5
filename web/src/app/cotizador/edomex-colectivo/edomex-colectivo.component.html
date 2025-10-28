@@ -15,7 +15,7 @@
       </article>
       <article class="collective-quote__summary-card collective-quote__summary-card--info">
         <span class="collective-quote__summary-label">Plazo típico</span>
-        <span class="collective-quote__summary-value">60 meses</span>
+        <span class="collective-quote__summary-value">{{ quotation?.term || 60 }} meses</span>
       </article>
       <article class="collective-quote__summary-card collective-quote__summary-card--accent">
         <span class="collective-quote__summary-label">Meta del grupo</span>
@@ -70,6 +70,7 @@
               min="200"
               step="50"
               placeholder="400"
+              readonly
             />
             <span>litros</span>
           </div>
@@ -86,6 +87,7 @@
               min="1"
               step="0.1"
               placeholder="3.0"
+              readonly
             />
           </div>
         </div>
@@ -104,6 +106,65 @@
             />
           </div>
         </div>
+
+        <div class="collective-quote__divider" aria-hidden="true"></div>
+
+        <section class="collective-quote__subsection" formArrayName="collectionUnits">
+          <div class="collective-quote__subsection-header">
+            <span class="collective-quote__label collective-quote__label--sub">Unidades y recaudación</span>
+            <button type="button" class="collective-quote__add-unit premium-button ghost" (click)="addCollectionUnit()">
+              Agregar unidad
+            </button>
+          </div>
+          <p class="collective-quote__hint">Registra consumo y sobreprecio por unidad para estimar la recaudación promedio por miembro.</p>
+
+          <div class="collective-quote__units">
+            <div
+              class="collective-quote__unit-card"
+              *ngFor="let unitGroup of collectionUnitsArray.controls; let i = index"
+              [formGroupName]="i"
+            >
+              <div class="collective-quote__unit-field">
+                <label class="collective-quote__label">Consumo mensual</label>
+                <div class="collective-quote__input-affix">
+                  <input
+                    type="number"
+                    formControlName="consumption"
+                    class="collective-quote__input"
+                    min="0"
+                    step="10"
+                    placeholder="400"
+                  />
+                  <span>litros</span>
+                </div>
+              </div>
+
+              <div class="collective-quote__unit-field">
+                <label class="collective-quote__label">Sobreprecio</label>
+                <div class="collective-quote__input-affix">
+                  <span>$</span>
+                  <input
+                    type="number"
+                    formControlName="overprice"
+                    class="collective-quote__input"
+                    min="0"
+                    step="0.1"
+                    placeholder="3.0"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="collective-quote__remove-unit"
+                (click)="removeCollectionUnit(i)"
+                *ngIf="collectionUnitsArray.length > 1"
+              >
+                Quitar
+              </button>
+            </div>
+          </div>
+        </section>
 
         <div class="collective-quote__actions">
           <button type="button" class="premium-button" (click)="generateQuotation()" [disabled]="!configForm.valid || isCalculating">
@@ -144,10 +205,17 @@
         <h3 class="collective-quote__section-heading">Por miembro</h3>
         <dl class="collective-quote__details">
           <div class="collective-quote__detail"><dt>Precio de unidad</dt><dd>{{ formatCurrency(quotation.unitPrice) }}</dd></div>
+          <div class="collective-quote__detail"><dt>Consumo promedio</dt><dd>{{ quotation.avgConsumption | number:'1.0-0' }} L</dd></div>
+          <div class="collective-quote__detail"><dt>Sobreprecio promedio</dt><dd>{{ quotation.overpricePerLiter | number:'1.2-2' }} MXN/L</dd></div>
+          <div class="collective-quote__detail"><dt>Recaudación mensual</dt><dd>{{ formatCurrency(quotation.monthlyCollectionPerMember) }}</dd></div>
+          <div class="collective-quote__detail"><dt>Aportación voluntaria</dt><dd>{{ formatCurrency(quotation.voluntaryContributionPerMember || 0) }}</dd></div>
+          <div class="collective-quote__detail"><dt>Aportación total</dt><dd>{{ formatCurrency(quotation.totalContributionPerMember || quotation.monthlyCollectionPerMember) }}</dd></div>
           <div class="collective-quote__detail"><dt>Enganche requerido</dt><dd>{{ formatCurrency(quotation.downPaymentPerMember) }}</dd></div>
           <div class="collective-quote__detail"><dt>Meta por miembro</dt><dd>{{ formatCurrency(quotation.scenario.targetPerMember || quotation.downPaymentPerMember) }}</dd></div>
           <div class="collective-quote__detail"><dt>Financiamiento</dt><dd>{{ formatCurrency(quotation.financingPerMember) }}</dd></div>
           <div class="collective-quote__detail"><dt>Pago mensual estimado</dt><dd>{{ formatCurrency(quotation.monthlyPaymentPerMember) }}</dd></div>
+          <div class="collective-quote__detail"><dt>Plazo</dt><dd>{{ quotation.term }} meses</dd></div>
+          <div class="collective-quote__detail"><dt>Tasa anual</dt><dd>{{ (quotation.annualRate || 0) | number:'1.2-2' }}%</dd></div>
         </dl>
       </section>
 

@@ -352,7 +352,9 @@
 .clientes-list__actions {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
+  align-self: flex-start;
+  margin-left: auto;
+  margin-top: 0;
 }
 
 .clientes-list__action {

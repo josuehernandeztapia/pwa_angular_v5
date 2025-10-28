@@ -1,6 +1,6 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, Inject, OnDestroy, OnInit, ViewChild, Optional, Renderer2 } from '@angular/core';
-import { Router, RouterModule, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterModule, RouterOutlet } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { BottomNavBarComponent } from './shared/bottom-nav-bar.component';
 import { UpdateBannerComponent } from './shared/update-banner.component';
@@ -14,7 +14,7 @@ import { FlowContextService } from '@core-services/flow-context.service';
 import { KeyboardShortcutsModalComponent } from './shared/keyboard-shortcuts-modal.component';
 import { KeyboardShortcutsService } from '@core-services/keyboard-shortcuts.service';
 import { Observable, combineLatest, of } from 'rxjs';
-import { map, distinctUntilChanged } from 'rxjs/operators';
+import { filter, map, distinctUntilChanged } from 'rxjs/operators';
 import { OfflineService } from '@core-services/offline.service';
 import { environment } from '@environments/environment';
 import { NavigationService, QuickAction } from '@core-services/navigation.service';
@@ -49,6 +49,8 @@ interface OfflineShellState {
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private readonly authRoutes = new Set(['/login', 'login', '/register', 'register', '/verify-email', 'verify-email', '/avi-interview', 'avi-interview']);
+  showShell = true;
   @ViewChild(GlobalSearchComponent) globalSearch?: GlobalSearchComponent;
 
   title = 'conductores-pwa';
@@ -74,6 +76,10 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {
     this.breadcrumbs$ = this.flowContext.breadcrumbs$;
     this.exposeTestingHelpers();
+    this.updateShellVisibility(this.router.url);
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(event => this.updateShellVisibility(event.urlAfterRedirects));
   }
 
   private removeGlobalShortcutListener?: () => void;
@@ -153,6 +159,12 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     await this.offlineService.flushQueueNow();
+  }
+
+
+  private updateShellVisibility(url: string): void {
+    const cleanUrl = url.split('?')[0];
+    this.showShell = !Array.from(this.authRoutes).some(route => cleanUrl.startsWith(route));
   }
 
   private handleResize = () => {

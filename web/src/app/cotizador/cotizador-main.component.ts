@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ChangeDetectionStrategy, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { BusinessFlow, Client } from '@interfaces/types';
 import { ClientType, Quote, SimulatorMode } from '@interfaces/business';
@@ -24,6 +25,7 @@ import { CotizadorStore, CollectionUnit } from './cotizador.store';
 export class CotizadorMainComponent implements OnInit, OnChanges {
   private readonly store = inject(CotizadorStore);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   private readonly marketLabels: Record<PolicyMarket, string> = {
     aguascalientes: 'Aguascalientes',
@@ -316,6 +318,7 @@ export class CotizadorMainComponent implements OnInit, OnChanges {
 
     this.store.persistFlowContextSnapshot('formalize');
     this.onFormalize.emit(quote);
+    this.navigateAfterFormalize(flow, market, clientType);
   }
 
   goBack(): void {
@@ -460,6 +463,40 @@ export class CotizadorMainComponent implements OnInit, OnChanges {
       return 0;
     }
     return Math.max(0, Math.min(100, (this.projectedCollectionSavings / total) * 100));
+  }
+
+  private navigateAfterFormalize(flow: BusinessFlow, market: PolicyMarket | '', clientType: PolicyClientType | ''): void {
+    if (!market || !clientType) {
+      return;
+    }
+
+    const flowParam = this.mapFlowToQuery(flow);
+    const queryParams: Record<string, string> = {
+      market,
+      clientType,
+      preselectedFlow: flowParam,
+      suggestedFlow: flowParam,
+      source: 'cotizador'
+    };
+
+    if (this.client?.name) {
+      queryParams['clientName'] = this.client.name;
+    }
+
+    this.router.navigate(['/nueva-oportunidad'], { queryParams });
+  }
+
+  private mapFlowToQuery(flow: BusinessFlow): string {
+    switch (flow) {
+      case BusinessFlow.AhorroProgramado:
+        return 'ahorro_programado';
+      case BusinessFlow.CreditoColectivo:
+        return 'credito_colectivo';
+      case BusinessFlow.VentaDirecta:
+        return 'venta_directa';
+      default:
+        return 'venta_plazo';
+    }
   }
 
   toNumber(value: any): number {
