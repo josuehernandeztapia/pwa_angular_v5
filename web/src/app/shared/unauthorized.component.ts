@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { PLATFORM_ID } from '@angular/core';
 import { AuthService } from '@core-services/auth.service';
 import { IconComponent } from '@shared/icon/icon.component';
@@ -15,6 +15,7 @@ import { IconComponent } from '@shared/icon/icon.component';
 export class UnauthorizedComponent {
   currentUser$ = this.authService.currentUser$;
   currentUser = this.authService.getCurrentUser();
+  readonly moduleMessage: string;
 
   private readonly isBrowser: boolean;
   private readonly windowRef: (Window & typeof globalThis) | null;
@@ -22,11 +23,13 @@ export class UnauthorizedComponent {
   constructor(
     private router: Router,
     private authService: AuthService,
+    private route: ActivatedRoute,
     @Inject(DOCUMENT) documentRef: Document,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
     this.windowRef = this.isBrowser ? (documentRef.defaultView as any) : null;
+    this.moduleMessage = this.resolveModuleMessage();
   }
 
   goHome(): void {
@@ -95,5 +98,17 @@ export class UnauthorizedComponent {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  private resolveModuleMessage(): string {
+    const module = this.route.snapshot.queryParamMap.get('module');
+    switch (module) {
+      case 'entregas':
+        return 'Activa un contrato con entregas para acceder a este módulo.';
+      case 'proteccion':
+        return 'Completa la evaluación de protección antes de ingresar.';
+      default:
+        return 'No tienes los permisos necesarios para acceder a esta sección. Si crees que esto es un error, contacta a tu supervisor.';
+    }
   }
 }

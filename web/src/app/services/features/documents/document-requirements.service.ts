@@ -29,7 +29,7 @@ export class DocumentRequirementsService {
    * Determines required documents based on market, sale type, and business flow
    */
   getDocumentRequirements(config: {
-    market: 'aguascalientes' | 'edomex';
+    market: 'aguascalientes' | 'edomex' | 'otros';
     saleType: 'contado' | 'financiero';
     businessFlow?: BusinessFlow;
     clientType?: 'individual' | 'colectivo';
@@ -57,7 +57,7 @@ export class DocumentRequirementsService {
    */
   getContractDocuments(config: {
     businessFlow: BusinessFlow;
-    market: 'aguascalientes' | 'edomex';
+    market: 'aguascalientes' | 'edomex' | 'otros';
     hasEcosystem?: boolean;
   }): Observable<Document[]> {
     let contractDocs: Document[] = [];

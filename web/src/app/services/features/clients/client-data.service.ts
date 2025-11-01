@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 import {
@@ -12,6 +12,8 @@ import {
 import { ImportStatus } from '@interfaces/postventa';
 import { CollectiveCreditMember } from '@interfaces/tanda';
 import { environment } from '@environments/environment';
+import { DemoModeService } from '@core-services/demo-mode.service';
+import { EntitySyncService } from '@core-services/entity-sync.service';
 
 // --- Document Checklists (instantiated only when mock data enabled) ---
 let CONTADO_DOCS: Document[] = [];
@@ -229,25 +231,52 @@ if (environment.features.enableMockData) {
 export class ClientDataService {
   private clientsDB = new Map<string, Client>();
   private clientsSubject = new BehaviorSubject<Client[]>([]);
+  private entitySyncInstance: EntitySyncService | null = null;
+  private entitySyncUnavailable = false;
 
   public clients$ = this.clientsSubject.asObservable();
 
-  constructor() {
-    this.initializeClients();
+  constructor(
+    private readonly demoMode: DemoModeService,
+    private readonly injector: Injector
+  ) {
+    this.applyDemoMode(this.demoMode.isDemoMode());
+    this.demoMode.isDemoMode$.subscribe(isDemo => this.applyDemoMode(isDemo));
+  }
+
+  private withEntitySync(action: (sync: EntitySyncService) => void): void {
+    if (this.entitySyncUnavailable) {
+      return;
+    }
+
+    try {
+      if (!this.entitySyncInstance) {
+        this.entitySyncInstance = this.injector.get(EntitySyncService);
+      }
+      action(this.entitySyncInstance);
+    } catch (error) {
+      console.warn('[ClientDataService] EntitySyncService unavailable', error);
+      this.entitySyncUnavailable = true;
+    }
   }
 
   /**
    * Initialize with exact data from React simulationService.ts
    */
-  private initializeClients(): void {
-    if (!environment.features.enableMockData) {
-      this.clientsDB.clear();
+  private applyDemoMode(isDemo: boolean): void {
+    this.clientsDB.clear();
+
+    if (!isDemo) {
       this.clientsSubject.next([]);
       return;
     }
 
-    this.clientsDB.clear();
-    INITIAL_CLIENTS.forEach(client => this.clientsDB.set(client.id, structuredClone(client)));
+    INITIAL_CLIENTS.forEach(client => {
+      const draft = structuredClone(client);
+      draft.isDemo = true;
+      this.clientsDB.set(draft.id, draft);
+    });
+
     this.clientsSubject.next(Array.from(this.clientsDB.values()));
   }
 
@@ -310,7 +339,8 @@ export class ClientDataService {
           type: EventType.AdvisorAction
         }
       ],
-      ...clientData
+      ...clientData,
+      isDemo: this.demoMode.isDemoMode()
     };
 
     this.clientsDB.set(newClient.id, newClient);
@@ -341,6 +371,8 @@ export class ClientDataService {
     this.clientsDB.set(id, updatedClient);
     this.clientsSubject.next(Array.from(this.clientsDB.values()));
 
+    this.withEntitySync(sync => sync.recordClientUpdate({ client: updatedClient, updates }));
+
     return of(updatedClient).pipe(delay(400));
   }
 
@@ -366,6 +398,8 @@ export class ClientDataService {
 
     this.clientsDB.set(clientId, updatedClient);
     this.clientsSubject.next(Array.from(this.clientsDB.values()));
+
+    this.withEntitySync(sync => sync.recordClientEvent(updatedClient, newEvent));
 
     return of(updatedClient).pipe(delay(300));
   }

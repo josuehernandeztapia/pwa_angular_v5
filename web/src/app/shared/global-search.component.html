@@ -61,6 +61,11 @@
       <div class="global-search__item-head">
         <span class="global-search__item-label">{{ result.label }}</span>
         <span class="global-search__item-type">{{ getTypeLabel(result.type) }}</span>
+        <app-demo-badge
+          *ngIf="result.origin"
+          class="global-search__item-badge"
+          [isDemo]="result.origin === 'demo'"
+        ></app-demo-badge>
       </div>
       <div *ngIf="result.description" class="global-search__item-description">
         {{ result.description }}

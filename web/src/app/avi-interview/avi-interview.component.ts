@@ -6,6 +6,9 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { InterviewCheckpointService } from '@feature-services/avi/interview-checkpoint.service';
 import { VoiceValidationService } from '@feature-services/avi/voice-validation.service';
+import { EntitySyncService } from '@core-services/entity-sync.service';
+import { BusinessFlow } from '@interfaces/types';
+import { PolicyMarket } from '@feature-services/configuration/market-policy.service';
 
 interface AviQuestionState {
   id: string;
@@ -47,6 +50,9 @@ export class AVIInterviewComponent implements OnInit, OnChanges {
   @Input() advisorId!: string;
   @Input() municipality: string | null | undefined;
   @Input() productType: string | null | undefined;
+  @Input() clientName?: string;
+  @Input() market?: PolicyMarket;
+  @Input() businessFlow?: BusinessFlow;
 
   @Output() interviewStarted = new EventEmitter<void>();
   @Output() interviewCompleted = new EventEmitter<ValidationResultPayload>();
@@ -57,6 +63,7 @@ export class AVIInterviewComponent implements OnInit, OnChanges {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly entitySync = inject(EntitySyncService);
 
   private readonly defaultQuestions: AviQuestionState[] = [
     { id: 'identity_confirmation', text: 'Confirma tu nombre completo y el de tu negocio.', mandatory: true, answered: false, response: '' },
@@ -138,6 +145,7 @@ export class AVIInterviewComponent implements OnInit, OnChanges {
     this.sessionStartedAt = null;
     this.interviewCancelled.emit();
     this.informativeMessage.set('La entrevista fue cancelada.');
+    this.recordCancellationEvent();
   }
 
   toggleQuestionAnswer(questionId: string, answered: boolean): void {
@@ -207,6 +215,7 @@ export class AVIInterviewComponent implements OnInit, OnChanges {
     this.informativeMessage.set('Entrevista completada correctamente.');
 
     this.interviewCompleted.emit({ validationResult });
+    this.recordCompletionEvent(validationResult, sessionDuration);
   }
 
   private loadCheckpointConfiguration(): void {
@@ -284,6 +293,39 @@ export class AVIInterviewComponent implements OnInit, OnChanges {
           this.minDurationSeconds = requirement.min_duration_seconds;
         }
       });
+  }
+
+  private recordCompletionEvent(validationResult: ValidationResultPayload['validationResult'], sessionDuration: number): void {
+    if (!this.clientId) {
+      return;
+    }
+
+    const durationSeconds = Math.round((sessionDuration ?? 0) / 1000);
+
+    this.entitySync.recordAviStatus({
+      clientId: this.clientId,
+      clientName: this.clientName ?? this.clientId,
+      market: this.market,
+      businessFlow: this.businessFlow,
+      status: 'completed',
+      complianceScore: validationResult?.compliance_score,
+      sessionId: validationResult?.session_id,
+      durationSeconds
+    });
+  }
+
+  private recordCancellationEvent(): void {
+    if (!this.clientId) {
+      return;
+    }
+
+    this.entitySync.recordAviStatus({
+      clientId: this.clientId,
+      clientName: this.clientName ?? this.clientId,
+      market: this.market,
+      businessFlow: this.businessFlow,
+      status: 'cancelled'
+    });
   }
 
   private buildSessionId(): string {

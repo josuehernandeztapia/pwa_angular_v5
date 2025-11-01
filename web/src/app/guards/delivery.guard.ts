@@ -46,6 +46,6 @@ export class DeliveryGuard implements CanActivate {
     }
 
     this.toast.warning('Activa un contrato con entregas para acceder a este módulo.');
-    return this.router.parseUrl('/contratos/generacion');
+    return this.router.parseUrl('/unauthorized?module=entregas');
   }
 }

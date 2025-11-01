@@ -1,15 +1,19 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, finalize, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, tap, take } from 'rxjs/operators';
 
 import { BusinessFlow, Client } from '@interfaces/types';
 import { SearchApiService, SearchResults } from '@data-access/search/search-api.service';
 import { ToastService } from '@core-services/toast.service';
 import { AnalyticsService } from '@core-services/analytics.service';
 import { ContractContextSnapshot } from '@interfaces/contract-context';
+import { safeWindow } from '@services/utils/ssr/safe-window.util';
+import { environment } from '@environments/environment';
 
 export type GlobalSearchType = 'client' | 'contract' | 'quote' | 'document';
+
+export type GlobalSearchDataOrigin = 'demo' | 'real';
 
 export interface GlobalSearchResult {
   id: string;
@@ -20,6 +24,7 @@ export interface GlobalSearchResult {
   queryParams?: Record<string, any>;
   externalUrl?: string;
   contractContext?: ContractContextSnapshot;
+  origin?: GlobalSearchDataOrigin;
 }
 
 interface QuoteMatch {
@@ -61,6 +66,7 @@ interface ContractMatch {
 
 @Injectable({ providedIn: 'root' })
 export class GlobalSearchService {
+  private lastQuery: string | null = null;
   private readonly fallbackIndex: GlobalSearchResult[] = [
     {
       id: 'client-juan-perez',
@@ -175,6 +181,8 @@ export class GlobalSearchService {
 
   private recentsSubject = new BehaviorSubject<GlobalSearchResult[]>([]);
   readonly recent$ = this.recentsSubject.asObservable();
+  private readonly storageKey = '__global_search_recents__';
+  private readonly lastQueryKey = '__global_search_last_query__';
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
   readonly loading$ = this.loadingSubject.asObservable();
@@ -187,11 +195,19 @@ export class GlobalSearchService {
     private searchApi: SearchApiService,
     private toast: ToastService,
     private analytics: AnalyticsService
-  ) {}
+  ) {
+    if (!environment.features.enableMockData) {
+      this.suggestionsSubject.next([]);
+    }
+    this.restoreRecentsFromStorage();
+    this.restoreLastQuery();
+  }
 
   search(query: string): Observable<GlobalSearchResult[]> {
     const trimmed = (query ?? '').trim();
     if (!trimmed) {
+      this.lastQuery = '';
+      this.persistLastQuery(this.lastQuery);
       const initial = this.initialResults();
       this.analytics.track('global_search_idle', {
         hasRecents: this.recentsSubject.value.length > 0,
@@ -200,6 +216,8 @@ export class GlobalSearchService {
       return of(initial);
     }
 
+    this.lastQuery = trimmed;
+    this.persistLastQuery(this.lastQuery);
     this.analytics.track('global_search_query', {
       query: trimmed,
       length: trimmed.length
@@ -216,13 +234,18 @@ export class GlobalSearchService {
   }
 
   recordRecent(result: GlobalSearchResult): void {
-    const current = this.recentsSubject.value.filter(item => item.id !== result.id);
-    const next = [result, ...current].slice(0, 8);
+    const normalized: GlobalSearchResult = {
+      ...result,
+      origin: result.origin ?? this.resolveOrigin()
+    };
+    const current = this.recentsSubject.value.filter(item => item.id !== normalized.id);
+    const next = [normalized, ...current].slice(0, 8);
     this.recentsSubject.next(next);
     this.analytics.track('global_search_recent', {
-      id: result.id,
-      type: result.type
+      id: normalized.id,
+      type: normalized.type
     });
+    this.persistRecents(next);
   }
 
   buildExternalUrl(result: GlobalSearchResult): string | null {
@@ -232,6 +255,121 @@ export class GlobalSearchService {
 
     const tree = this.router.createUrlTree(result.route, { queryParams: result.queryParams });
     return this.router.serializeUrl(tree);
+  }
+
+  refreshIndex(query?: string): void {
+    const effectiveQuery = (query ?? this.lastQuery ?? '').trim();
+
+    if (!effectiveQuery) {
+      // No active query: surface latest recents/suggestions without hitting API.
+      const initial = this.initialResults();
+      this.suggestionsSubject.next(initial.slice(0, 5));
+      return;
+    }
+
+    this.fetchResults(effectiveQuery)
+      .pipe(take(1))
+      .subscribe({
+        error: error => {
+          console.error('[GlobalSearchService] Error refreshing index', error);
+        }
+      });
+  }
+
+  private persistRecents(recents: GlobalSearchResult[]): void {
+    const windowRef = safeWindow();
+    if (!windowRef?.localStorage) {
+      return;
+    }
+
+    try {
+      windowRef.localStorage.setItem(this.storageKey, JSON.stringify(recents));
+    } catch (error) {
+      console.warn('[GlobalSearchService] Unable to persist recents', error);
+    }
+  }
+
+  private restoreRecentsFromStorage(): void {
+    const windowRef = safeWindow();
+    if (!windowRef?.localStorage) {
+      return;
+    }
+
+    try {
+      const raw = windowRef.localStorage.getItem(this.storageKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const recents = (parsed as GlobalSearchResult[]).map(item => ({
+          ...item,
+          origin: item.origin ?? this.resolveOrigin()
+        }));
+        this.recentsSubject.next(recents);
+      }
+    } catch (error) {
+      console.warn('[GlobalSearchService] Unable to restore persisted recents', error);
+    }
+  }
+
+  private persistLastQuery(query: string | null): void {
+    const windowRef = safeWindow();
+    if (!windowRef?.localStorage) {
+      return;
+    }
+
+    try {
+      if (query === null) {
+        windowRef.localStorage.removeItem(this.lastQueryKey);
+      } else {
+        windowRef.localStorage.setItem(this.lastQueryKey, query);
+      }
+    } catch (error) {
+      console.warn('[GlobalSearchService] Unable to persist last query', error);
+    }
+  }
+
+  private restoreLastQuery(): void {
+    const windowRef = safeWindow();
+    if (!windowRef?.localStorage) {
+      return;
+    }
+
+    try {
+      const stored = windowRef.localStorage.getItem(this.lastQueryKey);
+      if (typeof stored === 'string') {
+        this.lastQuery = stored;
+      }
+    } catch (error) {
+      console.warn('[GlobalSearchService] Unable to restore last query', error);
+    }
+  }
+
+  private clearDemoRecents(): void {
+    const filtered = this.recentsSubject.value.filter(item => item.origin !== 'demo');
+    this.recentsSubject.next(filtered);
+  }
+
+  private resolveOrigin(): GlobalSearchDataOrigin {
+    return environment.features.enableMockData ? 'demo' : 'real';
+  }
+
+  setDemoMode(isDemo: boolean): void {
+    if (isDemo) {
+      this.suggestionsSubject.next(this.fallbackIndex.slice(0, 5));
+    } else {
+      this.clearDemoRecents();
+      this.suggestionsSubject.next([]);
+    }
+    this.lastQuery = isDemo ? this.lastQuery : '';
+    this.persistLastQuery(this.lastQuery);
+    this.persistRecents(this.recentsSubject.value);
+  }
+
+  getLastQuery(): string | null {
+    return this.lastQuery;
   }
 
   private fetchResults(query: string): Observable<GlobalSearchResult[]> {
@@ -418,6 +556,9 @@ export class GlobalSearchService {
   }
 
   private filterFallback(query: string): GlobalSearchResult[] {
+    if (!environment.features.enableMockData) {
+      return [];
+    }
     const lowered = query.toLowerCase();
     const fallback = this.fallbackIndex.filter(item =>
       item.label.toLowerCase().includes(lowered) ||

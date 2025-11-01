@@ -1,0 +1,116 @@
+.demo-analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-radius: 1rem;
+  background: var(--flat-surface-bg, #fff);
+  box-shadow: var(--shadow-sm, 0 10px 30px rgba(15, 23, 42, 0.08));
+}
+
+.demo-analytics__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #0284c7;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.demo-analytics__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.demo-analytics__header h1 {
+  margin: 0.35rem 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+.demo-analytics__header p {
+  margin: 0;
+  color: rgba(15, 23, 42, 0.7);
+}
+
+.demo-analytics__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.demo-analytics__status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.8);
+}
+
+.demo-analytics__timeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.demo-analytics__event {
+  padding: 1rem 1.25rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(249, 250, 251, 0.9);
+}
+
+.demo-analytics__event-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.demo-analytics__event-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.demo-analytics__event-header time {
+  font-size: 0.8rem;
+  color: rgba(100, 116, 139, 0.9);
+}
+
+.demo-analytics__payload {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  overflow: auto;
+}
+
+.demo-analytics__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  border-radius: 0.85rem;
+  background: rgba(226, 232, 240, 0.5);
+  color: rgba(51, 65, 85, 0.8);
+  text-align: center;
+}
+
+.demo-analytics__actions {
+  display: flex;
+  gap: 0.75rem;
+}

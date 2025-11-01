@@ -11,6 +11,12 @@ import { CustomValidators } from '@validators/custom-validators';
 import { Client, BusinessFlow } from '@interfaces/types';
 import { FlowContextService } from '@core-services/flow-context.service';
 import { ErrorBoundaryService } from '@core-services/error-boundary.service';
+import { FlowCompletionService, FlowCompletionAction } from '@core-services/flow-completion.service';
+import { GlobalSearchService } from '@core-services/global-search.service';
+import { NavigationService } from '@core-services/navigation.service';
+import { SummaryMetric } from '@shared/summary-panel.component';
+import { EntitySyncService } from '@core-services/entity-sync.service';
+import { PolicyMarket } from '@feature-services/configuration/market-policy.service';
 
 @Component({
   selector: 'app-cliente-form',
@@ -34,6 +40,10 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     private clientsApi: ClientsApiService,
     private toast: ToastService,
     private errorBoundary: ErrorBoundaryService,
+    private flowCompletion: FlowCompletionService,
+    private entitySync: EntitySyncService,
+    private globalSearch: GlobalSearchService,
+    private navigation: NavigationService,
     @Optional() private flowContext?: FlowContextService
   ) {}
 
@@ -137,10 +147,9 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     if (this.isEditMode && this.clientId) {
       this.clientsApi.updateClient(this.clientId, formData).subscribe({
         next: client => {
-          this.toast.success('Cliente actualizado exitosamente');
           this.isLoading = false;
           this.errorBoundary.resolveIssueByContext(issue => issue.context?.module === 'clientes' && issue.context?.clientId === this.clientId);
-          this.handlePostSaveNavigation(client);
+          void this.presentFlowCompletion(client, 'update');
         },
         error: () => {
           this.isLoading = false;
@@ -151,10 +160,9 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     } else {
       this.clientsApi.createClient(formData).subscribe({
         next: (client) => {
-          this.toast.success('Cliente creado exitosamente');
           this.isLoading = false;
           this.errorBoundary.resolveIssueByContext(issue => issue.context?.module === 'clientes' && issue.context?.clientId === client.id);
-          this.handlePostSaveNavigation(client);
+          void this.presentFlowCompletion(client, 'create', formData);
         },
         error: () => {
           this.isLoading = false;
@@ -204,29 +212,228 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     this.router.navigate(['/clientes']);
   }
 
-  private handlePostSaveNavigation(client?: Client): void {
+  private async presentFlowCompletion(client: Client, mode: 'create' | 'update', payload?: any): Promise<void> {
     this.flowContext?.clearContext('cliente-form');
 
-    if (this.returnTo === 'cotizador') {
-      this.flowContext?.updateContext('cotizador', (ctx) => {
-        const next = { ...(ctx || {}) } as any;
-        if (client) {
-          next.clientId = client.id;
-          next.clientName = client.name;
-        }
-        next.lastClientSync = Date.now();
-        return next;
-      });
+    const title = mode === 'create' ? 'Cliente creado exitosamente' : 'Cliente actualizado exitosamente';
+    const description = mode === 'create'
+      ? `${client.name} está listo para continuar con documentos, oportunidades o cotizaciones.`
+      : 'Los datos del cliente se guardaron y se propagaron al resto de la aplicación.';
 
-      const target = this.returnUrl || '/cotizador';
-      this.router.navigateByUrl(target);
-      return;
+    let metrics = this.buildClientMetrics(client);
+
+    if (mode === 'create') {
+      try {
+        const market = (payload?.market ?? client.market ?? 'aguascalientes') as PolicyMarket;
+        const flow = (payload?.flow ?? client.flow ?? BusinessFlow.VentaPlazo) as BusinessFlow;
+        const syncResult = await this.entitySync.recordClientCreation({
+          clientName: client.name,
+          market,
+          businessFlow: flow,
+          email: payload?.email ?? client.email,
+          phone: payload?.phone ?? client.phone
+        });
+
+        if (syncResult?.metrics?.length) {
+          metrics = syncResult.metrics;
+        }
+      } catch (error) {
+        console.error('[ClienteForm] Error registrando sincronización de cliente', error);
+      }
     }
 
-    if (this.isEditMode && this.clientId) {
-      this.router.navigate(['/clientes', this.clientId]);
+    this.flowCompletion.open({
+      title,
+      description,
+      metrics,
+      actions: this.buildCompletionActions(client, mode),
+      onComplete: () => {
+        this.globalSearch.refreshIndex(client.name);
+        this.navigation.refreshQuickActions();
+      }
+    });
+  }
+
+  private buildClientMetrics(client: Client): SummaryMetric[] {
+    const metrics: SummaryMetric[] = [];
+
+    if (client.healthScore != null) {
+      metrics.push({ label: 'Health Score', value: this.formatHealthScore(client.healthScore) });
+    }
+
+    if (client.market) {
+      metrics.push({ label: 'Mercado', value: this.formatMarket(client.market) });
+    }
+
+    if (client.flow) {
+      metrics.push({ label: 'Flujo', value: this.formatFlow(client.flow) });
+    }
+
+    return metrics;
+  }
+
+  private buildCompletionActions(client: Client, mode: 'create' | 'update'): FlowCompletionAction[] {
+    const actions: FlowCompletionAction[] = [];
+
+    if (this.shouldReturnToCotizador()) {
+      actions.push({
+        id: 'return-cotizador',
+        label: 'Volver al cotizador',
+        kind: 'primary',
+        execute: () => this.handleReturnToCotizador(client)
+      });
+      actions.push({
+        id: 'documents',
+        label: 'Cargar documentos',
+        kind: 'secondary',
+        execute: () => this.goToDocuments(client)
+      });
     } else {
-      this.router.navigate(['/clientes']);
+      actions.push({
+        id: 'documents',
+        label: 'Cargar documentos',
+        kind: 'primary',
+        execute: () => this.goToDocuments(client)
+      });
+    }
+
+    actions.push({
+      id: 'create-opportunity',
+      label: 'Crear oportunidad vinculada',
+      kind: 'secondary',
+      execute: () => this.createOpportunity(client)
+    });
+
+    actions.push({
+      id: 'view-client',
+      label: 'Ver ficha del cliente',
+      kind: this.shouldReturnToCotizador() ? 'ghost' : 'secondary',
+      execute: () => this.viewClientDetail(client)
+    });
+
+    if (mode === 'create') {
+      actions.push({
+        id: 'register-another',
+        label: 'Registrar otro cliente',
+        kind: 'ghost',
+        execute: () => this.resetFormForCreation()
+      });
+    }
+
+    return actions;
+  }
+
+  private formatHealthScore(score: number): string {
+    if (Number.isFinite(score)) {
+      if (score > 1 && score <= 100) {
+        return `${Math.round(score)}%`;
+      }
+      return String(Math.round(score));
+    }
+    return 'Sin dato';
+  }
+
+  private formatMarket(market: string): string {
+    switch (market) {
+      case 'aguascalientes':
+        return 'Aguascalientes';
+      case 'edomex':
+      case 'estado_de_mexico':
+        return 'Estado de México';
+      default:
+        return market;
+    }
+  }
+
+  private formatFlow(flow: BusinessFlow): string {
+    switch (flow) {
+      case BusinessFlow.VentaDirecta:
+        return 'Venta directa';
+      case BusinessFlow.AhorroProgramado:
+        return 'Ahorro programado';
+      case BusinessFlow.CreditoColectivo:
+        return 'Crédito colectivo';
+      default:
+        return 'Venta a plazo';
+    }
+  }
+
+  private shouldReturnToCotizador(): boolean {
+    return this.returnTo === 'cotizador';
+  }
+
+  private goToDocuments(client: Client): Promise<boolean> {
+    return this.router.navigate(['/documentos'], {
+      queryParams: {
+        clientId: client.id,
+        source: 'cliente-flow'
+      }
+    });
+  }
+
+  private createOpportunity(client: Client): Promise<boolean> {
+    return this.router.navigate(['/nueva-oportunidad'], {
+      queryParams: {
+        source: 'cliente-flow',
+        clientId: client.id,
+        clientName: client.name,
+        market: client.market,
+        suggestedFlow: this.mapFlowToQueryParam(client.flow)
+      }
+    });
+  }
+
+  private viewClientDetail(client: Client): Promise<boolean> {
+    return this.router.navigate(['/clientes', client.id]);
+  }
+
+  private resetFormForCreation(): void {
+    const market = this.clienteForm.get('market')?.value || 'aguascalientes';
+
+    this.isEditMode = false;
+    this.clientId = undefined;
+
+    this.clienteForm.reset({
+      name: '',
+      email: '',
+      phone: '',
+      rfc: '',
+      market,
+      flow: BusinessFlow.VentaPlazo,
+      notes: ''
+    });
+
+    this.clienteForm.markAsPristine();
+    this.clienteForm.markAsUntouched();
+    this.flowContext?.clearContext('cliente-form');
+    this.updateBreadcrumbs();
+  }
+
+  private handleReturnToCotizador(client: Client): Promise<boolean> {
+    this.flowContext?.updateContext('cotizador', (ctx) => {
+      const next = { ...(ctx || {}) } as any;
+      next.clientId = client.id;
+      next.clientName = client.name;
+      next.lastClientSync = Date.now();
+      return next;
+    });
+
+    const target = this.returnUrl || '/cotizador';
+    return this.router.navigateByUrl(target);
+  }
+
+  private mapFlowToQueryParam(flow: BusinessFlow | undefined): string | undefined {
+    switch (flow) {
+      case BusinessFlow.VentaDirecta:
+        return 'venta_directa';
+      case BusinessFlow.AhorroProgramado:
+        return 'ahorro_programado';
+      case BusinessFlow.CreditoColectivo:
+        return 'credito_colectivo';
+      case BusinessFlow.VentaPlazo:
+        return 'venta_plazo';
+      default:
+        return undefined;
     }
   }
 
@@ -272,4 +479,5 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
 
     return firstValueFrom(this.clientsApi.updateClient(this.clientId, payload));
   }
+
 }

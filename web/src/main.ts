@@ -30,7 +30,22 @@ bootstrapApplication(AppComponent, appConfig)
     if (!html.getAttribute('lang')) {
       html.setAttribute('lang', 'es-MX');
     }
+    removeInitialLoader();
   })
   .catch(err => {
     console.error('Error starting app:', err);
   });
+
+function removeInitialLoader(): void {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const loader = document.getElementById('initial-loader');
+  if (loader) {
+    loader.classList.add('app-shell-loading--hidden');
+    window.setTimeout(() => loader.remove(), 300);
+  }
+
+  document.body.classList.add('app-ready');
+}

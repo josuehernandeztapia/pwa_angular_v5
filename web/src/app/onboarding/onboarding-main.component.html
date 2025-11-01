@@ -16,6 +16,68 @@
     </article>
   </section>
 
+  @if (isDemo(); as demoEnabled) {
+    @if (demoScenarioSnapshot(); as demoScenario) {
+      <section class="onboarding__demo" aria-label="Escenario demo activo">
+        <header class="onboarding__demo-header">
+        <div>
+          <span class="onboarding__demo-badge">Demo</span>
+          <h3>{{ demoScenario.label }}</h3>
+          <p>{{ demoScenario.description }}</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="resetDemoScenario()">
+          Reiniciar demo
+        </button>
+      </header>
+
+      @if (demoScenario.aviDecision !== undefined) {
+        <div class="onboarding__demo-avi" aria-label="Entrevista AVI demo">
+          <p class="onboarding__demo-avi-status">
+            Resultado actual:
+            <span class="onboarding__demo-avi-pill" [ngClass]="getAviDecisionClass(demoAviDecision())">
+              {{ formatAviDecision(demoAviDecision()) }}
+            </span>
+            <small *ngIf="demoAviDecisionUpdatedAt() as updated"> · Actualizado {{ updated | date:'short' }}</small>
+          </p>
+          <div class="onboarding__demo-avi-actions">
+            <button
+              *ngFor="let decision of aviDecisionOptions"
+              type="button"
+              class="btn btn-ghost btn-xs onboarding__demo-avi-button"
+              [class.onboarding__demo-avi-button--active]="decision === demoAviDecision()"
+              (click)="simulateAviDecision(decision)"
+              [disabled]="isSimulatingAviDecision() || decision === demoAviDecision()">
+              {{ formatAviDecision(decision) }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <ul *ngIf="demoScenario.documents?.length" class="onboarding__demo-docs">
+        <li *ngFor="let doc of demoScenario.documents">
+          <div>
+            <strong>{{ doc.name }}</strong>
+              <small>Estado actual: {{ doc.status }}</small>
+            </div>
+            <button type="button" class="btn btn-ghost btn-xs" (click)="toggleDemoDocument(doc.id)">
+              Alternar estado
+            </button>
+          </li>
+        </ul>
+      </section>
+    }
+  }
+
+  @if (requirementsSnapshot(); as snapshot) {
+    <section class="onboarding__preview" aria-label="Resumen de requisitos dinámicos">
+      <app-onboarding-status-banner class="onboarding__preview-banner" [snapshot]="snapshot"></app-onboarding-status-banner>
+      <div class="onboarding__preview-grid">
+        <app-onboarding-tracker [snapshot]="snapshot"></app-onboarding-tracker>
+        <app-onboarding-checklist [snapshot]="snapshot"></app-onboarding-checklist>
+      </div>
+    </section>
+  }
+
   <form [formGroup]="form" (ngSubmit)="submit()" class="onboarding__form" novalidate>
     <div class="onboarding__field">
       <label for="onboarding-name">Nombre del cliente</label>

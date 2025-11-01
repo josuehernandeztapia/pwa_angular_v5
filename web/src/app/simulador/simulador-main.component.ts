@@ -1,12 +1,19 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Renderer2, RendererFactory2 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { IconComponent } from '@shared/icon/icon.component';
 import { ChartDirective } from '@shared/chart.directive';
-import { SimuladorStore, SavedSimulation, SimulatorScenario } from './simulador.store';
+import { ChartConfiguration } from 'chart.js';
+import { DemoModeService } from '@core-services/demo-mode.service';
+import { DemoSeedService } from '@services/demo/demo-seed.service';
+import { DemoTandaService } from '@services/demo/demo-tanda.service';
+import { DemoAnalyticsService } from '@services/demo/demo-analytics.service';
+import { DemoReestructuraEngine } from '@services/demo/demo-reestructura.engine';
+import { SimuladorStore, SavedSimulation, SimulatorScenario, SimulationCharts } from './simulador.store';
+import { DemoFinanceEvent, DemoFinanceScenario } from '@services/demo/demo-scenarios';
 
 @Component({
   selector: 'app-simulador-main',
@@ -26,8 +33,39 @@ export class SimuladorMainComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly documentRef = inject(DOCUMENT);
   private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(null, null);
+  private readonly demoMode = inject(DemoModeService);
+  private readonly demoSeeds = inject(DemoSeedService);
+  private readonly demoTanda = inject(DemoTandaService);
+  private readonly demoAnalytics = inject(DemoAnalyticsService);
+  private readonly demoReestructura = inject(DemoReestructuraEngine);
 
   private readonly queryParamsSignal = toSignal(this.route.queryParams, { initialValue: {} as Params });
+  private readonly selectedDemoFinanceScenarioId = signal<string | null>(null);
+  private lastAppliedDemoScenario: string | null = null;
+  private lastTrackedScenarioId: string | null = null;
+  readonly isTandaSimulating = signal(false);
+  readonly isFinanceScenarioApplying = signal(false);
+
+  readonly isDemoMode = this.demoMode.isDemoMode;
+  readonly activeDemoScenario = this.demoMode.activeScenario;
+  readonly demoScenarioSnapshot = computed(() => {
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return null;
+    }
+    return this.demoSeeds.scenarioSnapshot(scenario);
+  });
+  readonly demoFinanceScenarioSet = computed(() => this.demoScenarioSnapshot()?.financeScenarios ?? null);
+  readonly activeDemoFinanceScenario = computed(() => {
+    const set = this.demoFinanceScenarioSet();
+    if (!set) {
+      return null;
+    }
+    const selected = this.selectedDemoFinanceScenarioId() ?? set.baseScenarioId;
+    return set.scenarios.find(option => option.id === selected) ?? set.scenarios[0] ?? null;
+  });
+  readonly demoTandaGroup = computed(() => this.demoScenarioSnapshot()?.tandaGroup ?? null);
+  readonly demoTandaSchedule = computed(() => this.demoScenarioSnapshot()?.tandaSchedule ?? this.demoScenarioSnapshot()?.tandaGroup?.deliverySchedule ?? null);
   private removeEscListener?: () => void;
   private comparisonPreviouslyFocused: HTMLElement | null = null;
 
@@ -56,13 +94,77 @@ export class SimuladorMainComponent implements OnInit {
     return this.pmtChartConfig() ?? undefined;
   }
 
-  readonly kpiData = {
+  private readonly defaultKpi = {
     ahorro: 15000,
     plazo: 24,
     pmt: 3250
   };
+  readonly kpiData = signal({ ...this.defaultKpi });
+  readonly financeEvents = computed(() => this.demoScenarioSnapshot()?.financeEvents ?? []);
+  readonly isFinanceEventProcessing = signal(false);
 
   constructor() {
+    effect(() => {
+      if (!this.isDemoMode()) {
+        this.lastAppliedDemoScenario = null;
+        this.lastTrackedScenarioId = null;
+        this.resetDemoFinanceView();
+        return;
+      }
+      const scenarioId = this.activeDemoScenario();
+      const snapshot = this.demoScenarioSnapshot();
+      if (!scenarioId || !snapshot) {
+        return;
+      }
+
+      if (this.lastTrackedScenarioId !== scenarioId) {
+        let targetScenarioId: string | null = null;
+        if (scenarioId === 'tanda-colectiva') {
+          targetScenarioId = 'tanda-colectiva';
+        } else if (scenarioId === 'finanzas-whatif') {
+          targetScenarioId = 'edomex-individual';
+        }
+        if (targetScenarioId) {
+          this.store.selectScenarioById(targetScenarioId);
+        }
+        this.lastTrackedScenarioId = scenarioId;
+      }
+
+      const activeOption = this.activeDemoFinanceScenario();
+      const trackerKey = `${scenarioId}|${activeOption?.id ?? 'default'}`;
+      if (this.lastAppliedDemoScenario !== trackerKey) {
+        this.lastAppliedDemoScenario = trackerKey;
+        this.demoAnalytics.track('scenario_active', { scenario: scenarioId, feature: 'simulador' });
+      }
+
+      const set = this.demoFinanceScenarioSet();
+      if (set) {
+        const nextId = set.baseScenarioId ?? set.scenarios[0]?.id ?? null;
+        if (this.selectedDemoFinanceScenarioId() !== nextId) {
+          this.selectedDemoFinanceScenarioId.set(nextId);
+        }
+      }
+    }, { allowSignalWrites: true });
+
+    effect(() => {
+      if (!this.isDemoMode()) {
+        return;
+      }
+      const snapshot = this.demoScenarioSnapshot();
+      const scenarioId = this.activeDemoScenario();
+      if (!scenarioId || !snapshot?.financeScenarios) {
+        return;
+      }
+
+      const activeOption = this.activeDemoFinanceScenario();
+      if (!activeOption) {
+        return;
+      }
+
+      const events = snapshot.financeEvents ?? [];
+      this.applyFinanceMetrics(activeOption, events);
+    }, { allowSignalWrites: true });
+
     effect(() => {
       const params = this.queryParamsSignal();
       this.store.handleQueryParams(params);
@@ -132,6 +234,285 @@ export class SimuladorMainComponent implements OnInit {
 
   clearSelection(): void {
     this.store.clearSelection();
+  }
+
+  resetDemoScenario(): void {
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return;
+    }
+    this.demoSeeds.resetScenario(scenario);
+    const set = this.demoFinanceScenarioSet();
+    if (set) {
+      this.selectedDemoFinanceScenarioId.set(set.baseScenarioId ?? set.scenarios[0]?.id ?? null);
+    }
+    this.demoAnalytics.track('scenario_reset', { scenario, feature: 'simulador' });
+  }
+
+  async selectDemoFinanceScenario(scenarioId: string): Promise<void> {
+    const set = this.demoFinanceScenarioSet();
+    if (!set) {
+      return;
+    }
+    const exists = set.scenarios.some(item => item.id === scenarioId);
+    const nextId = exists ? scenarioId : (set.baseScenarioId ?? null);
+    if (!nextId || this.selectedDemoFinanceScenarioId() === nextId) {
+      return;
+    }
+    this.selectedDemoFinanceScenarioId.set(nextId);
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return;
+    }
+
+    this.isFinanceScenarioApplying.set(true);
+    try {
+      await this.demoReestructura.applyScenario(nextId, { scenarioId: scenario });
+      this.demoAnalytics.track('finance_scenario_selected', { scenario, option: nextId });
+    } finally {
+      this.isFinanceScenarioApplying.set(false);
+    }
+  }
+
+  async simulateFinanceEvent(kind: 'late' | 'extra'): Promise<void> {
+    if (!this.isDemoMode() || this.isFinanceEventProcessing()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    const snapshot = this.demoScenarioSnapshot();
+    if (!scenario || !snapshot?.financeScenarios) {
+      return;
+    }
+
+    this.isFinanceEventProcessing.set(true);
+    try {
+      if (kind === 'late') {
+        await this.demoReestructura.simulateLatePayment({ scenarioId: scenario });
+      } else {
+        await this.demoReestructura.simulateExtraPayment({ scenarioId: scenario });
+      }
+      this.demoAnalytics.track('finance_event', {
+        scenario,
+        event: kind,
+        feature: 'simulador'
+      });
+    } finally {
+      this.isFinanceEventProcessing.set(false);
+    }
+  }
+
+  private applyFinanceMetrics(option: DemoFinanceScenario, events: DemoFinanceEvent[]): void {
+    const config = option.config ?? {};
+    let months = Math.max(1, Math.round(config['deliveryMonths'] ?? 12));
+    let monthly = Math.max(0, Math.round(option.pagoMensual ?? 0));
+    let downPayment = Math.max(0, Math.round((config['initialDownPayment'] ?? config['targetDownPayment'] ?? 0)));
+    const voluntary = Math.max(0, Math.round(config['voluntaryMonthly'] ?? 0));
+    let unitValue = Math.max(0, Math.round(config['unitValue'] ?? 0));
+
+    if (monthly === 0) {
+      const base = unitValue > downPayment ? unitValue - downPayment : 0;
+      monthly = months > 0 ? Math.round(base / months) : 0;
+    }
+
+    events.forEach(event => {
+      switch (event.kind) {
+        case 'late-payment':
+          monthly += Math.max(80, Math.round(monthly * 0.06));
+          months += 1;
+          break;
+        case 'extra-payment':
+          downPayment += Math.abs(event.amountDelta ?? 500);
+          monthly = Math.max(0, monthly - Math.max(60, Math.round(monthly * 0.05)));
+          months = Math.max(1, months - 1);
+          break;
+        default:
+          break;
+      }
+    });
+
+    const savingsProjection = downPayment + voluntary * months + monthly * months;
+    if (!unitValue) {
+      unitValue = savingsProjection;
+    }
+
+    this.kpiData.set({
+      ahorro: Math.max(0, Math.round(savingsProjection)),
+      plazo: months,
+      pmt: Math.max(0, Math.round(monthly))
+    });
+
+    const chartMonths = Math.max(1, Math.min(months, 12));
+    const labels = Array.from({ length: chartMonths }, (_, idx) => `Mes ${idx + 1}`);
+    const ahorroSeries = labels.map((_, idx) => {
+      const period = idx + 1;
+      return Math.max(0, Math.round(downPayment + voluntary * period + monthly * period));
+    });
+
+    const ahorroChart: ChartConfiguration<'line'> = {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Ahorro acumulado',
+            data: ahorroSeries,
+            borderColor: 'var(--accent-primary)',
+            backgroundColor: 'var(--token-surface-accent-alpha-12)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.35
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => `$${Number(value).toLocaleString('es-MX')}`
+            }
+          }
+        }
+      }
+    };
+
+    const saldoPendiente = Math.max(0, unitValue - (downPayment + monthly * months));
+    const pmtChart: ChartConfiguration<'bar'> = {
+      type: 'bar',
+      data: {
+        labels: ['Mensualidad demo', 'Enganche acumulado', 'Saldo estimado'],
+        datasets: [
+          {
+            label: 'Impacto financiero',
+            data: [Math.round(monthly), Math.round(downPayment), Math.round(saldoPendiente)],
+            backgroundColor: ['var(--accent-primary)', 'rgba(37, 99, 235, 0.45)', 'rgba(148, 163, 184, 0.65)'],
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => `$${Number(value).toLocaleString('es-MX')}`
+            }
+          }
+        }
+      }
+    };
+
+    const charts: SimulationCharts = {
+      ahorro: ahorroChart,
+      pmt: pmtChart
+    };
+    this.store.updateCharts(charts);
+  }
+
+  private resetDemoFinanceView(): void {
+    this.kpiData.set({ ...this.defaultKpi });
+    this.store.updateCharts(this.buildDefaultCharts());
+  }
+
+  private buildDefaultCharts(): SimulationCharts {
+    const ahorroChart: ChartConfiguration<'line'> = {
+      type: 'line',
+      data: {
+        labels: ['Mes 1', 'Mes 6', 'Mes 12', 'Mes 18', 'Mes 24'],
+        datasets: [
+          {
+            label: 'Ahorro acumulado',
+            data: [3250, 19500, 39000, 58500, 78000],
+            borderColor: 'var(--accent-primary)',
+            backgroundColor: 'var(--token-surface-accent-alpha-10)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => `$${Number(value).toLocaleString('es-MX')}`
+            }
+          }
+        }
+      }
+    };
+
+    const pmtChart: ChartConfiguration<'bar'> = {
+      type: 'bar',
+      data: {
+        labels: ['Año 1', 'Año 2', 'Promedio'],
+        datasets: [
+          {
+            label: 'PMT Mensual',
+            data: [3250, 3250, 3250],
+            backgroundColor: ['var(--accent-primary)', 'var(--accent-primary)', 'var(--color-success)'],
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => `$${Number(value).toLocaleString('es-MX')}`
+            }
+          }
+        }
+      }
+    };
+
+    return { ahorro: ahorroChart, pmt: pmtChart };
+  }
+
+  async simulateDemoSorteo(): Promise<void> {
+    if (this.isTandaSimulating()) {
+      return;
+    }
+    this.isTandaSimulating.set(true);
+    try {
+      await this.demoTanda.simulateSorteo();
+    } finally {
+      this.isTandaSimulating.set(false);
+    }
+  }
+
+  async markDemoPaymentMissed(memberId: string): Promise<void> {
+    if (this.isTandaSimulating()) {
+      return;
+    }
+    this.isTandaSimulating.set(true);
+    try {
+      await this.demoTanda.markPaymentMissed(memberId);
+    } finally {
+      this.isTandaSimulating.set(false);
+    }
   }
 
   compareSelectedSimulations(): void {

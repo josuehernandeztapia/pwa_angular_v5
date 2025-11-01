@@ -12,7 +12,12 @@ class TrackerStub {
 
 class FlowContextStub {
   setBreadcrumbs = jasmine.createSpy('setBreadcrumbs');
-  getContextData = jasmine.createSpy('getContextData').and.returnValue(null);
+  private readonly contextStore: Record<string, unknown> = {
+    client: { clientId: 'CL-001' },
+    cotizador: { clientId: 'CL-001' }
+  };
+
+  getContextData = jasmine.createSpy('getContextData').and.callFake((key: string) => this.contextStore[key] ?? null);
 }
 
 function buildStatus(): IntegratedImportStatus {
@@ -61,7 +66,7 @@ describe('IntegrationComponent', () => {
     fixture.detectChanges();
 
     expect(tracker.getIntegratedImportStatus).toHaveBeenCalledWith('CL-001');
-    const nextAction = fixture.nativeElement.querySelector('.integration__meta dd:last-child');
+    const nextAction = fixture.nativeElement.querySelector('.integration__meta div:last-child dd');
     expect(nextAction?.textContent?.trim()).toContain('Coordinación de entrega');
   });
 

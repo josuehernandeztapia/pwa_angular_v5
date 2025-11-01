@@ -1,0 +1,116 @@
+<section class="demo-kyc" *ngIf="scenarioState() as scenario; else missingScenario" aria-labelledby="demo-kyc-title">
+  <header class="demo-kyc__banner" role="status">
+    <div class="demo-kyc__banner-meta">
+      <app-icon name="shield-check" [size]="24" aria-hidden="true"></app-icon>
+      <div>
+        <p class="demo-kyc__banner-title" id="demo-kyc-title">Modo DEMO · Flujo KYC activo</p>
+        <p class="demo-kyc__banner-subtitle">{{ bannerMessage() }}</p>
+      </div>
+    </div>
+    <button type="button" class="demo-kyc__reset" (click)="resetTest()" data-cy="demo-kyc-reset">
+      Reiniciar Test KYC
+    </button>
+  </header>
+
+  <section class="demo-kyc__context" aria-label="Contexto demo">
+    <div>
+      <span class="demo-kyc__context-label">Cliente</span>
+      <strong>{{ scenario.client?.name || 'Cliente demo KYC' }}</strong>
+    </div>
+    <div>
+      <span class="demo-kyc__context-label">Documentos demo</span>
+      <strong>{{ documents().length }}</strong>
+    </div>
+    <div>
+      <span class="demo-kyc__context-label">Estado</span>
+      <strong>{{ hasFraudFlag() ? 'Alertas activas' : (isCompleted() ? 'Completado' : 'En progreso') }}</strong>
+    </div>
+  </section>
+
+  <app-stepper
+    class="demo-kyc__stepper"
+    [steps]="steps"
+    [currentStepIndex]="currentStepIndex()"
+    [allowNavigation]="false"
+  ></app-stepper>
+
+  <section class="demo-kyc__stage" [attr.data-step]="currentStepId()">
+    <ng-container [ngSwitch]="currentStepId()">
+      <section *ngSwitchCase="'contexto'" class="demo-kyc__card" aria-live="polite">
+        <h2>Checklist de preparación</h2>
+        <ul>
+          <li>Verifica que INE y comprobante estén aprobados en el seed demo.</li>
+          <li>Confirma que el botón de verificación se ejecute en modo demo.</li>
+          <li>Usa la opción "Preparar cargas demo" para iniciar el flujo.</li>
+        </ul>
+        <button type="button" class="demo-kyc__primary" (click)="prepareUploads()">
+          Preparar cargas demo
+        </button>
+      </section>
+
+      <section *ngSwitchCase="'biometria'" class="demo-kyc__card">
+        <h2>Simulación biométrica</h2>
+        <p>Selecciona el resultado demo para continuar con el flujo:</p>
+        <div class="demo-kyc__actions">
+          <button type="button" class="demo-kyc__success" (click)="simulateBiometricSuccess()">
+            Verificación exitosa
+          </button>
+          <button type="button" class="demo-kyc__warning" (click)="simulateBiometricAlert()">
+            Generar alerta demo
+          </button>
+        </div>
+        <div class="demo-kyc__docs">
+          <h3>Documentos</h3>
+          <ul>
+            <li *ngFor="let doc of documents()">
+              <span>
+                <strong>{{ doc.name }}</strong>
+                <small *ngIf="doc.tooltip"> · {{ doc.tooltip }}</small>
+              </span>
+              <span class="demo-kyc__badge" [attr.data-status]="doc.status">{{ getStatusLabel(doc.status) }}</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section *ngSwitchCase="'cierre'" class="demo-kyc__card demo-kyc__summary" role="status">
+        <h2>Resumen del flujo demo KYC</h2>
+        <p *ngIf="isCompleted(); else pendingCompletion">Test KYC demo completado</p>
+        <div class="demo-kyc__log">
+          <h3>Eventos recientes</h3>
+          <ul>
+            <li *ngFor="let entry of events()">
+              <span class="demo-kyc__log-icon" [attr.data-kind]="entry.kind"></span>
+              <div>
+                <p>{{ entry.label }}</p>
+                <small>{{ entry.timestamp | date:'shortTime' }}</small>
+              </div>
+            </li>
+          </ul>
+          <p *ngIf="!events().length" class="demo-kyc__log-empty">Ejecuta acciones demo para ver telemetría.</p>
+        </div>
+      </section>
+    </ng-container>
+  </section>
+
+  <app-demo-error-banner
+    *ngIf="hasFraudFlag()"
+    class="demo-kyc__issues"
+    title="Alertas demo detectadas"
+    description="Se detectaron señales de fraude en la verificación demo. Usa Autocorregir para simular una revisión exitosa."
+    actionLabel="Autocorregir"
+    (resolve)="resolveAlerts()"
+  ></app-demo-error-banner>
+</section>
+
+<ng-template #pendingCompletion>
+  <p>Resuelve el resultado biométrico para completar el test KYC.</p>
+</ng-template>
+
+<ng-template #missingScenario>
+  <section class="demo-kyc__empty" role="alert">
+    <app-icon name="alert-triangle" [size]="24" aria-hidden="true"></app-icon>
+    <p>No se encontró el seed demo para KYC. Usa el atajo del sidebar para reactivarlo.</p>
+    <button type="button" class="demo-kyc__reset" (click)="resetTest()">Reintentar</button>
+  </section>
+</ng-template>

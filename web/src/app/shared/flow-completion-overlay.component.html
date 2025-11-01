@@ -1,0 +1,79 @@
+<div
+  *ngIf="state()"
+  class="flow-completion-overlay"
+  [attr.aria-label]="state()?.title"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="flow-completion-overlay__backdrop" (click)="onBackdropClick()"></div>
+
+  <div class="flow-completion-overlay__content">
+    <header class="flow-completion-overlay__header">
+      <h2 class="flow-completion-overlay__title">{{ state()?.title }}</h2>
+      <button
+        *ngIf="state()?.dismissible"
+        type="button"
+        class="flow-completion-overlay__close"
+        (click)="close()"
+        aria-label="Cerrar"
+      >
+        <app-icon name="x" [size]="20" aria-hidden="true"></app-icon>
+      </button>
+    </header>
+
+    <div class="flow-completion-overlay__body">
+      <p *ngIf="state()?.description" class="flow-completion-overlay__description">
+        {{ state()?.description }}
+      </p>
+
+      <div *ngIf="state()?.metrics?.length" class="flow-completion-overlay__metrics">
+        <h3 class="flow-completion-overlay__metrics-title">Resumen</h3>
+        <dl class="flow-completion-overlay__metrics-list">
+          <div
+            *ngFor="let metric of state()?.metrics; trackBy: trackMetric"
+            class="flow-completion-overlay__metric"
+          >
+            <dt class="flow-completion-overlay__metric-label">{{ metric.label }}</dt>
+            <dd class="flow-completion-overlay__metric-value">
+              {{ metric.value }}
+              <span
+                *ngIf="metric.badge"
+                class="flow-completion-overlay__metric-badge"
+                [attr.data-badge]="metric.badge"
+              >
+                {{ metric.badge }}
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div *ngIf="state()?.nextSteps?.length" class="flow-completion-overlay__next-steps">
+        <h3 class="flow-completion-overlay__next-steps-title">Próximos pasos</h3>
+        <ul class="flow-completion-overlay__next-steps-list">
+          <li
+            *ngFor="let step of state()?.nextSteps; trackBy: trackStep"
+            class="flow-completion-overlay__next-step"
+          >
+            {{ step }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="flow-completion-overlay__footer">
+      <div class="flow-completion-overlay__actions">
+        <button
+          *ngFor="let action of state()?.actions; trackBy: trackAction"
+          type="button"
+          class="flow-completion-overlay__action"
+          [attr.data-kind]="action.kind || 'secondary'"
+          (click)="executeAction(action)"
+          [disabled]="isExecuting"
+        >
+          {{ action.label }}
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>

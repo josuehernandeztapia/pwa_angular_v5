@@ -5,9 +5,16 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, filter } from 'rxjs';
 import { FlowContextService } from '@core-services/flow-context.service';
+import { FlowCompletionService } from '@core-services/flow-completion.service';
 import { IconComponent } from '@shared/icon/icon.component';
 import { FormFieldComponent } from '@shared/form-field.component';
+import { PolicyHintPipe } from '@shared/policy-hint.pipe';
 import { MarketPolicyService, PolicyClientType, PolicyMarket } from '@feature-services/configuration/market-policy.service';
+import { EntitySyncService } from '@core-services/entity-sync.service';
+import { ToastService } from '@core-services/toast.service';
+import { BusinessFlow } from '@interfaces/types';
+import { GlobalSearchService } from '@core-services/global-search.service';
+import { NavigationService } from '@core-services/navigation.service';
 
 interface OpportunityStep {
   id: number;
@@ -43,7 +50,7 @@ interface FlowOption {
 @Component({
   selector: 'app-nueva-oportunidad',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IconComponent, FormFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, IconComponent, FormFieldComponent, PolicyHintPipe],
   templateUrl: './nueva-oportunidad.component.html',
   styleUrls: ['./nueva-oportunidad.component.scss']
 })
@@ -52,8 +59,13 @@ export class NuevaOportunidadComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly flowContext = inject(FlowContextService);
+  private readonly completion = inject(FlowCompletionService);
+  private readonly entitySync = inject(EntitySyncService);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly marketPolicy = inject(MarketPolicyService, { optional: true });
+  private readonly globalSearch = inject(GlobalSearchService);
+  private readonly navigation = inject(NavigationService);
 
   readonly steps: OpportunityStep[] = [
     {
@@ -96,6 +108,26 @@ export class NuevaOportunidadComponent implements OnInit {
 
   private readonly incomeRequiredSignal = signal(true);
   readonly isIncomeRequired = this.incomeRequiredSignal.asReadonly();
+  readonly policyContext = computed(() => {
+    const { market, flow, clientType } = this.opportunityForm.getRawValue();
+    const resolvedMarket = (market as PolicyMarket) ?? 'aguascalientes';
+    const resolvedClientType = (clientType as ClientType) ?? 'individual';
+    const resolvedFlow = flow ?? 'venta_plazo';
+    const businessFlow = this.resolveBusinessFlow(resolvedFlow);
+    const saleType: 'contado' | 'financiero' = resolvedFlow === 'venta_directa' ? 'contado' : 'financiero';
+
+    return {
+      market: resolvedMarket,
+      clientType: resolvedClientType,
+      saleType,
+      businessFlow
+    };
+  });
+
+  readonly isCollectiveFlow = computed(() => {
+    const { clientType, flow } = this.opportunityForm.getRawValue();
+    return clientType === 'colectivo' || flow === 'credito_colectivo';
+  });
 
   private readonly FLOW_LABELS: Record<FlowValue, string> = {
     venta_plazo: 'Venta a plazo',
@@ -202,7 +234,7 @@ export class NuevaOportunidadComponent implements OnInit {
     this.goToStep(this.activeStep() - 1);
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
     this.showValidationErrors.set(true);
     if (this.opportunityForm.invalid) {
       this.opportunityForm.markAllAsTouched();
@@ -217,15 +249,98 @@ export class NuevaOportunidadComponent implements OnInit {
       persist: true
     });
 
-    this.router.navigate(['/documentos'], {
+    try {
+      const syncResult = await this.entitySync.recordOpportunityCreation({
+        clientName: draft.clientName,
+        market: this.normalizePolicyMarket(draft.market),
+        businessFlow: this.mapFlowToBusinessFlow(draft.flow),
+        includeProtection: draft.includeProtection
+      });
+
+      const nextSteps = [
+        'Carga los documentos obligatorios para activar la oportunidad.',
+        'Agenda la entrevista AVI cuando los requisitos estén completos.'
+      ];
+
+      this.isSubmitting.set(false);
+
+      this.completion.open({
+        title: 'Oportunidad creada',
+        description: 'Revisa el expediente del cliente y continúa con documentos y validaciones pendientes.',
+        metrics: syncResult.metrics,
+        nextSteps,
+        actions: [
+          {
+            id: 'go-documents',
+            label: 'Ir a Documentos',
+            kind: 'primary',
+            execute: () => this.navigateToDocuments(draft, syncResult.clientId)
+          },
+          {
+            id: 'new-opportunity',
+            label: 'Registrar otra oportunidad',
+            kind: 'secondary',
+            execute: () => {
+              this.resetFormForNewOpportunity();
+            }
+          }
+        ],
+        breadcrumbs: ['Dashboard', 'Nueva oportunidad', 'Resumen'],
+        onComplete: () => {
+          this.globalSearch.refreshIndex(draft.clientName);
+          this.navigation.refreshQuickActions();
+        }
+      });
+    } catch (error) {
+      console.error('[NuevaOportunidad] No se pudo sincronizar la nueva oportunidad', error);
+      this.toast.error('No se pudo registrar la oportunidad. Intenta de nuevo.');
+      this.isSubmitting.set(false);
+    }
+  }
+
+  navigateToDocuments(draft: OpportunityDraft, clientId?: string): Promise<boolean> {
+    return this.router.navigate(['/documentos'], {
       queryParams: {
         source: 'nueva-oportunidad',
         market: draft.market,
         clientType: draft.clientType,
         businessFlow: draft.flow,
-        includeProtection: draft.includeProtection
+        includeProtection: draft.includeProtection,
+        clientId
       }
     });
+  }
+
+  resetFormForNewOpportunity(): void {
+    this.opportunityForm.reset({
+      market: 'aguascalientes',
+      flow: 'venta_plazo',
+      clientType: 'individual',
+      clientName: '',
+      monthlyIncome: null,
+      voluntaryContribution: null,
+      includeProtection: true,
+      notes: ''
+    });
+
+    this.showValidationErrors.set(false);
+    this.activeStep.set(0);
+    this.syncClientTypeOptions('aguascalientes');
+    this.syncFlowOptions();
+    this.flowContext.clearContext('newOpportunityDraft');
+  }
+
+  mapFlowToBusinessFlow(flow: FlowValue): BusinessFlow {
+    switch (flow) {
+      case 'venta_directa':
+        return BusinessFlow.VentaDirecta;
+      case 'ahorro_programado':
+        return BusinessFlow.AhorroProgramado;
+      case 'credito_colectivo':
+        return BusinessFlow.CreditoColectivo;
+      default:
+        return BusinessFlow.VentaPlazo;
+    }
   }
 
   trackStep(_: number, step: OpportunityStep): number {
@@ -446,6 +561,19 @@ export class NuevaOportunidadComponent implements OnInit {
       return 'edomex';
     }
     return 'otros';
+  }
+
+  private resolveBusinessFlow(flow: FlowValue): BusinessFlow {
+    switch (flow) {
+      case 'venta_directa':
+        return BusinessFlow.VentaDirecta;
+      case 'ahorro_programado':
+        return BusinessFlow.AhorroProgramado;
+      case 'credito_colectivo':
+        return BusinessFlow.CreditoColectivo;
+      default:
+        return BusinessFlow.VentaPlazo;
+    }
   }
 
   private sanitize(input: string): string {

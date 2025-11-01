@@ -12,6 +12,8 @@ import {
 } from '@interfaces/protection';
 import { ProtectionService } from '@feature-services/risk/protection.service';
 import { ProtectionWorkflowService } from './protection-workflow.service';
+import { ProtectionApiService } from '@data-access/protection/protection-api.service';
+import { environment } from '@environments/environment';
 
 class ToastServiceStub {
   success = jasmine.createSpy('success');
@@ -92,15 +94,19 @@ describe('ProtectionWorkflowService', () => {
   let service: ProtectionWorkflowService;
   let protectionStub: ProtectionServiceStub;
   let toastStub: ToastServiceStub;
+  let originalMockFlag: boolean;
 
   beforeEach(() => {
     protectionStub = new ProtectionServiceStub();
     toastStub = new ToastServiceStub();
+    originalMockFlag = environment.features.enableMockData;
+    environment.features.enableMockData = false;
 
     TestBed.configureTestingModule({
       providers: [
         ProtectionWorkflowService,
         { provide: ProtectionService, useValue: protectionStub },
+        { provide: ProtectionApiService, useValue: null },
         { provide: ToastService, useValue: toastStub },
         { provide: AnalyticsService, useClass: AnalyticsServiceStub },
         { provide: MonitoringService, useClass: MonitoringServiceStub },
@@ -109,6 +115,10 @@ describe('ProtectionWorkflowService', () => {
     });
 
     service = TestBed.inject(ProtectionWorkflowService);
+  });
+
+  afterEach(() => {
+    environment.features.enableMockData = originalMockFlag;
   });
 
   it('loads protection plan and exposes it through signal', () => {

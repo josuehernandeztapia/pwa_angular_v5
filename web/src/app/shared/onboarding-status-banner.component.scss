@@ -1,0 +1,140 @@
+.onboarding-status-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f8f9fa;
+}
+
+.onboarding-status-banner--success {
+  background: rgba(43, 138, 62, 0.12);
+  border-color: rgba(43, 138, 62, 0.2);
+}
+
+.onboarding-status-banner--warning {
+  background: rgba(197, 57, 41, 0.12);
+  border-color: rgba(197, 57, 41, 0.2);
+}
+
+.onboarding-status-banner__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a73e8;
+  color: #fff;
+}
+
+.onboarding-status-banner--success .onboarding-status-banner__icon {
+  background: #2b8a3e;
+}
+
+.onboarding-status-banner--warning .onboarding-status-banner__icon {
+  background: #c53929;
+}
+
+.onboarding-status-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboarding-status-banner__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onboarding-status-banner__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.onboarding-status-banner__counter {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a73e8;
+}
+
+.onboarding-status-banner--success .onboarding-status-banner__counter {
+  color: #2b8a3e;
+}
+
+.onboarding-status-banner--warning .onboarding-status-banner__counter {
+  color: #c53929;
+}
+
+.onboarding-status-banner__description {
+  margin: 0;
+  font-size: 13px;
+  color: #3c4043;
+}
+
+.onboarding-status-banner__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboarding-status-banner__chip {
+  background: rgba(26, 115, 232, 0.12);
+  color: #1a73e8;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.onboarding-status-banner--success .onboarding-status-banner__chip {
+  background: rgba(43, 138, 62, 0.12);
+  color: #2b8a3e;
+}
+
+.onboarding-status-banner--warning .onboarding-status-banner__chip {
+  background: rgba(197, 57, 41, 0.12);
+  color: #c53929;
+}
+
+.onboarding-status-banner__helper {
+  margin: 0;
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.onboarding-status-banner__link {
+  font-size: 12px;
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.onboarding-status-banner__link:hover,
+.onboarding-status-banner__link:focus {
+  text-decoration: underline;
+}
+
+.onboarding-status-banner__metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  color: #5f6368;
+}
+
+@media (max-width: 720px) {
+  .onboarding-status-banner {
+    grid-template-columns: auto 1fr;
+  }
+
+  .onboarding-status-banner__metrics {
+    grid-column: span 2;
+    align-items: flex-start;
+  }
+}

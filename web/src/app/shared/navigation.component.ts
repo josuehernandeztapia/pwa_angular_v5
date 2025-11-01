@@ -10,6 +10,9 @@ import { NavigationService, ShellNavigationItem } from '@core-services/navigatio
 import { NotificationCenterComponent } from '@shared/notification-center.component';
 import { IconComponent } from '@shared/icon/icon.component';
 import { IconName } from '@shared/icon/icon-definitions';
+import { DemoModeService } from '@core-services/demo-mode.service';
+import { DemoAnalyticsService } from '@services/demo/demo-analytics.service';
+import { DemoScenarioId } from '@services/demo/demo-scenarios';
 
 interface NavigationItem {
   label: string;
@@ -17,7 +20,10 @@ interface NavigationItem {
   iconType: IconName;
   badge?: number;
   dataCy?: string;
+  queryParams?: Record<string, any>;
   children?: NavigationItem[];
+  demoScenario?: DemoScenarioId;
+  tooltip?: string;
 }
 
 @Component({
@@ -46,6 +52,7 @@ export class NavigationComponent implements OnInit {
   navigationItems: NavigationItem[] = [];
   private baseNavigationItems: ShellNavigationItem[] = [];
   private offlinePendingCount = 0;
+  private documentsPendingCount = 0;
 
   constructor(
     private router: Router,
@@ -55,11 +62,13 @@ export class NavigationComponent implements OnInit {
     private readonly destroyRef: DestroyRef,
     @Inject(DOCUMENT) documentRef: Document,
     @Inject(PLATFORM_ID) platformId: Object,
-    @Optional() private readonly flowContext: FlowContextService | null
+    @Optional() private readonly flowContext: FlowContextService | null,
+    private readonly demoMode: DemoModeService,
+    private readonly demoAnalytics: DemoAnalyticsService
   ) {
     this.unreadCount$ = this.notificationService.getUnreadCount();
     this.baseNavigationItems = this.navigationService.getShellNavigationItems();
-    this.updateNavigationItems(0);
+    this.updateNavigationItems();
     this.isBrowser = isPlatformBrowser(platformId);
     this.windowRef = this.isBrowser ? (documentRef.defaultView as any) : null;
   }
@@ -73,8 +82,7 @@ export class NavigationComponent implements OnInit {
 
   getNavItemClasses(item: NavigationItem): Record<string, boolean> {
     return {
-      'is-active': this.isActive(item.route),
-      'app-nav__item--has-children': !!item.children?.length,
+      'app-nav__item-group--has-children': !!item.children?.length,
     };
   }
 
@@ -93,19 +101,37 @@ export class NavigationComponent implements OnInit {
     this.fontScale = this.userPrefs.getFontScale();
     this.highContrast = this.userPrefs.getHighContrast();
 
+    this.demoMode.isDemoMode$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateNavigationItems());
+
     if (this.flowContext) {
       this.flowContext.contexts$
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(entries => {
           const offlineEntry = entries.find(entry => entry.key === 'offlineQueue');
-          const pending = typeof offlineEntry?.data?.pending === 'number' ? offlineEntry.data.pending : 0;
-          if (pending !== this.offlinePendingCount) {
-            this.offlinePendingCount = pending;
-            this.updateNavigationItems(pending);
+          const offlinePending = typeof offlineEntry?.data?.pending === 'number' ? offlineEntry.data.pending : 0;
+          const documentsEntry = entries.find(entry => entry.key === 'documents-progress');
+          const documentsPending = typeof documentsEntry?.data?.pending === 'number' ? documentsEntry.data.pending : 0;
+
+          let shouldUpdate = false;
+
+          if (offlinePending !== this.offlinePendingCount) {
+            this.offlinePendingCount = offlinePending;
+            shouldUpdate = true;
+          }
+
+          if (documentsPending !== this.documentsPendingCount) {
+            this.documentsPendingCount = documentsPending;
+            shouldUpdate = true;
+          }
+
+          if (shouldUpdate) {
+            this.updateNavigationItems();
           }
         });
     } else {
-      this.updateNavigationItems(this.offlinePendingCount);
+      this.updateNavigationItems();
     }
   }
 
@@ -140,20 +166,66 @@ export class NavigationComponent implements OnInit {
     this.showMobileMenu = false;
   }
 
-  private updateNavigationItems(pending: number): void {
-    this.navigationItems = this.baseNavigationItems.map(item => this.decorateNavigationItem(item, pending));
+  private updateNavigationItems(): void {
+    let items = this.baseNavigationItems.map(item => this.decorateNavigationItem(item));
+
+    if (this.demoMode.isDemoMode()) {
+      const demoShortcuts = this.buildDemoShortcuts();
+      if (demoShortcuts.length) {
+        const insertIndex = items.findIndex(item => item.route === '/simulador');
+        const position = insertIndex >= 0 ? insertIndex + 1 : items.length;
+        items = [
+          ...items.slice(0, position),
+          ...demoShortcuts,
+          ...items.slice(position)
+        ];
+      }
+    }
+
+    this.navigationItems = items;
   }
 
-  private decorateNavigationItem(item: ShellNavigationItem, pending: number): NavigationItem {
-    const badge = item.route === '/documentos' && pending > 0 ? pending : item.badge;
+  private decorateNavigationItem(item: ShellNavigationItem): NavigationItem {
+    let badge = item.badge;
+
+    if (item.route === '/documentos') {
+      const combined = Math.max(this.documentsPendingCount, this.offlinePendingCount);
+      badge = combined > 0 ? combined : undefined;
+    }
+
     return {
       label: item.label,
       route: item.route,
       iconType: item.iconType,
       dataCy: item.dataCy,
       badge,
-      children: item.children ? item.children.map(child => this.decorateNavigationItem(child, pending)) : undefined
+      queryParams: item.queryParams,
+      children: item.children ? item.children.map(child => this.decorateNavigationItem(child)) : undefined,
+      tooltip: item.tooltip
     };
+  }
+
+  private buildDemoShortcuts(): NavigationItem[] {
+    return [
+      {
+        label: 'AVI Test',
+        route: '/documentos',
+        iconType: 'microphone',
+        dataCy: 'nav-demo-avi-test',
+        tooltip: 'Simula y prueba el flujo demo de AVI en un solo click',
+        queryParams: { enableDemo: 'true', demo: 'avi-perfecto', source: 'avi-test' },
+        demoScenario: 'avi-perfecto'
+      },
+      {
+        label: 'KYC Test',
+        route: '/documentos',
+        iconType: 'shield-check',
+        dataCy: 'nav-demo-kyc-test',
+        tooltip: 'Simula y prueba el flujo demo de KYC en un solo click',
+        queryParams: { enableDemo: 'true', demo: 'errores-documentos', source: 'kyc-test' },
+        demoScenario: 'errores-documentos'
+      }
+    ];
   }
 
   toggleNotifications() {
@@ -173,25 +245,62 @@ export class NavigationComponent implements OnInit {
       this.router.navigate([item.route]);
       return;
     }
-    
-    this.router.navigate([item.route]);
+
+    if (item.demoScenario) {
+      this.demoMode.enableDemoMode();
+      this.demoMode.setScenario(item.demoScenario);
+      const eventName = item.demoScenario === 'avi-perfecto' ? 'demo_avi_shortcut' : 'demo_kyc_shortcut';
+      this.demoAnalytics.track(eventName, {
+        scenario: item.demoScenario,
+        route: item.route,
+        source: 'sidebar'
+      });
+    }
+
+    const extras = item.queryParams ? { queryParams: item.queryParams } : undefined;
+    this.router.navigate([item.route], extras);
     
     if (this.isMobileView) {
       this.closeMobileMenu();
     }
   }
 
-  getNavTestId(route: string): string {
+  getNavTestId(route: string, queryParams?: Record<string, any>): string {
     if (!route) {
       return 'nav-item-root';
     }
     const trimmed = route.startsWith('/') ? route.slice(1) : route;
     const normalized = trimmed.split('/').filter(Boolean).join('-') || 'root';
-    return `nav-item-${normalized}`;
+    if (!queryParams || Object.keys(queryParams).length === 0) {
+      return `nav-item-${normalized}`;
+    }
+
+    const querySuffix = Object.entries(queryParams)
+      .map(([key, value]) => `${key}-${String(value)}`)
+      .join('-')
+      .replace(/[^a-zA-Z0-9-]/g, '');
+
+    return `nav-item-${normalized}-${querySuffix}`;
   }
 
-  isActive(route: string): boolean {
-    return this.router.url === route || this.router.url.startsWith(route + '/');
+  isActive(route: string, queryParams?: Record<string, any>): boolean {
+    const currentUrl = this.router.url;
+    if (!currentUrl) {
+      return false;
+    }
+
+    const [currentPath, queryString] = currentUrl.split('?');
+
+    if (queryParams && Object.keys(queryParams).length > 0) {
+      if (currentPath !== route) {
+        return false;
+      }
+
+      const params = new URLSearchParams(queryString ?? '');
+      return Object.entries(queryParams).every(([key, value]) => params.get(key) === String(value));
+    }
+
+    return currentPath === route || currentUrl.startsWith(route + '/') || currentUrl.startsWith(route + '?');
   }
 
   showHelp() {

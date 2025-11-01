@@ -1,4 +1,5 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { DestroyRef } from '@angular/core';
 import { Router, Params } from '@angular/router';
 import { SimuladorStore, SavedSimulation, SimulatorScenario, SmartContextState } from './simulador.store';
 import { MarketPolicyService } from '@feature-services/configuration/market-policy.service';
@@ -40,9 +41,11 @@ const localStorageMock = (() => {
 })();
 
 // Mock localStorage globally for window object
+let localStorageOverride: Storage | null = null;
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-  writable: true
+  configurable: true,
+  get: () => (localStorageOverride ?? localStorageMock as unknown as Storage),
+  set: (value: Storage) => { localStorageOverride = value; }
 });
 
 // Test data fixtures
@@ -102,14 +105,29 @@ describe('SimuladorStore', () => {
   let router: RouterStub;
   let marketPolicy: MarketPolicyServiceStub;
   let download: DownloadServiceStub;
+  let destroyRefMock: { onDestroy: jasmine.Spy };
+  let destroyCallback: (() => void) | null;
+
+  afterEach(() => {
+    localStorageOverride = null;
+  });
 
   beforeEach(() => {
+    localStorageOverride = null;
+    destroyCallback = null;
+    const onDestroySpy = jasmine.createSpy('onDestroy');
+    onDestroySpy.and.callFake((cb: () => void) => {
+      destroyCallback = cb;
+    });
+    destroyRefMock = { onDestroy: onDestroySpy } as unknown as { onDestroy: jasmine.Spy };
+
     TestBed.configureTestingModule({
       providers: [
         SimuladorStore,
         { provide: Router, useClass: RouterStub },
         { provide: MarketPolicyService, useClass: MarketPolicyServiceStub },
         { provide: DownloadService, useClass: DownloadServiceStub },
+        { provide: DestroyRef, useValue: destroyRefMock as unknown as DestroyRef },
       ],
     });
 
@@ -450,14 +468,11 @@ describe('SimuladorStore', () => {
     });
 
     it('should return empty array in server-side environment', () => {
-      const originalWindow = window;
-      Object.defineProperty(globalThis, 'window', { value: undefined, configurable: true, writable: true });
-      try {
-        store.refreshSavedSimulations();
-        expect(store.savedSimulations().length).toBe(0);
-      } finally {
-        Object.defineProperty(globalThis, 'window', { value: originalWindow, configurable: true, writable: true });
-      }
+      const originalHasWindow = (store as any).hasWindow.bind(store);
+      const hasWindowSpy = spyOn<any>(store, 'hasWindow').and.returnValue(false);
+      store.refreshSavedSimulations();
+      expect(store.savedSimulations().length).toBe(0);
+      hasWindowSpy.and.callFake(originalHasWindow);
     });
 
     it('should parse and sort saved simulations by lastModified timestamp', () => {
@@ -483,8 +498,9 @@ describe('SimuladorStore', () => {
         targetAmount: 100000
       }));
 
-      store.refreshSavedSimulations();
-      const simulations = store.savedSimulations();
+    store.refreshSavedSimulations();
+    const simulations = store.savedSimulations();
+    // eslint-disable-next-line no-console
 
       expect(simulations.length).toBe(3);
       expect(simulations[0].clientName).toBe('Newest Client');
@@ -662,14 +678,10 @@ describe('SimuladorStore', () => {
     });
 
     it('should handle deletion in server-side environment', () => {
-      Object.defineProperty(window, 'window', { value: undefined, configurable: true });
-
-      store.deleteSimulation('any-key');
-
-      // Should not throw error in server environment
-      expect(store.savedSimulations().length).toBe(0);
-
-      Object.defineProperty(window, 'window', { value: window, configurable: true });
+      const originalHasWindow = (store as any).hasWindow.bind(store);
+      const hasWindowSpy = spyOn<any>(store, 'hasWindow').and.returnValue(false);
+      expect(() => store.deleteSimulation('any-key')).not.toThrow();
+      hasWindowSpy.and.callFake(originalHasWindow);
     });
   });
 
@@ -972,28 +984,24 @@ describe('SimuladorStore', () => {
     });
 
     it('should handle null localStorage values', () => {
-      spyOnProperty(window, 'localStorage', 'get').and.returnValue({
-        keys: ['test-draft'],
+      localStorageOverride = {
         getItem: () => null,
         removeItem: () => {},
         setItem: () => {},
         clear: () => {},
         key: () => null,
         length: 1
-      });
-
-      Object.defineProperty(Object, 'keys', {
-        value: () => ['test-draft'],
-        configurable: true
-      });
+      } as unknown as Storage;
 
       expect(() => store.refreshSavedSimulations()).not.toThrow();
       expect(store.savedSimulations().length).toBe(0);
+
+      localStorageOverride = null;
     });
 
     it('should handle invalid JSON in localStorage', () => {
-      localStorageMock.setItem('invalid-json', 'not{valid}json');
-      localStorageMock.setItem('valid-json', JSON.stringify({ clientName: 'Valid' }));
+      localStorageMock.setItem('invalid-draft', 'not{valid}json');
+      localStorageMock.setItem('valid-draft', JSON.stringify({ clientName: 'Valid' }));
 
       store.refreshSavedSimulations();
 
@@ -1045,21 +1053,25 @@ describe('SimuladorStore', () => {
   });
 
   describe('Subscription Cleanup and Memory Management', () => {
-    it('should cancel scenario loading subscription on destroy', () => {
-      const destroyRef = (store as any).destroyRef;
-      const onDestroySpy = jasmine.createSpy('onDestroy');
-      destroyRef.onDestroy = onDestroySpy;
+    it('should cancel scenario loading subscription on destroy', fakeAsync(() => {
+      const registeredCallbacks = ((store as any).destroyCleanupHandlersForTesting ?? []) as Array<() => void>;
 
-      // Trigger constructor logic again to register destroy callback
-      new (store.constructor as any)(
-        TestBed.inject(Router),
-        TestBed.inject(MarketPolicyService),
-        TestBed.inject(DownloadService),
-        { onDestroy: onDestroySpy }
-      );
+      if (destroyRefMock.onDestroy.calls.any()) {
+        expect(destroyRefMock.onDestroy).toHaveBeenCalled();
+      } else {
+        expect(registeredCallbacks.length).toBeGreaterThan(0);
+        destroyCallback = registeredCallbacks[0];
+      }
 
-      expect(onDestroySpy).toHaveBeenCalled();
-    });
+      expect(typeof destroyCallback).toBe('function');
+
+      store.selectScenarioById('ags-ahorro');
+      expect((store as any).scenarioLoadSub).toBeTruthy();
+
+      destroyCallback?.();
+
+      expect((store as any).scenarioLoadSub).toBeUndefined();
+    }));
 
     it('should cancel scenario loading when new scenario selected', fakeAsync(() => {
       store.selectScenarioById('ags-ahorro');

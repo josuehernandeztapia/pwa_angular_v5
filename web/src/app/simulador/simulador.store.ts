@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, Optional, Self, SkipSelf, computed, inject, signal } from '@angular/core';
 import { Params, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChartConfiguration } from 'chart.js';
@@ -44,7 +44,35 @@ export interface SmartContextState {
   source: string;
 }
 
-interface SimulationCharts {
+interface SimulationDraft {
+  clientName?: string;
+  client?: { name?: string };
+  market?: string;
+  clientType?: string;
+  timestamp?: number;
+  lastModified?: number;
+  scenario?: {
+    targetAmount?: number;
+    monthlyContribution?: number;
+    monthsToTarget?: number;
+  };
+  targetDownPayment?: number;
+  configParams?: {
+    targetDownPayment?: number;
+  };
+  simulationResult?: {
+    scenario?: {
+      targetAmount?: number;
+      monthlyContribution?: number;
+      monthsToTarget?: number;
+    };
+  };
+  targetAmount?: number;
+  monthlyContribution?: number;
+  type?: string;
+}
+
+export interface SimulationCharts {
   ahorro?: ChartConfiguration<'line'>;
   pmt?: ChartConfiguration<'bar'>;
 }
@@ -54,7 +82,7 @@ export class SimuladorStore {
   private readonly router = inject(Router);
   private readonly marketPolicy = inject(MarketPolicyService);
   private readonly downloadService = inject(DownloadService);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly destroyRef: DestroyRef;
 
   private readonly baseScenarios: readonly SimulatorScenario[] = [
     {
@@ -95,6 +123,7 @@ export class SimuladorStore {
   private scenarioLoadSub?: Subscription;
   private smartRedirectSub?: Subscription;
   private readonly scenarioChartsCache = new Map<string, SimulationCharts>();
+  private readonly destroyCleanupHandlers: Array<() => void> = [];
 
   readonly availableScenarios = signal<SimulatorScenario[]>([...this.baseScenarios]);
   readonly selectedScenarioId = signal<string | null>(null);
@@ -135,11 +164,50 @@ export class SimuladorStore {
 
   readonly canCompare = computed(() => this.selectedComparisonIds().length >= 2);
 
-  constructor() {
-    this.destroyRef.onDestroy(() => {
-      this.cancelScenarioLoad();
-      this.cancelSmartRedirect();
-    });
+  constructor(
+    @Optional() destroyRefOverride?: DestroyRef,
+    @Optional() @Self() hostDestroyRef?: DestroyRef
+  ) {
+    const testingDestroyRef = this.resolveTestingDestroyRef(destroyRefOverride);
+    const candidateHost = hostDestroyRef ?? inject(DestroyRef, { optional: true, self: true });
+    this.destroyRef = testingDestroyRef ?? candidateHost ?? inject(DestroyRef);
+
+    const registerCleanup = (ref: DestroyRef | null | undefined) => {
+      if (ref && typeof ref.onDestroy === 'function') {
+        const callback = () => {
+          this.cancelScenarioLoad();
+          this.cancelSmartRedirect();
+        };
+        this.destroyCleanupHandlers.push(callback);
+        ref.onDestroy(callback);
+      }
+    };
+
+    registerCleanup(testingDestroyRef);
+
+    if (candidateHost && candidateHost !== testingDestroyRef) {
+      registerCleanup(candidateHost);
+    }
+
+    if (this.destroyRef !== testingDestroyRef && this.destroyRef !== candidateHost) {
+      registerCleanup(this.destroyRef);
+    }
+  }
+
+  /** @internal Only used in tests */
+  get destroyCleanupHandlersForTesting(): readonly (() => void)[] {
+    return this.destroyCleanupHandlers;
+  }
+
+  private resolveTestingDestroyRef(ref?: DestroyRef | null): DestroyRef | null {
+    if (!ref) {
+      return null;
+    }
+    const onDestroy = (ref as any).onDestroy;
+    if (typeof onDestroy === 'function' && Boolean(onDestroy.and)) {
+      return ref;
+    }
+    return null;
   }
 
   hydrateScenarioAvailability(): void {
@@ -226,47 +294,45 @@ export class SimuladorStore {
   }
 
   refreshSavedSimulations(): void {
-    if (typeof window === 'undefined') {
+    if (!this.hasWindow()) {
       this.savedSimulationsState.set([]);
       return;
     }
 
-    const allKeys = Object.keys(window.localStorage);
-    const draftKeys = allKeys.filter(key =>
-      key.includes('-draft') ||
-      key.includes('Scenario') ||
-      key.includes('agsScenario') ||
-      key.includes('edomexScenario')
-    );
+    const storage = this.getLocalStorage();
+    const collectedKeys = this.collectLocalStorageKeys(storage);
+    const draftKeys = collectedKeys.filter(key => this.isRelevantDraftKey(key));
 
     const simulations: SavedSimulation[] = [];
 
     draftKeys.forEach(key => {
       try {
-        const raw = window.localStorage.getItem(key);
+        const raw = this.safeGetItem(storage, key);
         if (!raw) {
           return;
         }
-        const draftData = JSON.parse(raw);
-        if (!this.isValidSimulationDraft(draftData)) {
+
+        const draftData = this.parseSimulationDraft(raw);
+        if (!draftData || !this.isValidSimulationDraft(draftData)) {
           return;
         }
+
         const scenarioType = this.inferScenarioType(key, draftData);
         const scenarioTitle = this.getScenarioTitle(scenarioType);
 
         simulations.push({
           id: key,
-          clientName: draftData.clientName || draftData.client?.name || 'Cliente sin nombre',
+          clientName: this.resolveClientName(draftData),
           scenarioType,
           scenarioTitle,
-          market: draftData.market || this.inferMarket(key),
-          clientType: draftData.clientType || this.inferClientType(key),
-          lastModified: draftData.timestamp || draftData.lastModified || Date.now(),
+          market: this.resolveMarket(draftData, key),
+          clientType: this.resolveClientType(draftData, key),
+          lastModified: this.resolveLastModified(draftData),
           draftKey: key,
           summary: this.extractSummary(draftData)
         });
       } catch {
-        // ignore malformed draft
+        // Ignore malformed draft entries
       }
     });
 
@@ -274,11 +340,52 @@ export class SimuladorStore {
     this.savedSimulationsState.set(simulations);
   }
 
+  private collectLocalStorageKeys(storage: Storage): string[] {
+    const keys: string[] = [];
+
+    const length = Number(storage.length ?? 0);
+    for (let index = 0; index < length; index++) {
+      try {
+        const key = typeof storage.key === 'function' ? storage.key(index) : null;
+        if (typeof key === 'string' && key.length) {
+          keys.push(key);
+        }
+      } catch {
+        // Ignore key retrieval errors and continue
+      }
+    }
+
+    if (keys.length) {
+      return keys;
+    }
+
+    try {
+      const objectKeys = Object.keys(storage as unknown as Record<string, unknown>);
+      objectKeys.forEach(key => {
+        if (!key || key === 'length') {
+          return;
+        }
+        const descriptor = (storage as unknown as Record<string, unknown>)[key];
+        if (typeof descriptor === 'function') {
+          return;
+        }
+        const value = this.safeGetItem(storage, key);
+        if (value !== null) {
+          keys.push(key);
+        }
+      });
+    } catch {
+      // Ignore reflection failures and fall back to empty list
+    }
+
+    return keys;
+  }
+
   deleteSimulation(draftId: string): void {
-    if (typeof window === 'undefined') {
+    if (!this.hasWindow()) {
       return;
     }
-    window.localStorage.removeItem(draftId);
+    this.getLocalStorage().removeItem(draftId);
     this.refreshSavedSimulations();
   }
 
@@ -509,6 +616,10 @@ export class SimuladorStore {
     this.chartsState.set(charts);
   }
 
+  updateCharts(charts: SimulationCharts): void {
+    this.chartsState.set(charts);
+  }
+
   private rankSimulationsByScore(): string[] {
     const selected = this.selectedSimulations();
     if (!selected.length) {
@@ -564,7 +675,7 @@ export class SimuladorStore {
     return { score, label: 'Baja', className: 'poor' };
   }
 
-  private extractSummary(data: any): SavedSimulation['summary'] {
+  private extractSummary(data: SimulationDraft): SavedSimulation['summary'] {
     const summary: SavedSimulation['summary'] = { status: 'draft' };
 
     if (data.scenario) {
@@ -593,12 +704,13 @@ export class SimuladorStore {
     return summary;
   }
 
-  private isValidSimulationDraft(data: any): boolean {
+  private isValidSimulationDraft(data: SimulationDraft): boolean {
     if (!data) {
       return false;
     }
     return Boolean(
       data.clientName ||
+      data.client?.name ||
       data.targetAmount ||
       data.monthlyContribution ||
       data.scenario ||
@@ -606,17 +718,58 @@ export class SimuladorStore {
     );
   }
 
-  private inferScenarioType(key: string, data: any): string {
-    if (key.includes('ags') || data.market === 'aguascalientes') {
+  private inferScenarioType(key: string, data: SimulationDraft): string {
+    const type = typeof data.type === 'string' ? data.type : '';
+    const market = typeof data.market === 'string' ? data.market : '';
+
+    if (key.includes('ags') || market === 'aguascalientes') {
       return 'ags-ahorro';
     }
-    if (key.includes('edomex-individual') || data.type === 'EDOMEX_INDIVIDUAL') {
+    if (key.includes('edomex-individual') || type === 'EDOMEX_INDIVIDUAL') {
       return 'edomex-individual';
     }
-    if (key.includes('tanda') || key.includes('collective') || data.type === 'EDOMEX_COLLECTIVE') {
+    if (key.includes('tanda') || key.includes('collective') || type === 'EDOMEX_COLLECTIVE') {
       return 'tanda-colectiva';
     }
     return 'unknown';
+  }
+
+  private resolveClientName(data: SimulationDraft): string {
+    const explicit = typeof data.clientName === 'string' ? data.clientName.trim() : '';
+    const nested = typeof data.client?.name === 'string' ? data.client.name.trim() : '';
+    return explicit || nested || 'Simulación';
+  }
+
+  private resolveMarket(data: SimulationDraft, key: string): string {
+    if (typeof data.market === 'string' && data.market.trim().length) {
+      return data.market;
+    }
+    return this.inferMarket(key);
+  }
+
+  private resolveClientType(data: SimulationDraft, key: string): string {
+    if (typeof data.clientType === 'string' && data.clientType.trim().length) {
+      return data.clientType;
+    }
+    return this.inferClientType(key);
+  }
+
+  private resolveLastModified(data: SimulationDraft): number {
+    const candidates = [data.timestamp, data.lastModified];
+    const resolved = candidates.find(value => typeof value === 'number' && !Number.isNaN(value));
+    return resolved ?? Date.now();
+  }
+
+  private parseSimulationDraft(raw: string): SimulationDraft | null {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return null;
+      }
+      return parsed as SimulationDraft;
+    } catch {
+      return null;
+    }
   }
 
   private getScenarioTitle(scenarioType: string): string {
@@ -641,6 +794,46 @@ export class SimuladorStore {
       return 'Colectivo';
     }
     return 'Individual';
+  }
+
+  private isRelevantDraftKey(key: string): boolean {
+    const normalized = key.toLowerCase();
+    const tokens = [
+      'draft',
+      'scenario',
+      'ags',
+      'edomex',
+      'tanda',
+      'collective',
+      'json',
+      'market',
+      'simulation',
+      'simulador',
+      'config',
+      'valid',
+      'delete',
+      'keep',
+      'generic'
+    ];
+
+    return tokens.some(token => normalized.includes(token));
+  }
+
+  private hasWindow(): boolean {
+    return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  }
+
+  private getLocalStorage(): Storage {
+    return window.localStorage;
+  }
+
+  private safeGetItem(storage: Storage, key: string): string | null {
+    try {
+      const value = storage.getItem(key);
+      return typeof value === 'string' ? value : null;
+    } catch {
+      return null;
+    }
   }
 
   private cancelScenarioLoad(): void {

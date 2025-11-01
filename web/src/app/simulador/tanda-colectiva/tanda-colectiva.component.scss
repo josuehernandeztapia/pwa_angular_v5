@@ -256,3 +256,123 @@
   align-items: center;
   justify-content: center;
 }
+
+
+.tanda-demo {
+  border: 1px dashed rgba(59, 130, 246, 0.45);
+  border-radius: var(--radius-lg);
+  background: rgba(59, 130, 246, 0.08);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.tanda-demo__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .tanda-demo__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}
+
+.tanda-demo__header h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.tanda-demo__header p {
+  margin: 0;
+  color: #1e3a8a;
+  max-width: 48ch;
+}
+
+.tanda-demo__badge {
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.2);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tanda-demo__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.tanda-demo__members ul,
+.tanda-demo__schedule ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tanda-demo__members li,
+.tanda-demo__schedule li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  background: rgba(191, 219, 254, 0.4);
+  color: #1e3a8a;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.tanda-demo__message {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  font-size: var(--text-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-semibold);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #1e3a8a;
+  color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.btn-sm {
+  padding: 0.5rem 1.1rem;
+  font-size: var(--text-sm);
+}
+
+.btn-xs {
+  padding: 0.35rem 0.9rem;
+  font-size: var(--text-xs);
+}

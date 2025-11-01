@@ -19,6 +19,66 @@
   </header>
 
   <main id="main-content" class="ags-ahorro__body">
+    <section
+      class="ags-demo"
+      *ngIf="isFinanzasDemo()"
+      aria-label="Escenario demo financiero"
+    >
+      <header class="ags-demo__header">
+        <div>
+          <span class="ags-demo__badge">Demo</span>
+          <h2>{{ demoSelectedScenario()?.title || 'Escenario demo disponible' }}</h2>
+          <p>{{ demoSelectedScenario()?.terminos || 'Escenario What-if preconfigurado para capacitación.' }}</p>
+        </div>
+        <div class="ags-demo__actions">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            (click)="resetDemoScenario()"
+            [disabled]="isApplyingDemoScenario()"
+          >
+            Reiniciar demo
+          </button>
+        </div>
+      </header>
+
+      <ng-container *ngIf="isFinanzasDemo() && demoFinanceScenarioSet()">
+        <div class="ags-demo__scenarios">
+          <h3>Escenarios What-If</h3>
+          <div class="ags-demo__scenario-list">
+            <button
+              *ngFor="let item of (demoFinanceScenarioSet()?.scenarios ?? [])"
+              type="button"
+              class="btn btn-ghost btn-xs ags-demo__scenario-button"
+              [class.ags-demo__scenario-button--active]="demoSelectedScenario()?.id === item.id"
+              (click)="selectDemoScenario(item.id)"
+              [disabled]="isApplyingDemoScenario()"
+            >
+              {{ item.title }}
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="demoSelectedScenario() as selectedScenario">
+        <div class="ags-demo__scenario-detail">
+          <p>Pago mensual demo: <strong>{{ selectedScenario.pagoMensual | currency:'MXN':'symbol':'1.0-0' }}</strong></p>
+          <p>Tasa simulada: <strong>{{ selectedScenario.tasa }}%</strong></p>
+          <p *ngIf="selectedScenario.bonificacion">Bonificación aplicada: {{ selectedScenario.bonificacion | currency:'MXN':'symbol':'1.0-0' }}</p>
+          <small *ngIf="selectedScenario.terminos">{{ selectedScenario.terminos }}</small>
+        </div>
+
+        <ul class="ags-demo__config" *ngIf="selectedScenario.config as config">
+          <li *ngIf="config['unitValue']">Valor unidad demo: {{ config['unitValue'] | currency:'MXN':'symbol':'1.0-0' }}</li>
+          <li *ngIf="config['initialDownPayment']">Enganche inicial: {{ config['initialDownPayment'] | currency:'MXN':'symbol':'1.0-0' }}</li>
+          <li *ngIf="config['deliveryMonths']">Entrega prevista: {{ config['deliveryMonths'] }} meses</li>
+          <li *ngIf="config['overpricePerLiter']">Sobreprecio por litro: {{ config['overpricePerLiter'] | number:'1.1-1' }} MXN</li>
+        </ul>
+      </ng-container>
+
+      <p class="ags-demo__message" *ngIf="demoMessage()">{{ demoMessage() }}</p>
+    </section>
+
     <!-- KPIs -->
     <div class="card ags-ahorro__kpi-card" >
       <div class="ags-ahorro__kpi-grid">

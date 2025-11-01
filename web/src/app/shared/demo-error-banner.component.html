@@ -1,0 +1,20 @@
+<div class="demo-banner" role="status" [attr.aria-busy]="busy">
+  <div class="demo-banner__icon" aria-hidden="true">
+    <app-icon name="alert-triangle" [size]="20"></app-icon>
+  </div>
+  <div class="demo-banner__content">
+    <h4 class="demo-banner__title">{{ title }}</h4>
+    <p class="demo-banner__description">{{ description }}</p>
+  </div>
+  <div class="demo-banner__actions">
+    <button
+      type="button"
+      class="btn btn-primary btn-sm"
+      (click)="onResolve()"
+      [disabled]="busy"
+    >
+      <app-icon *ngIf="actionIcon" [name]="actionIcon" [size]="16" aria-hidden="true"></app-icon>
+      {{ busy ? 'Resolviendo…' : actionLabel }}
+    </button>
+  </div>
+</div>

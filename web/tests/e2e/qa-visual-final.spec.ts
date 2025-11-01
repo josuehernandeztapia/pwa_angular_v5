@@ -12,9 +12,9 @@ const QA_CONFIG = {
   modules: [
     { name: 'Login', path: '/login', screenshot: 'login.png' },
     { name: 'Dashboard', path: '/dashboard', screenshot: 'dashboard.png' },
-    { name: 'Cotizador AGS', path: '/cotizador/ags', screenshot: 'cotizador-ags.png' },
-    { name: 'Cotizador EdoMex', path: '/cotizador/edomex', screenshot: 'cotizador-edomex.png' },
-    { name: 'Cotizador Colectivo', path: '/cotizador/colectivo', screenshot: 'cotizador-colectivo.png' },
+    { name: 'Cotizador AGS', path: '/cotizador?preset=ags-individual&autoAdvance=true', screenshot: 'cotizador-ags.png' },
+    { name: 'Cotizador EdoMex', path: '/cotizador?market=edomex&clientType=individual&autoAdvance=true', screenshot: 'cotizador-edomex.png' },
+    { name: 'Cotizador Colectivo', path: '/cotizador?preset=edomex-colectivo&autoAdvance=true', screenshot: 'cotizador-colectivo.png' },
     { name: 'Simulador AGS', path: '/simulador/ags-ahorro', screenshot: 'sim-ags.png' },
     { name: 'Simulador EdoMex Individual', path: '/simulador/edomex-individual', screenshot: 'sim-edomex-ind.png' },
     { name: 'Simulador EdoMex Colectivo', path: '/simulador/tanda-colectiva', screenshot: 'sim-edomex-col.png' },
@@ -217,7 +217,7 @@ test.describe('QA Visual Final - Screenshots & Accessibility', () => {
     const formModules = [
       '/configuracion',
       '/documents/upload',
-      '/cotizador/ags',
+      '/cotizador?preset=ags-individual&autoAdvance=true',
       '/simulador/ags-ahorro'
     ];
 

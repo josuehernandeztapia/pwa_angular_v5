@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { IconComponent } from '@shared/icon/icon.component';
+import { IconName } from '@shared/icon/icon-definitions';
 
 export interface StepperStep {
   id: string;
   label: string;
   valid?: boolean;
   completed?: boolean;
-  icon?: string;
+  icon?: IconName;
 }
 
 @Component({

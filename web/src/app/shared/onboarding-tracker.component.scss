@@ -1,0 +1,73 @@
+.onboarding-tracker {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.onboarding-tracker__title {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.onboarding-tracker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onboarding-tracker__stage {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  column-gap: 12px;
+  align-items: flex-start;
+  color: #202124;
+}
+
+.onboarding-tracker__stage--completed {
+  color: #2b8a3e;
+}
+
+.onboarding-tracker__stage--blocked {
+  color: #c53929;
+}
+
+.onboarding-tracker__stage-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 115, 232, 0.1);
+}
+
+.onboarding-tracker__stage--completed .onboarding-tracker__stage-icon {
+  background: rgba(43, 138, 62, 0.12);
+}
+
+.onboarding-tracker__stage--blocked .onboarding-tracker__stage-icon {
+  background: rgba(197, 57, 41, 0.12);
+}
+
+.onboarding-tracker__stage-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.onboarding-tracker__stage-meta,
+.onboarding-tracker__stage-subtitle {
+  display: block;
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.onboarding-tracker__stage-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

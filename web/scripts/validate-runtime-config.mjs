@@ -9,64 +9,78 @@
 
 import process from 'node:process'
 
-runtime_env = (process.env.get('RUNTIME_ENV') or process.env.get('NODE_ENV') or 'development').lower()
-required_flags_by_env = {
+const runtime_env = (process.env.RUNTIME_ENV || process.env.NODE_ENV || 'development').toLowerCase();
+const required_flags_by_env = {
     'development': [],
     'qa': ['BFF_BASE_URL'],
     'staging': ['BFF_BASE_URL'],
     'production': ['BFF_BASE_URL'],
-}
+};
 
-boolean_flags = [
+const boolean_flags = [
     'ENABLE_MOCK_DATA',
     'ENABLE_POSTVENTA',
     'ENABLE_CLAIMS_BFF',
     'ENABLE_ADMIN_BFF',
     'ENABLE_LABS',
     'ENABLE_USAGE_MODULE',
-]
+];
 
-problems = []
-warnings = []
+const problems = [];
+const warnings = [];
 
-required_flags = required_flags_by_env.get(runtime_env, required_flags_by_env['development'])
-for flag in required_flags:
-    value = process.env.get(flag)
-    if value is None or str(value).strip() == '':
-        problems.append(f"Missing required env var {flag} for runtime env "{runtime_env}"")
+const required_flags = required_flags_by_env[runtime_env] || required_flags_by_env['development'];
+for (const flag of required_flags) {
+    const value = process.env[flag];
+    if (!value || value.trim() === '') {
+        problems.push(`Missing required env var ${flag} for runtime env "${runtime_env}"`);
+    }
+}
 
-for flag in boolean_flags:
-    value = process.env.get(flag)
-    if value is None or value == '':
-        continue
-    if str(value).lower() not in ('true', 'false'):
-        problems.append(f"Env var {flag} must be "true" or "false", received "{value}"")
+for (const flag of boolean_flags) {
+    const value = process.env[flag];
+    if (!value || value === '') {
+        continue;
+    }
+    if (!['true', 'false'].includes(value.toLowerCase())) {
+        problems.push(`Env var ${flag} must be "true" or "false", received "${value}"`);
+    }
+}
 
-bff_url = process.env.get('BFF_BASE_URL')
-if bff_url:
-    if not (bff_url.startswith('http://') or bff_url.startswith('https://')):
-        warnings.append(f"BFF_BASE_URL="{bff_url}" does not look like an absolute URL. Consider using https://...")
-    if runtime_env == 'production' and 'localhost' in bff_url:
-        problems.append('BFF_BASE_URL cannot point to localhost in production builds')
+const bff_url = process.env.BFF_BASE_URL;
+if (bff_url) {
+    if (!(bff_url.startsWith('http://') || bff_url.startsWith('https://'))) {
+        warnings.push(`BFF_BASE_URL="${bff_url}" does not look like an absolute URL. Consider using https://...`);
+    }
+    if (runtime_env === 'production' && bff_url.includes('localhost')) {
+        problems.push('BFF_BASE_URL cannot point to localhost in production builds');
+    }
+}
 
-if problems:
-    print('
+if (problems.length > 0) {
+    console.log(`
 ❌ Runtime configuration validation failed:
-')
-    for issue in problems:
-        print(f"  • {issue}")
-    if warnings:
-        print('
-Warnings:')
-        for warn in warnings:
-            print(f"  • {warn}")
-    raise SystemExit(1)
+`);
+    for (const issue of problems) {
+        console.log(`  • ${issue}`);
+    }
+    if (warnings.length > 0) {
+        console.log(`
+Warnings:`);
+        for (const warn of warnings) {
+            console.log(`  • ${warn}`);
+        }
+    }
+    process.exit(1);
+}
 
-if warnings:
-    print('
-⚠️ Runtime configuration warnings:')
-    for warn in warnings:
-        print(f"  • {warn}")
+if (warnings.length > 0) {
+    console.log(`
+⚠️ Runtime configuration warnings:`);
+    for (const warn of warnings) {
+        console.log(`  • ${warn}`);
+    }
+}
 
-print(f"
-✅ Runtime configuration validated for environment "{runtime_env}"")
+console.log(`
+✅ Runtime configuration validated for environment "${runtime_env}"`);

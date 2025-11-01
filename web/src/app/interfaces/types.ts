@@ -219,6 +219,7 @@ export interface Client {
   completedPayments?: number;
   lastPaymentDate?: Date;
   nextPaymentDue?: Date;
+  isDemo?: boolean;
   // Optional vehicle info summary for UI
   vehicleInfo?: {
     model: string;
@@ -246,7 +247,17 @@ export interface DashboardStats {
 
 export interface ActivityFeedItem {
   id: string;
-  type: 'new_client' | 'doc_approved' | 'payment_received' | 'goal_reached' | 'contract_signed';
+  type:
+    | 'new_client'
+    | 'client_updated'
+    | 'client_event'
+    | 'doc_approved'
+    | 'payment_received'
+    | 'goal_reached'
+    | 'contract_signed'
+    | 'avi_completed'
+    | 'avi_cancelled'
+    | 'post_sale_evidence';
   timestamp: Date;
   message: string;
   clientName?: string;

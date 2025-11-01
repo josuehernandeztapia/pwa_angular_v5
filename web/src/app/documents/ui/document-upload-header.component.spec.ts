@@ -32,8 +32,17 @@ describe('DocumentUploadHeaderComponent', () => {
     expect(compiled.querySelector('[data-cy="doc-queued-count"]')?.textContent).toContain('2');
   });
 
+  it('should show demo/real badge', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.document-upload__data-badge')?.textContent).toContain('REAL');
+
+    fixture.componentRef.setInput('isDemo', true);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.document-upload__data-badge')?.textContent).toContain('DEMO');
+  });
+
   it('should hide queued indicator when there are no offline docs', () => {
-    component.pendingOfflineDocs = 0;
+    fixture.componentRef.setInput('pendingOfflineDocs', 0);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-cy="doc-queued-count"]')).toBeNull();
   });

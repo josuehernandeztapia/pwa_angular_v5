@@ -1,0 +1,59 @@
+<section class="demo-analytics" aria-labelledby="demo-analytics-title">
+  <header class="demo-analytics__header">
+    <div>
+      <span class="demo-analytics__badge">Demo</span>
+      <h1 id="demo-analytics-title">Telemetría de escenarios demo</h1>
+      <p>Observa en tiempo real los eventos que dispara el modo demo para QA y capacitación.</p>
+    </div>
+    <div class="demo-analytics__actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="clearLog()" [disabled]="!totalEvents()">
+        Limpiar log
+      </button>
+    </div>
+  </header>
+
+  <section class="demo-analytics__status" aria-live="polite">
+    <div class="demo-analytics__status-item">
+      <app-icon name="activity" [size]="18" aria-hidden="true"></app-icon>
+      <span>Eventos registrados: <strong>{{ totalEvents() }}</strong></span>
+    </div>
+    <div class="demo-analytics__status-item">
+      <app-icon name="sparkles" [size]="18" aria-hidden="true"></app-icon>
+      <span>
+        Escenario activo:
+        <strong *ngIf="isDemoMode(); else demoDisabled">{{ activeScenario() || 'N/A' }}</strong>
+      </span>
+      <ng-template #demoDisabled>
+        <strong>Demo desactivado</strong>
+      </ng-template>
+    </div>
+  </section>
+
+  <ng-container *ngIf="isDemoMode(); else demoPrompt">
+    <div class="demo-analytics__timeline" *ngIf="events().length; else emptyState">
+      <article *ngFor="let event of events(); let i = index" class="demo-analytics__event" [attr.data-index]="i">
+        <header class="demo-analytics__event-header">
+          <h2>{{ event.name }}</h2>
+          <time [attr.datetime]="(event.timestamp | date:'yyyy-MM-ddTHH:mm:ss') ?? ''">
+            {{ event.timestamp | date:'medium' }}
+          </time>
+        </header>
+        <pre class="demo-analytics__payload">{{ event.payload | json }}</pre>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #demoPrompt>
+    <div class="demo-analytics__empty">
+      <app-icon name="sparkles" [size]="24" aria-hidden="true"></app-icon>
+      <p>Activa el modo demo desde la barra superior y selecciona un escenario para comenzar a capturar telemetría.</p>
+    </div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="demo-analytics__empty">
+      <app-icon name="activity" [size]="24" aria-hidden="true"></app-icon>
+      <p>Aún no se registran eventos. Ejecuta alguna acción demo (ej. autocorrección de documentos, sorteo de tanda) para verlos aquí.</p>
+    </div>
+  </ng-template>
+</section>

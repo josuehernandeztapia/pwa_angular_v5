@@ -628,3 +628,121 @@ select:focus-visible {
     padding: var(--space-24) var(--space-12);
   }
 }
+
+
+.ags-demo {
+  border: 1px dashed rgba(59, 130, 246, 0.4);
+  border-radius: var(--radius-lg);
+  background: rgba(59, 130, 246, 0.08);
+  padding: var(--space-20);
+  display: grid;
+  gap: var(--space-12);
+}
+
+.ags-demo__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+@media (min-width: 768px) {
+  .ags-demo__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}
+
+.ags-demo__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.ags-demo__actions .btn {
+  white-space: nowrap;
+}
+
+.ags-demo__header h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.ags-demo__header p {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.ags-demo__badge {
+  display: inline-flex;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.2);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ags-demo__scenarios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.ags-demo__scenario-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.ags-demo__scenario-button {
+  border: 1px solid transparent;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ags-demo__scenario-button--active,
+.ags-demo__scenario-button--active:focus-visible {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.ags-demo__scenario-detail {
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.12);
+  display: grid;
+  gap: var(--space-6);
+  font-size: var(--text-sm);
+}
+
+.ags-demo__scenario-detail p {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.ags-demo__scenario-detail small {
+  color: rgba(30, 58, 138, 0.75);
+}
+
+.ags-demo__config {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-6);
+  color: #1e3a8a;
+  font-size: var(--text-sm);
+}
+
+.ags-demo__message {
+  margin: 0;
+  padding: var(--space-10);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  font-size: var(--text-sm);
+}

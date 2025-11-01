@@ -329,6 +329,12 @@
     overflow-y: auto;
   }
 
+  &__item-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   &__item {
     position: relative;
     display: flex;

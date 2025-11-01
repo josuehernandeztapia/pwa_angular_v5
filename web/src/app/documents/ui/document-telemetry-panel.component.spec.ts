@@ -25,7 +25,8 @@ describe('DocumentTelemetryPanelComponent', () => {
       status: 'queued',
       message: 'Timeout al subir el documento',
       attempts: 1,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      actions: [{ id: 'retry', label: 'Retry' }]
     } as BoundaryIssue
   ];
 
@@ -65,6 +66,8 @@ describe('DocumentTelemetryPanelComponent', () => {
   it('emite eventos al reintentar una incidencia', () => {
     const retrySpy = spyOn(component.retryIssue, 'emit');
     const retryButton = fixture.debugElement.query(By.css('[data-cy="telemetry-retry"]'));
+
+    expect(retryButton).toBeTruthy();
     retryButton.nativeElement.click();
 
     expect(retrySpy).toHaveBeenCalledWith('issue-1');
@@ -73,6 +76,8 @@ describe('DocumentTelemetryPanelComponent', () => {
   it('emite eventos al sincronizar una solicitud en cola', () => {
     const retryQueuedSpy = spyOn(component.retryQueued, 'emit');
     const retryButton = fixture.debugElement.query(By.css('[data-cy="telemetry-queue-retry"]'));
+
+    expect(retryButton).toBeTruthy();
     retryButton.nativeElement.click();
 
     expect(retryQueuedSpy).toHaveBeenCalledWith('req-1');

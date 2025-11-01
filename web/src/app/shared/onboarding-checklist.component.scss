@@ -1,0 +1,98 @@
+.onboarding-checklist {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.onboarding-checklist__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onboarding-checklist__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.onboarding-checklist__summary {
+  color: #5f6368;
+  font-size: 12px;
+}
+
+.onboarding-checklist__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboarding-checklist__list--compact {
+  gap: 6px;
+}
+
+.onboarding-checklist__item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  column-gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: #202124;
+}
+
+.onboarding-checklist__item--completed {
+  color: #2b8a3e;
+}
+
+.onboarding-checklist__item--blocked {
+  color: #c53929;
+}
+
+.onboarding-checklist__icon {
+  margin-top: 2px;
+}
+
+.onboarding-checklist__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.onboarding-checklist__label {
+  font-weight: 500;
+}
+
+.onboarding-checklist__help {
+  color: #5f6368;
+  font-size: 12px;
+}
+
+.onboarding-checklist__link {
+  font-size: 12px;
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.onboarding-checklist__link:hover {
+  text-decoration: underline;
+}
+
+.onboarding-checklist__extras {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 8px;
+}
+
+.onboarding-checklist__subtitle {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #202124;
+}

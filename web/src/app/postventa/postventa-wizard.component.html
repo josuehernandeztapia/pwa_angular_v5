@@ -10,6 +10,76 @@
     </button>
   </header>
 
+  <section
+    class="post-sale__demo"
+    *ngIf="isPostventaDemo()"
+    aria-label="Escenario demo de postventa"
+  >
+    <header class="post-sale__demo-header">
+      <div>
+        <span class="post-sale__demo-badge">Demo</span>
+        <h2>Postventa listo para evidencia</h2>
+        <p>Carga fotos ficticias, simula incidencias y registra notas de capacitación sin tocar datos reales.</p>
+      </div>
+      <div class="post-sale__demo-actions">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="loadDemoEvidence()"
+          [disabled]="demoEvidenceLoaded()"
+        >
+          {{ demoEvidenceLoaded() ? 'Evidencia cargada' : 'Cargar evidencia demo' }}
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="resetDemoScenario()">
+          Reiniciar demo
+        </button>
+      </div>
+    </header>
+
+    <section class="post-sale__demo-incidents" *ngIf="demoIncidents().length">
+      <header>
+        <h3>Incidencias demo</h3>
+        <small>Activa o resuelve para explicar procesos de QA.</small>
+      </header>
+      <ul>
+        <li *ngFor="let incident of demoIncidents()" [attr.data-status]="incident.status">
+          <div class="post-sale__demo-incident-main">
+            <strong>{{ incident.title }}</strong>
+            <p>{{ incident.description }}</p>
+          </div>
+          <span class="post-sale__demo-incident-status" [class.is-open]="incident.status === 'open'">
+            {{ incident.status === 'open' ? 'Activa' : 'Resuelta' }}
+          </span>
+          <div class="post-sale__demo-incident-actions">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs"
+              *ngIf="incident.status !== 'open'"
+              (click)="simulateDemoIncident(incident.id)"
+            >
+              Simular incidencia
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-xs"
+              *ngIf="incident.status === 'open'"
+              (click)="resolveDemoIncident(incident.id)"
+            >
+              Resolver
+            </button>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="post-sale__demo-notes" *ngIf="demoNotes().length">
+      <h3>Bitácora demo</h3>
+      <ul>
+        <li *ngFor="let note of demoNotes()">{{ note }}</li>
+      </ul>
+    </section>
+  </section>
+
   <form class="post-sale__form" [formGroup]="wizardForm">
     <label>
       <span>Cliente</span>

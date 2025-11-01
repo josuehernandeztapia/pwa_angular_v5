@@ -29,6 +29,140 @@
     </div>
   </div>
 
+  @if (isDemoMode() && demoScenarioSnapshot(); as demoScenario) {
+  <section class="simulador-demo" aria-label="Escenario demo del simulador">
+    <header class="simulador-demo__header">
+      <div>
+        <span class="simulador-demo__badge">Demo</span>
+        <h3>{{ demoScenario.label }}</h3>
+        <p>{{ demoScenario.description }}</p>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="resetDemoScenario()">Reiniciar demo</button>
+    </header>
+
+    @if (demoFinanceScenarioSet(); as financeSet) {
+      <div class="simulador-demo__finance">
+        <h4>Escenarios financieros</h4>
+        <ul class="simulador-demo__finance-list">
+          <li *ngFor="let item of financeSet.scenarios">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs"
+              [class.simulador-demo__finance-btn--active]="activeDemoFinanceScenario()?.id === item.id"
+              [disabled]="isFinanceScenarioApplying()"
+              (click)="selectDemoFinanceScenario(item.id)"
+            >
+              <ng-container *ngIf="isFinanceScenarioApplying() && activeDemoFinanceScenario()?.id === item.id; else financeLabel">
+                Procesando…
+              </ng-container>
+              <ng-template #financeLabel>
+                {{ item.title }}
+              </ng-template>
+            </button>
+          </li>
+        </ul>
+        @if (activeDemoFinanceScenario(); as selectedScenario) {
+          <div class="simulador-demo__finance-detail">
+            <p>Pago mensual demo: <strong>{{ formatCurrency(selectedScenario.pagoMensual) }}</strong></p>
+            <p>Tasa simulada: <strong>{{ selectedScenario.tasa }}%</strong></p>
+            <p *ngIf="selectedScenario.bonificacion">Bonificación aplicada: {{ formatCurrency(selectedScenario.bonificacion) }}</p>
+            <small *ngIf="selectedScenario.terminos">{{ selectedScenario.terminos }}</small>
+          </div>
+        }
+        <div class="simulador-demo__finance-actions" *ngIf="activeDemoFinanceScenario()">
+          <button
+            type="button"
+            class="btn btn-secondary btn-xs"
+            (click)="simulateFinanceEvent('extra')"
+            [disabled]="isFinanceEventProcessing()"
+            [attr.aria-busy]="isFinanceEventProcessing()"
+          >
+            Simular pago extra
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-xs"
+            (click)="simulateFinanceEvent('late')"
+            [disabled]="isFinanceEventProcessing()"
+            [attr.aria-busy]="isFinanceEventProcessing()"
+          >
+            Simular pago atrasado
+          </button>
+        </div>
+        @if (financeEvents().length) {
+          <ul class="simulador-demo__finance-events">
+            <li *ngFor="let event of financeEvents()">
+              <div class="simulador-demo__finance-event-info">
+                <strong>{{ event.title }}</strong>
+                <span>{{ event.description }}</span>
+              </div>
+              <div class="simulador-demo__finance-event-meta">
+                <span *ngIf="event.amountDelta">
+                  Impacto: {{ event.amountDelta | currency:'MXN':'symbol':'1.0-0' }}
+                </span>
+                <small>{{ event.createdAt | date:'short' }}</small>
+              </div>
+            </li>
+          </ul>
+        }
+      </div>
+    }
+
+    @if (demoTandaGroup(); as tanda) {
+      <div class="simulador-demo__tanda">
+        <div class="simulador-demo__tanda-actions">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            (click)="simulateDemoSorteo()"
+            [disabled]="isTandaSimulating()"
+            [attr.aria-busy]="isTandaSimulating()"
+          >
+            {{ isTandaSimulating() ? 'Simulando…' : 'Simular sorteo' }}
+          </button>
+        </div>
+        <table class="simulador-demo__tanda-table">
+          <thead>
+            <tr>
+              <th>Integrante</th>
+              <th>Estado</th>
+              <th>Aportación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let member of tanda.members">
+              <td>{{ member.name }}</td>
+              <td>{{ member.deliveryStatus || member.status }}</td>
+              <td>{{ formatCurrency(member.monthlyContribution || 0) }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs"
+                  (click)="markDemoPaymentMissed(member.id)"
+                  [disabled]="isTandaSimulating()"
+                >
+                  Pago faltante
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        @if (demoTandaSchedule(); as schedule) {
+          <div class="simulador-demo__tanda-schedule">
+            <h4>Entregas programadas</h4>
+            <ul>
+              <li *ngFor="let delivery of schedule">
+                <strong>{{ delivery.memberName }}</strong> • {{ delivery.deliveryStatus }} • {{ delivery.scheduledDate | date:'mediumDate' }}
+              </li>
+            </ul>
+          </div>
+        }
+      </div>
+    }
+  </section>
+  }
+
   <!-- Context Info -->
   <div *ngIf="smartContext().hasContext" class="context-alert alert alert--info">
     <div class="context-alert__content">
@@ -63,19 +197,19 @@
       <div class="kpi-card">
         <div class="kpi-card__label">Ahorro</div>
         <div class="kpi-card__value" data-cy="sim-ahorro">
-          {{ formatCurrency(kpiData.ahorro) }}
+          {{ formatCurrency(kpiData().ahorro) }}
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-card__label">Plazo</div>
         <div class="kpi-card__value" data-cy="sim-plazo">
-          {{ kpiData.plazo }} meses
+          {{ kpiData().plazo }} meses
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-card__label">PMT Proyectado</div>
         <div class="kpi-card__value" data-cy="sim-pmt">
-          {{ formatCurrency(kpiData.pmt) }}
+          {{ formatCurrency(kpiData().pmt) }}
         </div>
       </div>
     </div>

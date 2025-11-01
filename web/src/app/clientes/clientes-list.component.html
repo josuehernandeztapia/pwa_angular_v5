@@ -109,6 +109,33 @@
     }
   </section>
 
+  @if (!isLoading() && summaryMetrics().total > 0) {
+    <section class="clientes-list__insights premium-card" aria-label="Resumen de cartera">
+      <article class="clientes-list__insight">
+        <span class="clientes-list__insight-label">Clientes visibles</span>
+        <span class="clientes-list__insight-value">{{ summaryMetrics().total }}</span>
+        <span class="clientes-list__insight-meta">{{ filteredClientes().length === totalClientes() ? 'Inventario completo' : 'Segmento filtrado' }}</span>
+      </article>
+      <article class="clientes-list__insight">
+        <span class="clientes-list__insight-label">Activos</span>
+        <span class="clientes-list__insight-value clientes-list__insight-value--positive">{{ summaryMetrics().active }}</span>
+        <span class="clientes-list__insight-meta">{{ (summaryMetrics().active / summaryMetrics().total * 100) | number:'1.0-0' }}% del segmento</span>
+      </article>
+      <article class="clientes-list__insight">
+        <span class="clientes-list__insight-label">Con alerta</span>
+        <span class="clientes-list__insight-value clientes-list__insight-value--risk">{{ summaryMetrics().atRisk }}</span>
+        <span class="clientes-list__insight-meta">Incluye riesgo crediticio o Health &lt; 60</span>
+      </article>
+      <article class="clientes-list__insight">
+        <span class="clientes-list__insight-label">Salud promedio</span>
+        <span [ngClass]="getSummaryHealthClasses(summaryMetrics().avgHealth)">
+          {{ summaryMetrics().avgHealth !== null ? summaryMetrics().avgHealth + '%' : '—' }}
+        </span>
+        <span class="clientes-list__insight-meta">{{ summaryMetrics().healthCount }} clientes con score</span>
+      </article>
+    </section>
+  }
+
   @if (isLoading()) {
     <div class="clientes-list__loading premium-card">
       <div class="premium-loading" aria-hidden="true"></div>
@@ -147,6 +174,7 @@
           >
           <span class="clientes-list__select-label">Seleccionar página actual</span>
         </label>
+        <p class="clientes-list__bulk-hint">Aplica exportaciones, campañas o recordatorios a los clientes marcados.</p>
       </div>
 
       @if (selectedCount() > 0) {
@@ -183,7 +211,12 @@
                 {{ getClientInitials(cliente.name) }}
               </div>
               <div class="clientes-list__identity">
-                <h3 class="clientes-list__client-name">{{ cliente.name }}</h3>
+                <div class="clientes-list__identity-row">
+                  <h3 class="clientes-list__client-name">{{ cliente.name }}</h3>
+                  <span class="clientes-list__data-badge">
+                    <app-demo-badge [isDemo]="cliente.isDemo ?? false"></app-demo-badge>
+                  </span>
+                </div>
                 <p class="clientes-list__client-email">{{ cliente.email || 'Sin email' }}</p>
               </div>
               <div class="clientes-list__metrics">
@@ -241,15 +274,18 @@
           </a>
 
           <div class="clientes-list__actions">
-            <button type="button" class="clientes-list__action clientes-list__action--call" (click)="$event.stopPropagation(); callClient(cliente)" aria-label="Llamar cliente">
+            <button type="button" class="clientes-list__action-btn" (click)="$event.stopPropagation(); callClient(cliente)" aria-label="Contactar cliente">
               <app-icon class="icon-16" name="phone" [size]="16"></app-icon>
+              <span>Contactar</span>
             </button>
-            <button type="button" class="clientes-list__action clientes-list__action--email" (click)="$event.stopPropagation(); emailClient(cliente)" aria-label="Enviar correo">
-              <app-icon class="icon-16" name="mail" [size]="16"></app-icon>
-            </button>
-            <button type="button" class="clientes-list__action clientes-list__action--view" (click)="$event.stopPropagation(); viewClientDetails(cliente.id)" aria-label="Ver detalles">
+            <a
+              class="clientes-list__action-btn clientes-list__action-btn--ghost"
+              [routerLink]="['/clientes', cliente.id]"
+              (click)="$event.stopPropagation()"
+            >
               <app-icon class="icon-16" name="external-link" [size]="16"></app-icon>
-            </button>
+              <span>Ver ficha</span>
+            </a>
           </div>
         </div>
       }

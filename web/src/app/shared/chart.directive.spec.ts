@@ -51,13 +51,15 @@ describe('ChartDirective', () => {
     };
   }
 
-  it('creates a chart when configuration is provided', async () => {
+  it('creates a chart when configuration is provided', fakeAsync(async () => {
     host.config = createConfig();
     fixture.detectChanges();
+    tick(); // Allow Chart.js async operations to complete
+    fixture.detectChanges(); // Allow role attribute to be set
 
     const harness = await loader.getHarness(ChartHarness);
     expect(await harness.isChartRendered()).toBeTrue();
-  });
+  }));
 
   it('recreates the chart when configuration changes', () => {
     // This test is better with spies to ensure the old instance is destroyed
@@ -76,17 +78,22 @@ describe('ChartDirective', () => {
     expect(instantiateSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('destroys the chart when configuration becomes undefined', async () => {
+  it('destroys the chart when configuration becomes undefined', fakeAsync(async () => {
     host.config = createConfig();
     fixture.detectChanges();
+    tick(); // Allow Chart.js async operations to complete
+    fixture.detectChanges(); // Allow role attribute to be set
+
     const harness = await loader.getHarness(ChartHarness);
     expect(await harness.isChartRendered()).toBe(true);
 
     host.config = undefined;
     fixture.detectChanges();
+    tick(); // Allow cleanup to complete
+    fixture.detectChanges(); // Allow role attribute to be removed
 
     expect(await harness.isChartRendered()).toBe(false);
-  });
+  }));
 
   it('does not instantiate charts when running on the server platform', async () => {
     // Re-bootstrap with server platform ID
@@ -100,23 +107,25 @@ describe('ChartDirective', () => {
     const serverFixture = TestBed.createComponent(ChartHostComponent);
     serverFixture.componentInstance.config = createConfig();
     serverFixture.detectChanges();
-    const serverLoader = TestbedHarnessEnvironment.loader(serverFixture);
-    const harness = await serverLoader.getHarness(ChartHarness);
 
-    expect(await harness.isChartRendered()).toBe(false);
+    // On server platform, the canvas should not have role="img" since no chart is rendered
+    const canvas = serverFixture.debugElement.query(By.css('canvas')).nativeElement;
+    expect(canvas.getAttribute('role')).toBe(null);
   });
 
-  it('registers chart.js plugins only once', () => {
+  it('registers chart.js plugins only once', fakeAsync(() => {
     const registerSpy = spyOn(Chart, 'register').and.callFake(() => {});
     const directive = fixture.debugElement.query(By.directive(ChartDirective)).injector.get(ChartDirective);
     spyOn<any>(directive, 'instantiateChart').and.returnValue({ destroy: () => {} } as unknown as Chart);
 
     host.config = createConfig();
     fixture.detectChanges();
+    tick(); // Allow Chart.js async operations to complete
 
     host.config = createConfig('green');
     fixture.detectChanges();
+    tick(); // Allow Chart.js async operations to complete
 
     expect(registerSpy).toHaveBeenCalledTimes(1);
-  });
+  }));
 });

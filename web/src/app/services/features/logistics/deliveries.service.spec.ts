@@ -1,38 +1,31 @@
+import { TestBed } from '@angular/core/testing';
+import { HttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
+
 import { DeliveriesService } from './deliveries.service';
 import { DeliveryOrder } from '@interfaces/deliveries';
-import * as HttpClientUtil from '@services/utils/http-client.util';
-import * as BaseUrlUtil from '@services/utils/resolve-bff-base-url.util';
-import { HttpClient } from '@angular/common/http';
 
 describe('DeliveriesService', () => {
   let httpSpy: jasmine.SpyObj<HttpClient>;
   let service: DeliveriesService;
-  let originalResolveHttp: typeof HttpClientUtil.resolveHttpClient;
-  let originalResolveBase: typeof BaseUrlUtil.resolveBffBaseUrl;
-  let resolveHttpSpy: jasmine.Spy;
-  let resolveBaseSpy: jasmine.Spy;
 
   beforeEach(() => {
     httpSpy = jasmine.createSpyObj<HttpClient>('HttpClient', ['get', 'post', 'put', 'patch']);
 
-    originalResolveHttp = HttpClientUtil.resolveHttpClient;
-    originalResolveBase = BaseUrlUtil.resolveBffBaseUrl;
+    TestBed.configureTestingModule({
+      providers: [
+        DeliveriesService,
+        { provide: HttpClient, useValue: httpSpy }
+      ]
+    });
 
-    resolveHttpSpy = spyOn(HttpClientUtil, 'resolveHttpClient').and.returnValue(httpSpy as any);
-    resolveBaseSpy = spyOn(BaseUrlUtil, 'resolveBffBaseUrl').and.returnValue('https://mock-bff');
-
-    service = new DeliveriesService();
+    service = TestBed.inject(DeliveriesService);
+    (service as any).baseUrl = 'https://mock-bff';
     (service as any).logger = {
       log: jasmine.createSpy('log'),
       warn: jasmine.createSpy('warn'),
       error: jasmine.createSpy('error')
     };
-  });
-
-  afterEach(() => {
-    resolveHttpSpy.and.callFake(originalResolveHttp);
-    resolveBaseSpy.and.callFake(originalResolveBase);
   });
 
   it('maps bulk sync response metadata and failures', done => {

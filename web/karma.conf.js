@@ -34,7 +34,7 @@ module.exports = function (config) {
     },
     reporters: ['progress', 'kjhtml'],
     // Allow overriding the default port via KARMA_PORT to avoid conflicts in CI/sandboxes
-    port: Number(process.env.KARMA_PORT) || 9877,
+    port: Number(process.env.KARMA_PORT ?? 0) || 0,
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: true,

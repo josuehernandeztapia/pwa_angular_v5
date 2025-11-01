@@ -15,6 +15,53 @@
   </header>
 
   <main id="main-content" class="tanda-colectiva__main">
+    <section
+      class="tanda-demo"
+      *ngIf="isTandaDemo()"
+      aria-label="Escenario demo de tanda colectiva"
+    >
+      <header class="tanda-demo__header">
+        <div>
+          <span class="tanda-demo__badge">Demo</span>
+          <h2>Tanda colectiva demo</h2>
+          <p>Simula sorteos, penalizaciones y explica KPIs sin tocar información productiva.</p>
+        </div>
+        <div class="tanda-demo__actions">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="loadDemoConfig()">
+            Cargar demo
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="simulateDemoSorteo()">
+            Simular sorteo
+          </button>
+        </div>
+      </header>
+
+      <div class="tanda-demo__members" *ngIf="demoMembers().length">
+        <h3>Integrantes demo</h3>
+        <ul>
+          <li *ngFor="let member of demoMembers()">
+            <span>{{ member.name }} · {{ member.deliveryStatus || member.status }}</span>
+            <button type="button" class="btn btn-ghost btn-xs" (click)="markDemoPaymentMissed(member.id)">
+              Pago faltante
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="tanda-demo__schedule" *ngIf="demoSchedule().length">
+        <h3>Calendario demo</h3>
+        <ul>
+          <li *ngFor="let delivery of demoSchedule()">
+            <strong>{{ delivery.memberName }}</strong>
+            • {{ delivery.deliveryStatus }}
+            • {{ delivery.scheduledDate | date:'mediumDate' }}
+          </li>
+        </ul>
+      </div>
+
+      <p class="tanda-demo__message" *ngIf="demoMessage()">{{ demoMessage() }}</p>
+    </section>
+
     <section class="card tanda-colectiva__kpi" *ngIf="simulationResult?.scenario">
       <div class="tanda-colectiva__kpi-grid">
         <div class="tanda-colectiva__kpi-item" data-cy="group-monthly">

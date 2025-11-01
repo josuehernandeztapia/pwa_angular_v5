@@ -8,6 +8,8 @@ import { MonitoringService } from '@core-services/monitoring.service';
 import { ProtectionService } from '@feature-services/risk/protection.service';
 import { FlowContextService } from '@core-services/flow-context.service';
 import { ToastService } from '@core-services/toast.service';
+import { ProtectionApiService } from '@data-access/protection/protection-api.service';
+import { environment } from '@environments/environment';
 import {
   HealthTriggerEvent,
   ProtectionApplicationRequest,
@@ -126,12 +128,20 @@ export class ProtectionWorkflowService {
 
   constructor(
     private readonly protection: ProtectionService,
+    @Optional() private readonly protectionApi: ProtectionApiService | null,
     private readonly analytics: AnalyticsService,
     private readonly monitoring: MonitoringService,
     private readonly toast: ToastService,
     @Optional() private readonly flowContext?: FlowContextService,
   ) {
     this.setupReactiveStreams();
+  }
+
+  private get protectionClient(): ProtectionService | ProtectionApiService {
+    if (environment.features.enableMockData && this.protectionApi) {
+      return this.protectionApi;
+    }
+    return this.protection;
   }
 
   private setupReactiveStreams(): void {
@@ -143,7 +153,7 @@ export class ProtectionWorkflowService {
           this.lastActionSignal.set('loading');
         }),
         switchMap(contractId =>
-          this.protection.getPlan(contractId).pipe(
+          this.protectionClient.getPlan(contractId).pipe(
             tap(plan => {
               let nextPlan = plan;
               if (this.pendingSimulation) {
@@ -173,7 +183,7 @@ export class ProtectionWorkflowService {
           this.lastActionSignal.set('simulating');
         }),
         switchMap(request =>
-          this.protection.simulate(request).pipe(
+          this.protectionClient.simulate(request).pipe(
             tap(response => this.handleSimulationResponse(response)),
             catchError(error => {
               this.errorSignal.set(error.userMessage || 'Error al simular escenarios');
@@ -195,7 +205,7 @@ export class ProtectionWorkflowService {
           this.lastActionSignal.set('selecting');
         }),
         switchMap(request =>
-          this.protection.select(request).pipe(
+          this.protectionClient.select(request).pipe(
             tap(response => {
               if (!response.success) {
                 return;
@@ -231,7 +241,7 @@ export class ProtectionWorkflowService {
     this.healthTrigger
       .pipe(
         switchMap(event =>
-          this.protection.triggerHealthEvent(event).pipe(
+          this.protectionClient.triggerHealthEvent(event).pipe(
             tap(result => {
               if (!result.triggered || !result.newState) {
                 return;
@@ -345,7 +355,7 @@ export class ProtectionWorkflowService {
     this.loadingSignal.set(true);
     this.lastActionSignal.set('approving');
 
-    this.protection
+    this.protectionClient
       .approve({ contractId: contractId.trim(), approvedBy, notes })
       .pipe(
         tap(response => {
@@ -383,7 +393,7 @@ export class ProtectionWorkflowService {
     this.loadingSignal.set(true);
     this.lastActionSignal.set('denying');
 
-    this.protection
+    this.protectionClient
       .deny({ contractId: contractId.trim(), deniedBy, reason })
       .pipe(
         tap(response => {
@@ -426,7 +436,7 @@ export class ProtectionWorkflowService {
     this.loadingSignal.set(true);
     this.lastActionSignal.set('creating_mifiel');
 
-    this.protection
+    this.protectionClient
       .getMifielSigningUrl(contractId.trim(), scenarioType)
       .pipe(
         tap(response => this.openMifielWindow(contractId, response.sessionId, response.documentId, response.signingUrl)),
@@ -445,7 +455,7 @@ export class ProtectionWorkflowService {
     this.loadingSignal.set(true);
     this.lastActionSignal.set('applying');
 
-    this.protection
+    this.protectionClient
       .apply({ contractId: contractId.trim(), effectiveDate })
       .pipe(
         tap(response => {
@@ -657,7 +667,7 @@ export class ProtectionWorkflowService {
 
   private async tryFetchPlan(contractId: string): Promise<ProtectionPlan> {
     return firstValueFrom(
-      this.protection.getPlan(contractId).pipe(timeout(this.planTimeoutMs))
+      this.protectionClient.getPlan(contractId).pipe(timeout(this.planTimeoutMs))
     );
   }
 
@@ -673,7 +683,7 @@ export class ProtectionWorkflowService {
     };
 
     return firstValueFrom(
-      this.protection.simulate(request).pipe(timeout(this.applyTimeoutMs))
+      this.protectionClient.simulate(request).pipe(timeout(this.applyTimeoutMs))
     );
   }
 
@@ -756,7 +766,7 @@ export class ProtectionWorkflowService {
 
     try {
       const response = await firstValueFrom(
-        this.protection.select(request).pipe(timeout(this.applyTimeoutMs))
+        this.protectionClient.select(request).pipe(timeout(this.applyTimeoutMs))
       );
       return { value: response.newState, fallback: false };
     } catch (error) {
@@ -778,7 +788,7 @@ export class ProtectionWorkflowService {
 
     try {
       const response = await firstValueFrom(
-        this.protection.approve(request).pipe(timeout(this.applyTimeoutMs))
+        this.protectionClient.approve(request).pipe(timeout(this.applyTimeoutMs))
       );
       return { value: response.newState, fallback: false };
     } catch (error) {
@@ -803,7 +813,7 @@ export class ProtectionWorkflowService {
 
     try {
       const response = await firstValueFrom(
-        this.protection.sign(signRequest).pipe(timeout(this.applyTimeoutMs))
+        this.protectionClient.sign(signRequest).pipe(timeout(this.applyTimeoutMs))
       );
       return { value: response.newState, fallback: false };
     } catch (error) {
@@ -827,7 +837,7 @@ export class ProtectionWorkflowService {
 
     try {
       const response = await firstValueFrom(
-        this.protection.apply(request).pipe(timeout(this.applyTimeoutMs))
+        this.protectionClient.apply(request).pipe(timeout(this.applyTimeoutMs))
       );
       this.monitoring.captureInfo(
         'protection',
@@ -915,7 +925,7 @@ export class ProtectionWorkflowService {
     this.loadingSignal.set(true);
     this.lastActionSignal.set('signing');
 
-    this.protection
+    this.protectionClient
       .sign({ contractId: contractId.trim(), mifielSessionId: sessionId, signedDocumentUrl: documentUrl })
       .pipe(
         tap(response => {

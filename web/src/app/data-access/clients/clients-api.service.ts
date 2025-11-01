@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map, tap, take } from 'rxjs/operators';
 
 import { HttpClientService, ApiResponse } from '@core-services/http-client.service';
 import { ClientsMockAdapter } from '@internal-services/mock-adapters/clients-mock.adapter';
@@ -9,6 +9,7 @@ import { Client, Document, DocumentStatus, EventLog, Ecosystem } from '@interfac
 import { CollectiveCreditGroup } from '@interfaces/tanda';
 import { EcosystemHierarchyNode } from '@internal-services/mock-adapters/clients-mock.adapter';
 import { environment } from '@environments/environment';
+import { DemoModeService } from '@core-services/demo-mode.service';
 
 @Injectable({ providedIn: 'root' })
 export class ClientsApiService {
@@ -18,8 +19,16 @@ export class ClientsApiService {
 
   constructor(
     private readonly httpClient: HttpClientService,
-    private readonly mockClients: ClientsMockAdapter
-  ) {}
+    private readonly mockClients: ClientsMockAdapter,
+    private readonly demoMode: DemoModeService
+  ) {
+    this.demoMode.isDemoMode$.subscribe(isDemo => {
+      this.clientsSignal.set([]);
+      if (isDemo) {
+        this.getClients().pipe(take(1)).subscribe();
+      }
+    });
+  }
 
   /**
    * Fetch clients (optionally filtered).

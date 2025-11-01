@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { AVIInterviewComponent } from './avi-interview.component';
 import { InterviewCheckpointService } from '@feature-services/avi/interview-checkpoint.service';
 import { VoiceValidationService } from '@feature-services/avi/voice-validation.service';
+import { EntitySyncService } from '@core-services/entity-sync.service';
 
 class MockInterviewCheckpointService {
   getCheckpoint() {
@@ -25,6 +26,10 @@ class MockVoiceValidationService {
   }
 }
 
+class MockEntitySyncService {
+  recordAviStatus() {}
+}
+
 describe('AVIInterviewComponent', () => {
   let fixture: ComponentFixture<AVIInterviewComponent>;
   let component: AVIInterviewComponent;
@@ -34,7 +39,8 @@ describe('AVIInterviewComponent', () => {
       imports: [AVIInterviewComponent],
       providers: [
         { provide: InterviewCheckpointService, useClass: MockInterviewCheckpointService },
-        { provide: VoiceValidationService, useClass: MockVoiceValidationService }
+        { provide: VoiceValidationService, useClass: MockVoiceValidationService },
+        { provide: EntitySyncService, useClass: MockEntitySyncService }
       ]
     }).compileComponents();
 

@@ -1,5 +1,5 @@
 import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, EventEmitter, Input, OnDestroy, OnInit, Optional, Output, PLATFORM_ID, Renderer2, RendererFactory2, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnDestroy, OnInit, Optional, Output, PLATFORM_ID, Renderer2, RendererFactory2, inject, computed, effect, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { DocumentRequirementsService } from '@feature-services/documents/documen
 import { DocumentValidationService } from '@feature-services/documents/document-validation.service';
 import { OCRProgress, OCRResult, OCRService } from '@feature-services/documents/ocr.service';
 import { VoiceValidationService } from '@feature-services/avi/voice-validation.service';
+import { AviEligibilityService, AviReadinessSnapshot } from '@feature-services/avi/avi-eligibility.service';
 import { IconComponent } from '@shared/icon/icon.component';
 import { DocumentUploadHeaderComponent } from './document-upload-header.component';
 import { DocumentStatusBannerComponent } from './document-status-banner.component';
@@ -21,20 +22,37 @@ import { ContextPanelComponent } from '@shared/context-panel.component';
 import { ErrorBoundaryService, BoundaryIssue } from '@core-services/error-boundary.service';
 import { FlowContextService } from '@core-services/flow-context.service';
 import { OfflineData, OfflineProcessResult, OfflineService } from '@core-services/offline.service';
-import { MarketPolicyContext, MarketPolicyMetadata, MarketPolicyService, TandaPolicyMetadata } from '@feature-services/configuration/market-policy.service';
+import { MarketPolicyContext, MarketPolicyMetadata, MarketPolicyService, PolicyMarket, TandaPolicyMetadata } from '@feature-services/configuration/market-policy.service';
 import { AnalyticsService } from '@core-services/analytics.service';
 import { AviBackendService } from '@feature-services/avi/avi-backend.service';
 import { DocumentUploadService, DocumentUploadEvent } from '@feature-services/documents/document-upload.service';
 import { DocumentsApiService } from '@data-access/documents/documents-api.service';
 import { TandaValidationService, TandaFlowContextState, TandaValidationConfig, TandaValidationStatus } from '@feature-services/tanda/tanda-validation.service';
 import { ToastService } from '@core-services/toast.service';
+import { FlowCompletionService, FlowCompletionAction } from '@core-services/flow-completion.service';
+import { SummaryMetric } from '@shared/summary-panel.component';
+import { NavigationService } from '@core-services/navigation.service';
+import { GlobalSearchService } from '@core-services/global-search.service';
+import { DemoModeService } from '@core-services/demo-mode.service';
+import { DemoSeedService } from '@services/demo/demo-seed.service';
+import { DemoWorkflowService } from '@services/demo/demo-workflow.service';
+import { DemoAnalyticsService } from '@services/demo/demo-analytics.service';
+import { DemoAviDecision, DemoScenarioId } from '@services/demo/demo-scenarios';
+import { EntitySyncService } from '@core-services/entity-sync.service';
 import { ContractContextSnapshot } from '@interfaces/contract-context';
 import { ProtectionFlowContextState } from '@feature-services/risk/protection-workflow.service';
+import { OnboardingRequirementsService } from '@feature-services/onboarding/onboarding-requirements.service';
+import { OnboardingAviSessionState, OnboardingRequirementsSnapshot } from '@feature-services/onboarding/onboarding-requirements.models';
+import { OnboardingStatusBannerComponent } from '@shared/onboarding-status-banner.component';
+import { OnboardingTrackerComponent } from '@shared/onboarding-tracker.component';
+import { OnboardingChecklistComponent } from '@shared/onboarding-checklist.component';
 import { DocumentVoiceService } from '../services/document-voice.service';
 import { DocumentOcrService } from '../services/document-ocr.service';
 import { DocumentTandaService } from '../services/document-tanda.service';
 import { catchError } from 'rxjs/operators';
 import { DocumentUploadStore } from './document-upload.store';
+import { PolicyHintPipe } from '@shared/policy-hint.pipe';
+import { DemoErrorBannerComponent } from '@shared/demo-error-banner.component';
 
 type AuditLogEntry = { timestamp: Date; docName: string; action: string; meta?: any };
 
@@ -51,7 +69,12 @@ type AuditLogEntry = { timestamp: Date; docName: string; action: string; meta?: 
     DocumentProtectionBannerComponent,
     DocumentTandaBannerComponent,
     DocumentIncomeBannerComponent,
-    DocumentTelemetryPanelComponent
+    DocumentTelemetryPanelComponent,
+    OnboardingStatusBannerComponent,
+    OnboardingTrackerComponent,
+    OnboardingChecklistComponent,
+    PolicyHintPipe,
+    DemoErrorBannerComponent
   ],
   templateUrl: './document-upload-shell.component.html',
   styleUrls: ['./document-upload-shell.component.scss'],
@@ -67,9 +90,80 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     ? (this.documentRef.defaultView as any)
     : null;
   private readonly store = inject(DocumentUploadStore);
+  private readonly completion = inject(FlowCompletionService);
+  private readonly navigation = inject(NavigationService);
+  private readonly globalSearch = inject(GlobalSearchService);
+  private readonly demoMode = inject(DemoModeService);
+  private readonly demoSeeds = inject(DemoSeedService);
+  private readonly demoWorkflow = inject(DemoWorkflowService);
+  private readonly demoAnalytics = inject(DemoAnalyticsService);
+  private readonly entitySync = inject(EntitySyncService);
+  readonly isDemoMode = this.demoMode.isDemoMode;
+  readonly activeDemoScenario = this.demoMode.activeScenario;
+  readonly demoScenarioSnapshot = computed(() => {
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return null;
+    }
+    return this.demoSeeds.scenarioSnapshot(scenario);
+  });
+  readonly demoDocumentsWithIssues = computed(() => {
+    if (!this.isDemoMode()) {
+      return [] as Document[];
+    }
+    const snapshot = this.demoScenarioSnapshot();
+    if (!snapshot?.documents?.length) {
+      return [] as Document[];
+    }
+    return snapshot.documents.filter(doc => doc.status !== DocumentStatus.Aprobado);
+  });
+  readonly demoIssueDescription = computed(() => {
+    const issues = this.demoDocumentsWithIssues();
+    if (!issues.length) {
+      return 'Todos los documentos demo están validados.';
+    }
+    const preview = issues.slice(0, 3).map(doc => doc.name).join(', ');
+    const remaining = issues.length - 3;
+    if (remaining > 0) {
+      return `${preview} y ${remaining} más con incidencias demo.`;
+    }
+    return `${preview} con incidencias demo.`;
+  });
+  readonly demoAviDecision = computed(() => this.demoScenarioSnapshot()?.aviDecision ?? null);
+  readonly demoAviDecisionUpdatedAt = computed(() => this.demoScenarioSnapshot()?.aviDecisionUpdatedAt ?? null);
+  readonly aviDecisionOptions: DemoAviDecision[] = ['GO', 'REVIEW', 'NO_GO'];
+  readonly isResolvingDemoIssues = signal(false);
+  readonly demoDocumentBusy = signal<string | null>(null);
+  readonly isSimulatingAviDecision = signal(false);
+  private readonly demoWatcher = effect(() => {
+    if (!this.isDemoMode()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    const snapshot = this.demoScenarioSnapshot();
+    if (!scenario || !snapshot?.documents) {
+      return;
+    }
+
+    const docs = snapshot.documents.map(doc => ({ ...doc }));
+    this.requiredDocuments = docs;
+    this.completionStatus = this.documentRequirements.getDocumentCompletionStatus(docs) as DocumentCompletionStatus;
+
+    if (!this.flowContext && snapshot.flowContext) {
+      this.flowContext = {
+        ...snapshot.flowContext,
+        source: snapshot.flowContext.source ?? 'nueva-oportunidad'
+      } as FlowContext;
+    }
+
+    this.demoAnalytics.track('scenario_active', {
+      scenario,
+      feature: 'documents'
+    });
+  });
   private syncMessageTimer?: Subscription;
   private readonly contextKey = 'documentos';
-  private policyContext: MarketPolicyContext | null = null;
+  policyContext: MarketPolicyContext | null = null;
   private restoredDocuments: Document[] | null = null;
   private policyMetadata: MarketPolicyMetadata | null = null;
   private protectionBannerDismissed = false;
@@ -77,6 +171,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
   private currentUploadingFile: File | null = null;
   private readonly documentStatusCache = new Map<string, DocumentStatus>();
   private hasLoadedServerDocuments = false;
+  private hasShownCompletionOverlay = false;
+  private lastDocumentProgressOverlayAt = 0;
 
   @Input() flowContext!: FlowContext;
   @Output() flowComplete = new EventEmitter<any>();
@@ -96,6 +192,25 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
 
   set completionStatus(value: DocumentCompletionStatus) {
     this.store.setCompletionStatus(value);
+    this.syncDocumentProgress(value);
+  }
+
+  private syncDocumentProgress(status: DocumentCompletionStatus | null | undefined): void {
+    if (!status || !this.flowContextService) {
+      return;
+    }
+
+    this.flowContextService.saveContext('documents-progress', {
+      pending: status.pendingDocs,
+      completed: status.completedDocs,
+      total: status.totalDocs,
+      clientId: this.flowContext?.clientId ?? null,
+      lastUpdated: Date.now()
+    }, {
+      persist: false
+    });
+
+    this.navigation.refreshQuickActions();
   }
 
   get primaryDocuments(): Document[] {
@@ -156,6 +271,122 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     this.store.setOfflineState(current.isOffline, value);
   }
 
+  toggleDemoDocument(doc: Document): void {
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return;
+    }
+    this.demoWorkflow.toggleDocumentCompletion(scenario, doc.id);
+  }
+
+  async autoFixDemoDocument(doc: Document): Promise<void> {
+    await this.runDemoDocumentAction(doc.id, async scenario => {
+      await this.demoWorkflow.fixDocument(scenario, doc.id);
+      this.demoAnalytics.track('document_autofix_single', { scenario, documentId: doc.id });
+    });
+  }
+
+  async simulateDemoDocumentIssue(doc: Document): Promise<void> {
+    await this.runDemoDocumentAction(doc.id, async scenario => {
+      await this.demoWorkflow.rejectDocument(scenario, doc.id, 'Incidencia demo generada manualmente');
+      this.demoAnalytics.track('document_issue_simulated', { scenario, documentId: doc.id });
+    });
+  }
+
+  async resolveDemoIssues(): Promise<void> {
+    if (this.isResolvingDemoIssues()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return;
+    }
+    const documents = [...this.demoDocumentsWithIssues()];
+    if (!documents.length) {
+      return;
+    }
+    this.isResolvingDemoIssues.set(true);
+    try {
+      for (const doc of documents) {
+        await this.demoWorkflow.fixDocument(scenario, doc.id);
+      }
+      this.demoAnalytics.track('documents_autofix', {
+        scenario,
+        total: documents.length
+      });
+    } finally {
+      this.isResolvingDemoIssues.set(false);
+    }
+  }
+
+  isDemoDocumentBusy(docId: string): boolean {
+    return this.isResolvingDemoIssues() || this.demoDocumentBusy() === docId;
+  }
+
+  exitDemoMode(): void {
+    this.demoMode.enableRealData();
+    this.demoAnalytics.track('scenario_exit', { feature: 'documents' });
+  }
+
+  resetDemoScenario(): void {
+    if (!this.isDemoMode()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    if (!scenario) {
+      return;
+    }
+    this.demoSeeds.resetScenario(scenario);
+    this.demoAnalytics.track('scenario_reset', { scenario, feature: 'documents' });
+  }
+
+  simulateAviDecision(decision: DemoAviDecision): void {
+    if (!this.isDemoMode()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    if (!scenario || this.isSimulatingAviDecision()) {
+      return;
+    }
+    this.isSimulatingAviDecision.set(true);
+    try {
+      this.demoAnalytics.track('avi_decision_triggered', {
+        scenario,
+        decision,
+        feature: 'documents'
+      });
+      this.demoWorkflow.simulateAviDecision(scenario, decision);
+    } finally {
+      this.isSimulatingAviDecision.set(false);
+    }
+  }
+
+  formatAviDecision(decision: DemoAviDecision | null): string {
+    switch (decision) {
+      case 'GO':
+        return 'GO';
+      case 'REVIEW':
+        return 'Review';
+      case 'NO_GO':
+        return 'No go';
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  getAviDecisionClass(decision: DemoAviDecision | null): string {
+    switch (decision) {
+      case 'GO':
+        return 'document-upload__demo-avi-pill--go';
+      case 'REVIEW':
+        return 'document-upload__demo-avi-pill--review';
+      case 'NO_GO':
+        return 'document-upload__demo-avi-pill--no-go';
+      default:
+        return 'document-upload__demo-avi-pill--pending';
+    }
+  }
+
   queueHasAction(queueId: string): boolean {
     return this.store.queueInProgress().has(queueId);
   }
@@ -196,6 +427,19 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     this.store.resetRetryCount(docId);
   }
 
+  private async runDemoDocumentAction(docId: string, action: (scenario: DemoScenarioId) => Promise<void>): Promise<void> {
+    const scenario = this.activeDemoScenario();
+    if (!scenario || this.demoDocumentBusy() === docId || this.isResolvingDemoIssues()) {
+      return;
+    }
+    this.demoDocumentBusy.set(docId);
+    try {
+      await action(scenario);
+    } finally {
+      this.demoDocumentBusy.set(null);
+    }
+  }
+
   get auditLog(): AuditLogEntry[] {
     return this.store.auditLog();
   }
@@ -219,6 +463,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
   private lastTandaRosterHash: string | null = null;
   boundaryIssues: BoundaryIssue[] = [];
   private lastTelemetryHash = '';
+  private lastRequirementsTelemetryKey: string | null = null;
 
   get voicePattern(): string {
     return this.voiceService.state().pattern;
@@ -242,6 +487,22 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
 
   get aviAnalysis(): any {
     return this.voiceService.state().analysis;
+  }
+
+  get aviReadiness(): AviReadinessSnapshot | null {
+    if (!this.showAVI) {
+      return null;
+    }
+
+    return this.aviEligibility.evaluate({
+      documents: this.requiredDocuments ?? [],
+      flowContext: this.flowContext ?? null,
+      showAviOverride: true
+    });
+  }
+
+  get onboardingSnapshot() {
+    return this.onboardingRequirements.snapshot();
   }
 
   get ocrStatus(): 'processing' | 'validated' | 'error' | null {
@@ -299,6 +560,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     private documentUpload: DocumentUploadService,
     private tandaValidation: TandaValidationService,
     private toast: ToastService,
+    private aviEligibility: AviEligibilityService,
+    private onboardingRequirements: OnboardingRequirementsService,
     @Optional() private flowContextService?: FlowContextService
   ) {}
 
@@ -327,6 +590,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         this.flowContext = { market, clientType, source, businessFlow, saleType, clientId, clientName } as any;
       } catch {}
     }
+
+    this.syncDocumentProgress(this.store.completionStatus());
 
     this.updateBreadcrumbs();
     this.persistFlowState();
@@ -429,6 +694,21 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
 
     this.initializeTandaValidation();
 
+    const demoSnapshot = this.demoScenarioSnapshot();
+    if (this.isDemoMode() && demoSnapshot?.documents?.length) {
+      const docs = demoSnapshot.documents.map(doc => ({ ...doc }));
+      this.requiredDocuments = docs;
+      this.initializeDocumentStatusCache(docs);
+      this.syncQueuedDocumentStatuses();
+      this.syncOnboardingSnapshot(docs);
+      this.updateCompletionStatus(false);
+      this.demoAnalytics.track('documents_seed_applied', {
+        scenario: this.activeDemoScenario(),
+        total: docs.length
+      });
+      return;
+    }
+
     this.documentRequirements.getDocumentRequirements({
       market: this.flowContext.market,
       saleType,
@@ -450,7 +730,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       this.requiredDocuments = finalDocs;
       this.initializeDocumentStatusCache(finalDocs);
       this.syncQueuedDocumentStatuses();
-      this.updateCompletionStatus();
+      this.syncOnboardingSnapshot(docs);
+      this.updateCompletionStatus(false);
       this.loadDocumentsFromServer();
     });
 
@@ -479,6 +760,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
           this.lastTandaConfigKey = this.configKeyForState(state);
         }
         this.persistFlowState();
+        this.maybeOpenCompletionOverlay();
+        this.syncOnboardingSnapshot();
       });
 
     const config = this.buildTandaValidationConfig();
@@ -1003,12 +1286,16 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       } else {
         if (stored.voiceVerified !== undefined) {
           this.voiceService.markVerified(this.voiceService.state().analysis, stored.voiceVerified ? 'GO' : 'NO_GO');
+          this.maybeOpenCompletionOverlay();
+          this.syncOnboardingSnapshot();
         }
         if (stored.showAVI !== undefined) {
           this.voiceService.setShowAvi(stored.showAVI);
         }
         if (stored.aviAnalysis !== undefined) {
           this.voiceService.updateAnalysis(stored.aviAnalysis);
+          this.maybeOpenCompletionOverlay();
+          this.syncOnboardingSnapshot();
         }
       }
       if (stored.ocrState) {
@@ -1332,6 +1619,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
   private initializeAVI() {
     this.voiceService.setShowAvi(true);
     this.voiceService.updateAnalysis({ status: 'pending', confidence: 0, fraudRisk: 'UNKNOWN' });
+    this.syncOnboardingSnapshot();
     this.persistFlowState();
   }
 
@@ -2083,19 +2371,23 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         sessionId: result.sessionId,
         fallbackUsed: result.fallbackUsed
       }, result.decision);
+      this.syncOnboardingSnapshot();
 
       this.analytics.track('avi_recording_completed', {
         decision: result.decision,
         score: result.score,
         fallbackUsed: result.fallbackUsed,
       });
+      this.maybeOpenCompletionOverlay();
     } catch (error) {
       const message = (error as Error)?.message ?? 'Error desconocido';
       this.voiceService.markVerified({ status: 'error', message }, 'NO_GO');
+      this.maybeOpenCompletionOverlay();
       this.analytics.track('avi_recording_failed', {
         message,
       });
       this.voiceService.updateAnalysis({ status: 'error', message });
+      this.syncOnboardingSnapshot();
       this.errorBoundary.reportNetworkTimeout({
         message: 'No se pudo procesar la validación de voz',
         context: {
@@ -2112,6 +2404,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
 
   private startAVIAnalysis() {
     this.voiceService.updateAnalysis({ status: 'processing', confidence: 0, fraudRisk: 'UNKNOWN' });
+    this.syncOnboardingSnapshot();
     this.persistFlowState();
   }
 
@@ -2226,11 +2519,124 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  private updateCompletionStatus() {
-    this.completionStatus = this.documentRequirements.getDocumentCompletionStatus(this.requiredDocuments) as DocumentCompletionStatus;
+  private updateCompletionStatus(triggerSync: boolean = true) {
+    const previousStatus = this.cloneCompletionStatus(this.completionStatus);
+    const nextStatus = this.documentRequirements.getDocumentCompletionStatus(this.requiredDocuments) as DocumentCompletionStatus;
+    this.completionStatus = nextStatus;
     this.updateDocumentCollections();
     this.syncDocumentStatusChanges();
     this.persistFlowState();
+    this.maybeOpenCompletionOverlay();
+    this.syncEntityDocumentProgress(previousStatus, nextStatus);
+    if (triggerSync) {
+      this.syncOnboardingSnapshot();
+    }
+  }
+
+  private syncOnboardingSnapshot(documentTemplates?: Document[]): void {
+    if (!this.flowContext) {
+      return;
+    }
+
+    const context = {
+      market: this.flowContext.market,
+      saleType: this.flowContext.saleType ?? 'financiero',
+      clientType: this.flowContext.clientType,
+      businessFlow: this.flowContext.businessFlow,
+      clientStatus: this.flowContext.contract?.status ?? null,
+      requiresIncomeProof: this.determineIncomeProofRequirement(),
+      collectiveSize: this.determineCollectiveSize() ?? null
+    };
+
+    this.onboardingRequirements.update({
+      context,
+      documents: this.requiredDocuments ?? [],
+      policyMetadata: this.policyMetadata ?? null,
+      completion: this.completionStatus,
+      aviSession: this.buildAviSessionState(),
+      aviReadiness: this.showAVI ? this.aviReadiness : null,
+      flowContext: this.flowContext,
+      documentTemplates
+    });
+
+    this.recordRequirementsTelemetry(this.onboardingRequirements.snapshot(), 'documents');
+  }
+
+  private recordRequirementsTelemetry(
+    snapshot: OnboardingRequirementsSnapshot | null,
+    origin: 'documents' | 'onboarding' | 'cotizador'
+  ): void {
+    if (!snapshot) {
+      return;
+    }
+
+    const key = `${origin}|${snapshot.context.market}|${snapshot.context.saleType}|${snapshot.context.clientType}|${snapshot.pendingCount}`;
+    if (this.lastRequirementsTelemetryKey === key) {
+      return;
+    }
+
+    this.lastRequirementsTelemetryKey = key;
+
+    if (snapshot.pendingCount > 0) {
+      this.analytics.track('onboarding_requirements_pending', {
+        origin,
+        pending: snapshot.pendingCount,
+        market: snapshot.context.market,
+        saleType: snapshot.context.saleType,
+        clientType: snapshot.context.clientType,
+        items: snapshot.pendingRequirements.slice(0, 5).map(item => ({
+          id: item.id,
+          title: item.title,
+          status: item.status
+        }))
+      });
+    } else {
+      this.analytics.track('onboarding_requirements_clear', {
+        origin,
+        market: snapshot.context.market,
+        saleType: snapshot.context.saleType,
+        clientType: snapshot.context.clientType
+      });
+    }
+  }
+
+  private buildAviSessionState(): OnboardingAviSessionState | null {
+    if (!this.showAVI) {
+      return null;
+    }
+
+    const analysis = this.aviAnalysis;
+    const rawStatus = typeof analysis?.status === 'string' ? analysis.status.toLowerCase() : 'pending';
+
+    let status: OnboardingAviSessionState['status'];
+    switch (rawStatus) {
+      case 'completed':
+        status = 'completed';
+        break;
+      case 'in_progress':
+        status = 'in_progress';
+        break;
+      case 'cancelled':
+        status = 'cancelled';
+        break;
+      case 'pending':
+      case 'not_started':
+        status = 'pending';
+        break;
+      default:
+        status = 'pending';
+        break;
+    }
+
+    const decision = typeof analysis?.decision === 'string'
+      ? (analysis.decision.toUpperCase() as OnboardingAviSessionState['decision'])
+      : null;
+
+    return {
+      status,
+      decision,
+      updatedAt: typeof analysis?.updatedAt === 'number' ? analysis.updatedAt : Date.now()
+    };
   }
 
   private async syncTandaRosterIfNeeded(): Promise<void> {
@@ -2440,6 +2846,104 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     });
   }
 
+  private cloneCompletionStatus(status: DocumentCompletionStatus | null): DocumentCompletionStatus | null {
+    return status ? { ...status } : null;
+  }
+
+  private syncEntityDocumentProgress(
+    previous: DocumentCompletionStatus | null,
+    current: DocumentCompletionStatus | null
+  ): void {
+    if (!current || !current.totalDocs || !this.flowContext?.clientId) {
+      return;
+    }
+
+    const hasChanged = previous
+      ? previous.completedDocs !== current.completedDocs || previous.pendingDocs !== current.pendingDocs
+      : current.completedDocs > 0 || current.pendingDocs < current.totalDocs;
+
+    if (!hasChanged) {
+      return;
+    }
+
+    const clientName = this.flowContext.clientName ?? 'Cliente';
+
+    this.entitySync.recordDocumentCompletion({
+      clientId: this.flowContext.clientId,
+      clientName,
+      market: this.flowContext.market as PolicyMarket,
+      businessFlow: this.flowContext.businessFlow,
+      validatedDocs: current.completedDocs,
+      pendingDocs: current.pendingDocs,
+      totalDocs: current.totalDocs,
+      source: this.flowContext.source
+    });
+
+    this.presentDocumentProgressOverlay(previous, current);
+  }
+
+  private presentDocumentProgressOverlay(
+    previous: DocumentCompletionStatus | null,
+    current: DocumentCompletionStatus
+  ): void {
+    if (this.completion.isOpen() || current.pendingDocs === 0) {
+      return;
+    }
+
+    const validatedDiff = previous ? current.completedDocs - previous.completedDocs : current.completedDocs;
+    if (validatedDiff < 3) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastDocumentProgressOverlayAt < 4000) {
+      return;
+    }
+    this.lastDocumentProgressOverlayAt = now;
+
+    const metrics: SummaryMetric[] = [
+      {
+        label: 'Documentos validados',
+        value: `${current.completedDocs}/${current.totalDocs}`,
+        badge: 'success'
+      },
+      {
+        label: 'Pendientes',
+        value: `${current.pendingDocs}`,
+        badge: 'warning'
+      }
+    ];
+
+    const nextSteps = [
+      'Revisa los documentos con observaciones antes de continuar.',
+      'Coordina con el cliente las evidencias faltantes.'
+    ];
+
+    const actions: FlowCompletionAction[] = [
+      {
+        id: 'continue-validation',
+        label: 'Seguir validando',
+        kind: 'primary',
+        execute: () => Promise.resolve()
+      },
+      {
+        id: 'open-dashboard',
+        label: 'Ir al dashboard',
+        kind: 'ghost',
+        execute: () => this.navigation.navigateTo('/dashboard')
+      }
+    ];
+
+    this.completion.open({
+      title: 'Validación masiva registrada',
+      description: 'Sincronizamos los documentos marcados. Prioriza los pendientes antes de generar contratos.',
+      metrics,
+      nextSteps,
+      actions,
+      onComplete: () => this.navigation.refreshQuickActions()
+    });
+  }
+
   private mergeUpdatedDocument(updated: Document): void {
     if (!updated.id) {
       return;
@@ -2492,7 +2996,11 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     return docsComplete && voiceComplete && aviComplete;
   }
 
-  proceedToContracts() {
+  proceedToContracts(): void {
+    if (!this.canProceedToContracts) {
+      return;
+    }
+
     const contractData = {
       flowContext: this.flowContext,
       documentsComplete: true,
@@ -2501,19 +3009,124 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       contractType: this.getContractType()
     };
 
-    // Emit completion event with all flow data
     this.flowComplete.emit(contractData);
     this.persistFlowState();
 
-    // Navigate to contract generation or final step
-    this.router.navigate(['/contratos/generacion'], {
-      queryParams: {
-        clientId: this.flowContext.clientId,
-        source: this.flowContext.source,
-        market: this.flowContext.market,
-        businessFlow: this.flowContext.businessFlow
+    this.hasShownCompletionOverlay = true;
+    this.openCompletionOverlay(contractData);
+  }
+
+  private openCompletionOverlay(contractData: any): void {
+    const metrics = this.buildDocumentCompletionMetrics();
+    const nextSteps = [
+      'Genera el contrato y valida condiciones financieras.',
+      'Registra cualquier actividad adicional en el expediente.'
+    ];
+
+    const queryParams = {
+      clientId: this.flowContext.clientId,
+      source: this.flowContext.source,
+      market: this.flowContext.market,
+      businessFlow: this.flowContext.businessFlow
+    };
+
+    const actions: FlowCompletionAction[] = [
+      {
+        id: 'go-contracts',
+        label: 'Generar contrato',
+        kind: 'primary',
+        execute: () => this.router.navigate(['/contratos/generacion'], { queryParams })
+      }
+    ];
+
+    if (this.flowContext?.clientId) {
+      actions.push({
+        id: 'view-client',
+        label: 'Ver cliente',
+        kind: 'secondary',
+        execute: () => this.router.navigate(['/clientes', this.flowContext!.clientId])
+      });
+    }
+
+    this.hasShownCompletionOverlay = true;
+    this.completion.open({
+      title: 'Expediente listo para contrato',
+      description: 'Los documentos, verificaciones de voz y AVI quedaron sincronizados. Elige el siguiente paso.',
+      metrics,
+      nextSteps,
+      actions,
+      onComplete: () => {
+        this.globalSearch.refreshIndex(this.flowContext?.clientName);
+        this.navigation.refreshQuickActions();
       }
     });
+  }
+
+  private maybeOpenCompletionOverlay(): void {
+    if (this.canProceedToContracts) {
+      if (!this.hasShownCompletionOverlay && !this.completion.isOpen()) {
+        if (!this.flowContext) {
+          return;
+        }
+        const contractData = {
+          flowContext: this.flowContext,
+          documentsComplete: true,
+          voiceVerified: this.voiceVerified,
+          aviAnalysis: this.aviAnalysis,
+          contractType: this.getContractType()
+        };
+        this.openCompletionOverlay(contractData);
+      }
+    } else if (this.hasShownCompletionOverlay) {
+      this.hasShownCompletionOverlay = false;
+    }
+  }
+
+  private buildDocumentCompletionMetrics(): SummaryMetric[] {
+    const status = this.store.completionStatus();
+    const metrics: SummaryMetric[] = [
+      {
+        label: 'Documentos',
+        value: `${status.completedDocs}/${status.totalDocs} completos`,
+        badge: status.allComplete ? 'success' : 'warning'
+      }
+    ];
+
+    metrics.push({
+      label: 'Biometría de voz',
+      value: this.voiceVerified ? 'Verificada' : 'Pendiente',
+      badge: this.voiceVerified ? 'success' : 'warning'
+    });
+
+    metrics.push({
+      label: 'Fuente de datos',
+      value: this.isDemoMode() ? 'DEMO' : 'REAL',
+      badge: this.isDemoMode() ? 'warning' : 'success'
+    });
+
+    if (this.showAVI) {
+      const aviStatus = this.aviAnalysis?.status ?? 'pending';
+      const fraudRisk = (this.aviAnalysis?.fraudRisk as string | undefined)?.toUpperCase() ?? 'LOW';
+      const isRiskHigh = fraudRisk === 'HIGH';
+      const aviValue = aviStatus === 'completed'
+        ? (isRiskHigh ? 'Riesgo alto detectado' : 'Completada')
+        : 'Pendiente';
+      metrics.push({
+        label: 'AVI',
+        value: aviValue,
+        badge: aviStatus === 'completed' ? (isRiskHigh ? 'error' : 'success') : 'warning'
+      });
+    }
+
+    if (this.pendingOfflineDocs > 0) {
+      metrics.push({
+        label: 'Sincronización offline',
+        value: `${this.pendingOfflineDocs} pendientes`,
+        badge: 'warning'
+      });
+    }
+
+    return metrics;
   }
 
   private getContractType(): string {

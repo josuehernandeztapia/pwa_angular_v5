@@ -61,6 +61,51 @@ export class CotizadorEngineService {
    * Port exacto de getProductPackage desde React simulationService.ts líneas 550-613
    */
   getProductPackage(market: string): Observable<ProductPackage> {
+    const edomexFinancingPackage: ProductPackage = {
+      name: "Paquete Venta a Plazo (Individual) - EdoMex",
+      rate: 0.299,
+      terms: [48, 60],
+      minDownPaymentPercentage: 0.20, // Rango 20-25%, este es el mínimo
+      maxDownPaymentPercentage: 0.25, // Máximo sugerido para individual
+      components: [
+        { id: 'vagoneta_ventanas', name: 'Vagoneta H6C (Ventanas)', price: 749000, isOptional: false },
+        { id: 'gnv', name: 'Conversión GNV', price: 54000, isOptional: false },
+        { id: 'tec', name: 'Paquete Tec (GPS, Cámaras)', price: 12000, isOptional: false },
+        { id: 'bancas', name: 'Bancas', price: 22000, isOptional: false },
+        { id: 'seguro', name: 'Seguro Anual', price: 36700, isOptional: false, isMultipliedByTerm: true }
+      ]
+    };
+
+    const edomexDirectPackage: ProductPackage = {
+      name: "Paquete Compra de Contado - EdoMex",
+      rate: 0,
+      terms: [],
+      minDownPaymentPercentage: 0.50, // 50% para compra de contado
+      components: [
+        { id: 'vagoneta_ventanas', name: 'Vagoneta H6C (Ventanas)', price: 749000, isOptional: false },
+        { id: 'gnv', name: 'Conversión GNV', price: 54000, isOptional: false }, // Obligatorio en EdoMex contado
+        { id: 'bancas', name: 'Bancas', price: 22000, isOptional: false } // Obligatorio en EdoMex contado
+        // GPS+Cámaras+Seguro SOLO para venta a plazo/crédito, NO contado
+      ]
+    };
+
+    const edomexCollectivePackage: ProductPackage = {
+      name: "Paquete Crédito Colectivo - EdoMex",
+      rate: 0.299,
+      terms: [60],
+      minDownPaymentPercentage: 0.15, // Rango 15-20%, este es el mínimo
+      maxDownPaymentPercentage: 0.20, // Máximo sugerido para colectivo
+      defaultMembers: 5, // Mínimo 5 miembros
+      maxMembers: 20, // Sin límite rígido, máximo lógico ~20
+      components: [
+        { id: 'vagoneta_ventanas', name: 'Vagoneta H6C (Ventanas)', price: 749000, isOptional: false },
+        { id: 'gnv', name: 'Conversión GNV', price: 54000, isOptional: false },
+        { id: 'tec', name: 'Paquete Tec (GPS, Cámaras)', price: 12000, isOptional: false },
+        { id: 'bancas', name: 'Bancas', price: 22000, isOptional: false },
+        { id: 'seguro', name: 'Seguro Anual', price: 36700, isOptional: false, isMultipliedByTerm: true }
+      ]
+    };
+
     const packages: { [key: string]: ProductPackage } = {
       // --- Aguascalientes ---
       'aguascalientes-plazo': {
@@ -85,46 +130,26 @@ export class CotizadorEngineService {
       },
       // --- Estado de México ---
       'edomex-plazo': {
-        name: "Paquete Venta a Plazo (Individual) - EdoMex",
-        rate: 0.299,
-        terms: [48, 60],
-        minDownPaymentPercentage: 0.20, // Rango 20-25%, este es el mínimo
-        maxDownPaymentPercentage: 0.25, // Máximo sugerido para individual
-        components: [
-          { id: 'vagoneta_ventanas', name: 'Vagoneta H6C (Ventanas)', price: 749000, isOptional: false },
-          { id: 'gnv', name: 'Conversión GNV', price: 54000, isOptional: false },
-          { id: 'tec', name: 'Paquete Tec (GPS, Cámaras)', price: 12000, isOptional: false },
-          { id: 'bancas', name: 'Bancas', price: 22000, isOptional: false },
-          { id: 'seguro', name: 'Seguro Anual', price: 36700, isOptional: false, isMultipliedByTerm: true }
-        ]
+        ...edomexFinancingPackage
       },
       'edomex-directa': {
-        name: "Paquete Compra de Contado - EdoMex",
-        rate: 0,
-        terms: [],
-        minDownPaymentPercentage: 0.50, // 50% para compra de contado
-        components: [
-          { id: 'vagoneta_ventanas', name: 'Vagoneta H6C (Ventanas)', price: 749000, isOptional: false },
-          { id: 'gnv', name: 'Conversión GNV', price: 54000, isOptional: false }, // Obligatorio en EdoMex contado
-          { id: 'bancas', name: 'Bancas', price: 22000, isOptional: false }, // Obligatorio en EdoMex contado
-          // GPS+Cámaras+Seguro SOLO para venta a plazo/crédito, NO contado
-        ]
+        ...edomexDirectPackage
       },
       'edomex-colectivo': {
-        name: "Paquete Crédito Colectivo - EdoMex",
-        rate: 0.299,
-        terms: [60],
-        minDownPaymentPercentage: 0.15, // Rango 15-20%, este es el mínimo
-        maxDownPaymentPercentage: 0.20, // Máximo sugerido para colectivo
-        defaultMembers: 5, // Mínimo 5 miembros
-        maxMembers: 20, // Sin límite rígido, máximo lógico ~20
-        components: [
-          { id: 'vagoneta_ventanas', name: 'Vagoneta H6C (Ventanas)', price: 749000, isOptional: false },
-          { id: 'gnv', name: 'Conversión GNV', price: 54000, isOptional: false },
-          { id: 'tec', name: 'Paquete Tec (GPS, Cámaras)', price: 12000, isOptional: false },
-          { id: 'bancas', name: 'Bancas', price: 22000, isOptional: false },
-          { id: 'seguro', name: 'Seguro Anual', price: 36700, isOptional: false, isMultipliedByTerm: true }
-        ]
+        ...edomexCollectivePackage
+      },
+      // --- Otros mercados (alias EdoMex estándar) ---
+      'otros-plazo': {
+        ...edomexFinancingPackage,
+        name: 'Paquete Venta a Plazo - Otros mercados'
+      },
+      'otros-directa': {
+        ...edomexDirectPackage,
+        name: 'Paquete Compra de Contado - Otros mercados'
+      },
+      'otros-colectivo': {
+        ...edomexCollectivePackage,
+        name: 'Paquete Crédito Colectivo - Otros mercados'
       }
     };
 

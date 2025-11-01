@@ -84,6 +84,155 @@
   }
 }
 
+.simulador-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px dashed rgba(37, 99, 235, 0.28);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.simulador-demo__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.simulador-demo__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.simulador-demo__finance,
+.simulador-demo__tanda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.simulador-demo__finance-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.simulador-demo__finance-btn--active {
+  background: rgba(37, 99, 235, 0.16);
+  color: #1d4ed8;
+}
+
+.simulador-demo__finance-detail {
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.simulador-demo__finance-detail p {
+  margin: 0.3rem 0;
+}
+
+.simulador-demo__finance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.simulador-demo__finance-actions .btn {
+  min-width: 148px;
+}
+
+.simulador-demo__finance-events {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.simulador-demo__finance-events li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  font-size: 0.85rem;
+}
+
+.simulador-demo__finance-event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.simulador-demo__finance-event-info strong {
+  font-size: 0.85rem;
+}
+
+.simulador-demo__finance-event-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--token-color-text-secondary, #64748b);
+}
+
+.simulador-demo__tanda-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.simulador-demo__tanda-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 0.85rem;
+  overflow: hidden;
+}
+
+.simulador-demo__tanda-table th,
+.simulador-demo__tanda-table td {
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.simulador-demo__tanda-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.simulador-demo__tanda-schedule {
+  border-top: 1px solid rgba(59, 130, 246, 0.18);
+  padding-top: 0.9rem;
+}
+
+.simulador-demo__tanda-schedule ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
 .scenario-card {
   display: flex;
   flex-direction: column;

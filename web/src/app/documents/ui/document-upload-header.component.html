@@ -1,6 +1,7 @@
 <header class="document-upload__header">
   <div class="document-upload__header-main">
     <h2 class="document-upload__title">{{ title }}</h2>
+    <app-demo-badge class="document-upload__data-badge" [isDemo]="isDemo"></app-demo-badge>
   </div>
   <div class="document-upload__meta">
     <span class="document-upload__progress" data-cy="documents-progress">

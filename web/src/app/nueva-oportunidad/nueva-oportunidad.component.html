@@ -90,10 +90,16 @@
       >
         <input id="monthlyIncome" type="number" min="0" step="100" formControlName="monthlyIncome" placeholder="15000" />
       </app-form-field>
+      <p *ngIf="policyContext() as context" class="new-opportunity__policy-hint">
+        {{ 'income' | policyHint: { context } }}
+      </p>
 
       <app-form-field id="voluntaryContribution" label="Aportación voluntaria" helper="Opcional">
         <input id="voluntaryContribution" type="number" min="0" step="100" formControlName="voluntaryContribution" placeholder="2000" />
       </app-form-field>
+      <p *ngIf="isCollectiveFlow() && policyContext() as context" class="new-opportunity__policy-hint">
+        {{ 'tandaContribution' | policyHint: { context } }}
+      </p>
 
       <app-form-field id="notes" label="Notas internas">
         <textarea id="notes" rows="3" formControlName="notes" placeholder="Aspectos relevantes del cliente"></textarea>

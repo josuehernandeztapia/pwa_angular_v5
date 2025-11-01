@@ -38,10 +38,61 @@ Consulta [`../README.md`](../README.md) para instrucciones de instalación, desp
   - Error handling and edge cases
   - Integration scenarios and cleanup
 
+## Escenarios Demo Secuenciales
+
+### Activación rápida
+- Usa `?enableDemo=true` o el switch de la barra superior para entrar en modo demo. Cualquier URL con `?demo=<scenario>` activa automáticamente el guard `DemoRouterGuard`, fuerza el escenario correspondiente y redirige a su ruta preferida.
+- El servicio `DemoModeService` ahora expone `getScenarioSnapshot`, `getClientByScenario`, `resetActiveScenario` y `resolveScenarioRedirect` para orquestar flujos demo desde componentes o pruebas.
+- Seeds disponibles desde `DemoSeedService`: `getAviPerfectoSeed()`, `getKycDemoSeed()`, `getErrorDocsSeed()`, `getProteccionDemoSeed()`, `getTandaDemoSeed()`, `getPostventaDemoSeed()`, `getFinanzasWhatIfSeed()`, `getOnboardingMultiSeed()`, `getFavoritosExportSeed()` y `getTelemetriaFullSeed()`. Todas mantienen estado mutable (signals) y se pueden reiniciar con los métodos `reset*` equivalentes.
+- En modo demo, usa los accesos directos del sidebar “AVI Test” y “KYC Test” para abrir los flujos mock instantáneos, reiniciar seeds y registrar telemetría `demo_avi_*` / `demo_kyc_*` sin navegar onboarding manual.
+
+### Cómo usar “AVI Test” / “KYC Test” desde el sidebar
+1. Activa modo demo (`?enableDemo=true`) o usa el banner superior.
+2. Haz click en “AVI Test” o “KYC Test” justo debajo de “Simulador”. Cada acceso abre una vista dedicada (`/demo/avi-test` o `/demo/kyc-test`) con banner “Modo DEMO” y los seeds precargados (`getAviPerfectoSeed()` / `getKycDemoSeed()`).
+3. Ejecuta el flujo completo:
+   - **AVI Test**: sigue el stepper (briefing → entrevista → resultados), dispara la entrevista demo, observa los logs `demo_avi_*` y usa “Autocorregir” si aparecen banderas.
+   - **KYC Test**: prepara documentos, simula la biometría (éxito o alerta) y revisa el log de eventos `demo_kyc_*`. El banner de alertas permite “Autocorregir” para completar la sesión.
+4. Usa “Reiniciar Test AVI/KYC” para restaurar el seed y comenzar otra demostración sin arrastrar estado.
+5. Consulta `/demo-analytics` para ver tiempos, resultados y eventos emitidos por ambos flujos.
+
+### Flujos cubiertos
+- **Documentos** (`/documentos?demo=...`): `DemoErrorBannerComponent` resalta documentos pendientes con acción “Autocorregir pendientes”. Cada tarjeta incluye botones “Simular incidencia”, “Autocorregir” y el conmutador AVI (GO/REVIEW/NO_GO) que delega en `DemoWorkflowService` (`fixDocument`, `rejectDocument`, `simulateAviDecision`).
+- **Simulador** (`/simulador?demo=finanzas-whatif` o `proteccion-reestructura`): los escenarios financieros pasan por `DemoReestructuraEngine`, aplican cálculos falsos y registran telemetría. El módulo de tanda demo usa `DemoTandaService` (`simulateSorteo`, `markPaymentMissed`) con latencia simulada.
+  - `AGS Ahorro` y `EdoMex Individual` cargan automáticamente la configuración del escenario What-If, repintan formularios y disparan la simulación inicial (`demo_finanzas_autosimulated`). Los botones “Reiniciar demo”, la selección de presets y las acciones rápidas (“Pago extra”, “Atraso”) se enlazan con `DemoReestructuraEngine`, actualizando KPIs y telemetría en tiempo real.
+- **Cotizador** (`/cotizador?demo=finanzas-whatif` o `proteccion-reestructura`): la sección demo refleja el preset financiero activo, aplica configuración al store (`downPayment`, `voluntaryContribution`, unidades de consumo) y muestra la PMT resultante. Cualquier cambio manual dispara `demo_finanzas_autoupdate`; los botones de eventos financieros utilizan `simulateLatePayment`/`simulateExtraPayment` para generar nuevos logs en `DemoReestructuraEngine`.
+- **Protección** (`/proteccion?demo=proteccion-reestructura`): las tarjetas de Stepdown/Diferimiento/Recalendarización consumen el mismo motor demo, muestran la PMT actualizada y exponen controles para registrar pagos extra o atrasados mientras se registran notas y telemetría.
+- **Onboarding** (`/onboarding?demo=avi-perfecto`): checklist y tracker consumen seeds con `OnboardingRequirementsService.update`, conservan botones de reinicio y toggles de estado para entrenamiento.
+- **Export / Favoritos** (`/dashboard?demo=favoritos-export`): `DemoExportService` genera blobs falsos y `DemoFavoritesStore` persiste favoritos en `sessionStorage` mediante signals.
+
+### Telemetría y dashboard QA
+- Todos los eventos pasan por `DemoAnalyticsService`, que prefija `demo_*`, guarda un log in-memory (`events`) y emite helpers como `trackFlowStart`, `trackDocumentFix`, `trackFinanceScenarioApplied`, `trackTandaEvent` y `trackExportSuccess`.
+- Eventos clave para los flujos recientes:
+  - `demo_finanzas_autosimulated`, `demo_finanzas_autoupdate`, `demo_finance_scenario_applied` (motor y simuladores).
+  - `demo_finance_event` (pagos extra/atrasos desde simulador, cotizador y protección).
+  - `demo_protection_option_applied`, `demo_protection_simulate_triggered` (acciones directas en protección).
+  - `demo_avi_decision_simulated`, `demo_documents_autofix`, `demo_document_fix` (controles de documentos/onboarding).
+- Página dedicada `/demo-analytics` (solo autenticado + demo) muestra la bitácora viva de eventos demo y permite limpiar el log. Usa el mismo servicio, por lo que cualquier acción en modo demo se refleja ahí.
+
+### Sugerencias de QA / capacitación
+
+#### Accesos directos AVI/KYC
+1. Activa el modo demo (toggle superior o `?enableDemo=true`).
+2. Usa el sidebar y selecciona **AVI Test** o **KYC Test**.
+3. Confirma el banner “Modo DEMO” y utiliza los controles integrados (reiniciar test, simular decisión, autocorregir, etc.).
+4. Sigue el flujo completo y verifica el mensaje final (“Test AVI/KYC demo completado”).
+5. Revisa `/demo-analytics` para validar eventos `demo_avi_*` / `demo_kyc_*`, tiempos y métricas registradas.
+
+1. Activa un escenario vía `?demo=` y reproduce los pasos secuenciales (AVI perfecto → errores docs → tanda → reestructura → postventa).
+2. Observa los eventos emitidos en `/demo-analytics` mientras ejecutas las acciones guiadas (autocorrección, sorteo, penalizaciones, export falso).
+3. Reinicia el escenario con `resetScenario` o la UI (“Reiniciar demo”) antes de cada demostración para garantizar repetibilidad.
+4. Para pruebas automatizadas, utiliza las APIs de `DemoModeService` + `DemoSeedService` para hidratar el estado demo sin depender de datos reales.
+
 ### Test Execution ✅
 Run all store tests with:
 ```bash
 KARMA_PORT=9878 npm run test -- --watch=false --browsers=ChromeHeadless --include src/app/cotizador/cotizador.store.spec.ts,src/app/simulador/simulador.store.spec.ts
+# Nuevos flujos demo (servicios + protección):
+KARMA_PORT=9878 npm run test -- --watch=false --browsers=ChromeHeadless --include src/app/services/demo/demo-workflow.service.spec.ts,src/app/services/demo/demo-reestructura.engine.spec.ts,src/app/proteccion/proteccion.component.spec.ts
 ```
 
 ### Testing Infrastructure ✅
@@ -116,6 +167,8 @@ npm run ci:qa           # Full pipeline: lint + unit + e2e
 #### Core Business Logic Tests
 - **`src/app/cotizador/cotizador.store.spec.ts`**: FlowContext validation, insurance toggles, collection units CRUD, tanda limits, amortization calculations, PDF generation
 - **`src/app/simulador/simulador.store.spec.ts`**: Caching reselect optimization, ordered savings, comparison snapshots, scenario filtering
+- **`src/app/simulador/ags-ahorro/ags-ahorro.component.spec.ts`**: Verifica auto simulación y mensajes demo en AGS Ahorro
+- **`src/app/simulador/edomex-individual/edomex-individual.component.spec.ts`**: Cubre autoparcheo de formularios y telemetría en EdoMex Individual
 - **`src/app/services/core/focus-trap.service.spec.ts`**: Accessibility compliance, remember/restore cycles, Tab/Shift+Tab navigation
 
 #### Integration & E2E Coverage

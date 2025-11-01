@@ -168,6 +168,35 @@
   gap: var(--space-24);
 }
 
+.edomex-individual__results-highlights {
+  display: grid;
+  gap: var(--space-16);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.edomex-individual__highlight-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.edomex-individual__highlight-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.edomex-individual__highlight-value {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
 .edomex-individual__charts {
   display: grid;
   gap: var(--space-16);
@@ -275,6 +304,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-16);
+  margin-top: var(--space-24);
 }
 
 .edomex-individual__primary-actions .btn {
@@ -352,6 +382,124 @@
   display: flex;
   justify-content: center;
   padding: var(--space-32) 0;
+}
+
+.edomex-demo {
+  border: 1px dashed rgba(59, 130, 246, 0.4);
+  border-radius: var(--radius-lg);
+  background: rgba(59, 130, 246, 0.08);
+  padding: var(--space-20);
+  display: grid;
+  gap: var(--space-12);
+  margin-bottom: var(--space-24);
+}
+
+.edomex-demo__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+@media (min-width: 768px) {
+  .edomex-demo__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}
+
+.edomex-demo__badge {
+  display: inline-flex;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.2);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.edomex-demo__header h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.edomex-demo__header p {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.edomex-demo__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.edomex-demo__actions .btn {
+  white-space: nowrap;
+}
+
+.edomex-demo__scenarios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.edomex-demo__scenario-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.edomex-demo__scenario-button {
+  border: 1px solid transparent;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.edomex-demo__scenario-button--active,
+.edomex-demo__scenario-button--active:focus-visible {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.edomex-demo__scenario-detail {
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.12);
+  display: grid;
+  gap: var(--space-6);
+  font-size: var(--text-sm);
+}
+
+.edomex-demo__scenario-detail p {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.edomex-demo__scenario-detail small {
+  color: rgba(30, 58, 138, 0.75);
+}
+
+.edomex-demo__config {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-6);
+  font-size: var(--text-sm);
+  color: #1e3a8a;
+}
+
+.edomex-demo__message {
+  margin: 0;
+  padding: var(--space-10);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  font-size: var(--text-sm);
 }
 
 button:focus-visible,

@@ -1,0 +1,102 @@
+<section class="demo-flow" *ngIf="scenarioState() as scenario; else missingScenario" aria-labelledby="demo-avi-title">
+  <header class="demo-flow__banner" role="status">
+    <div class="demo-flow__banner-meta">
+      <app-icon name="microphone" [size]="24" aria-hidden="true"></app-icon>
+      <div>
+        <p class="demo-flow__banner-title" id="demo-avi-title">Modo DEMO · Flujo AVI activo</p>
+        <p class="demo-flow__banner-subtitle">{{ bannerMessage() }}</p>
+      </div>
+    </div>
+    <button type="button" class="demo-flow__reset" (click)="resetTest()" data-cy="demo-avi-reset">
+      Reiniciar Test AVI
+    </button>
+  </header>
+
+  <section class="demo-flow__context" aria-label="Contexto del cliente demo">
+    <div class="demo-flow__context-item">
+      <span class="demo-flow__context-label">Cliente demo</span>
+      <strong>{{ scenario.client?.name || 'Cliente demo AVI' }}</strong>
+    </div>
+    <div class="demo-flow__context-item">
+      <span class="demo-flow__context-label">Mercado</span>
+      <strong>{{ scenario.flowContext?.market || 'aguascalientes' }}</strong>
+    </div>
+    <div class="demo-flow__context-item">
+      <span class="demo-flow__context-label">Total documentos</span>
+      <strong>{{ scenario.documents?.length || 0 }}</strong>
+    </div>
+  </section>
+
+  <app-stepper
+    class="demo-flow__stepper"
+    [steps]="steps"
+    [currentStepIndex]="currentStepIndex()"
+    [allowNavigation]="false"
+  ></app-stepper>
+
+  <section class="demo-flow__stage" [attr.data-stage]="currentStepId">
+    <ng-container [ngSwitch]="currentStepId">
+      <section *ngSwitchCase="'briefing'" class="demo-flow__card" aria-live="polite">
+        <h2>Checklist antes de iniciar</h2>
+        <ul>
+          <li>Confirma micrófono disponible y asesor listo.</li>
+          <li>Revisa las preguntas clave cargadas para el demo.</li>
+          <li>Tiempo sugerido mínimo: 3 minutos.</li>
+        </ul>
+        <p class="demo-flow__hint">
+          Usa el botón "Iniciar entrevista" dentro del flujo para comenzar. La telemetría se registrará automáticamente.
+        </p>
+      </section>
+
+      <section *ngSwitchCase="'interview'" class="demo-flow__card">
+        <app-avi-interview
+          [clientId]="scenario.client?.id || 'client-demo-avi'"
+          [advisorId]="'asesor-demo-avi'"
+          [municipality]="scenario.flowContext?.market"
+          [productType]="scenario.flowContext?.saleType"
+          [clientName]="scenario.client?.name"
+          [market]="scenario.flowContext?.market"
+          [businessFlow]="scenario.flowContext?.businessFlow"
+          (interviewStarted)="onInterviewStarted()"
+          (interviewCompleted)="onInterviewCompleted($event)"
+          (interviewCancelled)="onInterviewCancelled()"
+        ></app-avi-interview>
+      </section>
+
+      <section *ngSwitchCase="'resultado'" class="demo-flow__card demo-flow__result" role="status">
+        <h2>Resumen del Test AVI demo</h2>
+        <ng-container *ngIf="aviResult() as result; else waitingResult">
+          <p class="demo-flow__result-score">
+            <app-icon name="chart" [size]="20" aria-hidden="true"></app-icon>
+            Puntaje de cumplimiento: <strong>{{ result.compliance_score }}</strong>
+          </p>
+          <p>Preguntas faltantes: <strong>{{ (result.questions_missing && result.questions_missing.length) || 0 }}</strong></p>
+          <p>Flags detectados: <strong>{{ (result.risk_flags && result.risk_flags.length) || 0 }}</strong></p>
+          <p>ID de sesión: <code>{{ result.session_id }}</code></p>
+          <p class="demo-flow__result-info">Test AVI demo completado</p>
+        </ng-container>
+      </section>
+    </ng-container>
+  </section>
+
+  <app-demo-error-banner
+    *ngIf="hasIssues() && aviResult()"
+    class="demo-flow__issues"
+    title="Alertas detectadas en el test demo"
+    description="Se identificaron banderas de riesgo o bajo puntaje. Puedes autocorregir para continuar con el recorrido demo."
+    actionLabel="Autocorregir"
+    (resolve)="resolveIssues()"
+  ></app-demo-error-banner>
+</section>
+
+<ng-template #waitingResult>
+  <p class="demo-flow__result-info">Ejecuta el test para ver el resumen.</p>
+</ng-template>
+
+<ng-template #missingScenario>
+  <section class="demo-flow__empty" role="alert">
+    <app-icon name="alert-triangle" [size]="24" aria-hidden="true"></app-icon>
+    <p>No se encontró el seed demo para AVI. Usa el sidebar para reactivar el escenario.</p>
+    <button type="button" class="demo-flow__reset" (click)="resetTest()">Reintentar</button>
+  </section>
+</ng-template>

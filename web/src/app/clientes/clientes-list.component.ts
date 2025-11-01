@@ -7,6 +7,7 @@ import { ToastService } from '@core-services/toast.service';
 import { DownloadService } from '@core-services/download.service';
 import { Client, BusinessFlow } from '@interfaces/types';
 import { IconComponent } from '@shared/icon/icon.component';
+import { DemoBadgeComponent } from '@shared/demo-badge.component';
 import { FlowContextService } from '@core-services/flow-context.service';
 import { RiskEvaluationService } from '@feature-services/risk/risk-evaluation.service';
 import { RiskEvaluation } from '@interfaces/risk-evaluation';
@@ -18,7 +19,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-clientes-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, IconComponent],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent, DemoBadgeComponent],
   templateUrl: './clientes-list.component.html',
   styleUrls: ['./clientes-list.component.scss'],
 })
@@ -148,6 +149,38 @@ export class ClientesListComponent {
     const start = (this.currentPage() - 1) * pageSize + 1;
     const end = Math.min(start + pageSize - 1, total);
     return `${start}-${end}`;
+  });
+
+  readonly summaryMetrics = computed(() => {
+    const clients = this.filteredClientes();
+    const total = clients.length;
+
+    if (total === 0) {
+      return {
+        total: 0,
+        active: 0,
+        atRisk: 0,
+        avgHealth: null as number | null,
+        healthCount: 0
+      };
+    }
+
+    const active = clients.filter(cliente => (cliente.status ?? '').toLowerCase() === 'activo').length;
+    const atRisk = clients.filter(cliente => this.isAtRisk(cliente)).length;
+    const healthScores = clients
+      .map(cliente => cliente.healthScore)
+      .filter((score): score is number => typeof score === 'number');
+    const avgHealth = healthScores.length
+      ? Math.round(healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length)
+      : null;
+
+    return {
+      total,
+      active,
+      atRisk,
+      avgHealth,
+      healthCount: healthScores.length
+    };
   });
 
   constructor(
@@ -297,24 +330,20 @@ export class ClientesListComponent {
     };
   }
 
+  getSummaryHealthClasses(avgHealth: number | null): Record<string, boolean> {
+    const level = this.getHealthScoreLevel(avgHealth ?? undefined);
+    return {
+      'clientes-list__insight-value': true,
+      [`clientes-list__insight-value--${level}`]: avgHealth !== null
+    };
+  }
+
   callClient(cliente: Client): void {
     if (cliente.phone) {
       window.open(`tel:${cliente.phone}`, '_self');
     } else {
       this.toast.error('Este cliente no tiene teléfono registrado');
     }
-  }
-
-  emailClient(cliente: Client): void {
-    if (cliente.email) {
-      window.open(`mailto:${cliente.email}?subject=Seguimiento Conductores PWA`, '_self');
-    } else {
-      this.toast.error('Este cliente no tiene email registrado');
-    }
-  }
-
-  viewClientDetails(_: string): void {
-    // Navigation handled by routerLink
   }
 
   toggleSelectAll(): void {

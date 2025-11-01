@@ -1,0 +1,36 @@
+<div class="avi-prerequisites" *ngIf="snapshot as data">
+  <header class="avi-prerequisites__header">
+    <div>
+      <h4 class="avi-prerequisites__title">{{ title }}</h4>
+      <p *ngIf="getPendingLabel()" class="avi-prerequisites__subtitle">{{ getPendingLabel() }}</p>
+      <p *ngIf="!getPendingLabel()" class="avi-prerequisites__subtitle">Todo listo para iniciar AVI</p>
+    </div>
+    <div class="avi-prerequisites__progress" aria-hidden="true">
+      <span class="avi-prerequisites__progress-label">{{ completionPercentage }}%</span>
+      <div class="avi-prerequisites__progress-bar">
+        <div class="avi-prerequisites__progress-fill" [style.width.%]="completionPercentage"></div>
+      </div>
+    </div>
+  </header>
+
+  <ul class="avi-prerequisites__list">
+    <li
+      *ngFor="let requirement of data.requirements"
+      class="avi-prerequisites__item"
+      [class.avi-prerequisites__item--completed]="requirement.completed"
+      [class.avi-prerequisites__item--optional]="!requirement.required"
+    >
+      <app-icon
+        class="avi-prerequisites__icon"
+        [name]="requirement.completed ? 'check' : 'clock'"
+        [size]="16"
+      ></app-icon>
+      <span class="avi-prerequisites__label">{{ requirement.label }}</span>
+      <small *ngIf="!requirement.completed && requirement.helpText" class="avi-prerequisites__help">{{ requirement.helpText }}</small>
+    </li>
+  </ul>
+
+  <p *ngIf="!data.isEligible && data.blockingReason" class="avi-prerequisites__hint">
+    {{ data.blockingReason }}
+  </p>
+</div>

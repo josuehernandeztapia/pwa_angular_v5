@@ -74,7 +74,7 @@
       class="stepper__nav-btn stepper__nav-btn--prev"
       [disabled]="currentStepIndex === 0 || !allowNavigation"
       (click)="onPreviousStep()"
-      [attr.aria-label]="'Ir al paso anterior: ' + (currentStepIndex > 0 ? steps[currentStepIndex - 1]?.label : '')"
+      [attr.aria-label]="'Ir al paso anterior: ' + (currentStepIndex > 0 ? steps[currentStepIndex - 1].label : '')"
     >
       <app-icon name="chevron-left" [size]="16"></app-icon>
       <span class="stepper__nav-text">Anterior</span>
@@ -89,7 +89,7 @@
       class="stepper__nav-btn stepper__nav-btn--next"
       [disabled]="currentStepIndex >= steps.length - 1 || !canProceed || !allowNavigation"
       (click)="onNextStep()"
-      [attr.aria-label]="'Ir al siguiente paso: ' + (currentStepIndex < steps.length - 1 ? steps[currentStepIndex + 1]?.label : '')"
+      [attr.aria-label]="'Ir al siguiente paso: ' + (currentStepIndex < steps.length - 1 ? steps[currentStepIndex + 1].label : '')"
     >
       <span class="stepper__nav-text">Siguiente</span>
       <app-icon name="chevron-right" [size]="16"></app-icon>

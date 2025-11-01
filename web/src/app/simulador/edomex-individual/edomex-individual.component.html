@@ -19,6 +19,66 @@
   </header>
 
   <main id="main-content" class="edomex-individual__body">
+    <section
+      class="edomex-demo"
+      *ngIf="isFinanzasDemo()"
+      aria-label="Escenario demo What-If"
+    >
+      <header class="edomex-demo__header">
+        <div>
+          <span class="edomex-demo__badge">Demo</span>
+          <h2>{{ demoSelectedScenario()?.title || 'Escenario What-If demo' }}</h2>
+          <p>{{ demoSelectedScenario()?.terminos || 'Escenario precargado para prácticas de ahorro individual.' }}</p>
+        </div>
+        <div class="edomex-demo__actions">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            (click)="resetDemoScenario()"
+            [disabled]="isApplyingDemoScenario()"
+          >
+            Reiniciar demo
+          </button>
+        </div>
+      </header>
+
+      <ng-container *ngIf="demoFinanceScenarioSet()">
+        <div class="edomex-demo__scenarios">
+          <h3>Escenarios financieros</h3>
+          <div class="edomex-demo__scenario-list">
+            <button
+              *ngFor="let item of (demoFinanceScenarioSet()?.scenarios ?? [])"
+              type="button"
+              class="btn btn-ghost btn-xs edomex-demo__scenario-button"
+              [class.edomex-demo__scenario-button--active]="demoSelectedScenario()?.id === item.id"
+              (click)="selectDemoScenario(item.id)"
+              [disabled]="isApplyingDemoScenario()"
+            >
+              {{ item.title }}
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="demoSelectedScenario() as selectedScenario">
+        <div class="edomex-demo__scenario-detail">
+          <p>Pago mensual demo: <strong>{{ selectedScenario.pagoMensual | currency:'MXN':'symbol':'1.0-0' }}</strong></p>
+          <p>Tasa simulada: <strong>{{ selectedScenario.tasa }}%</strong></p>
+          <p *ngIf="selectedScenario.bonificacion">Bonificación demo: {{ selectedScenario.bonificacion | currency:'MXN':'symbol':'1.0-0' }}</p>
+          <small *ngIf="selectedScenario.terminos">{{ selectedScenario.terminos }}</small>
+        </div>
+
+        <ul class="edomex-demo__config" *ngIf="selectedScenario.config as config">
+          <li *ngIf="config['targetDownPayment']">Meta demo de enganche: {{ config['targetDownPayment'] | currency:'MXN':'symbol':'1.0-0' }}</li>
+          <li *ngIf="config['currentPlateConsumption']">Consumo mensual demo: {{ config['currentPlateConsumption'] | number:'1.0-0' }} L</li>
+          <li *ngIf="config['voluntaryMonthly']">Aportación voluntaria: {{ config['voluntaryMonthly'] | currency:'MXN':'symbol':'1.0-0' }}</li>
+          <li *ngIf="config['overpricePerLiter']">Sobreprecio por litro: {{ config['overpricePerLiter'] | number:'1.1-1' }} MXN</li>
+        </ul>
+      </ng-container>
+
+      <p class="edomex-demo__message" *ngIf="demoMessage()">{{ demoMessage() }}</p>
+    </section>
+
     <!-- KPIs -->
     <div class="card edomex-individual__kpi-card" *ngIf="scenario">
       <div class="edomex-individual__kpi-grid">
@@ -52,70 +112,78 @@
         <form [formGroup]="configForm" class="edomex-individual__form">
           <!-- Target Down Payment -->
           <div>
-            <label class="edomex-individual__label">Meta de Enganche *</label>
+            <label class="edomex-individual__label" for="targetDownPayment">Meta de Enganche *</label>
             <div class="input-affix-wrapper">
               <span class="input-affix input-affix--prefix" aria-hidden="true" style="color: var(--color-text-tertiary)">$</span>
               <input
+                id="targetDownPayment"
                 type="number"
                 formControlName="targetDownPayment"
                 placeholder="150000"
                 class="input input-has-prefix"
                 min="50000"
-                step="1000"
+                step="100"
+                aria-describedby="targetDownPaymentHint"
+                [class.is-error]="hasControlError('targetDownPayment')"
                 data-cy="target-down-payment"
               />
             </div>
-            <div class="edomex-individual__hint" style="display: flex; justify-content: space-between;">
-              <span>Mínimo: $50,000</span>
-              <span>Para unidad de $749K: $149,800 (20%)</span>
-            </div>
-            <div *ngIf="configForm.get('targetDownPayment')?.errors?.['required']"
+            <p id="targetDownPaymentHint" class="edomex-individual__hint">
+              {{ 'downPayment' | policyHint: { context: policyContext, totalPrice: 749000, minDownPaymentPct: 0.2 } }}
+            </p>
+            <div *ngIf="showControlError('targetDownPayment', 'required')"
                  class="edomex-individual__error">La meta de enganche es obligatoria</div>
-            <div *ngIf="configForm.get('targetDownPayment')?.errors?.['min']"
+            <div *ngIf="showControlError('targetDownPayment', 'min')"
                  class="edomex-individual__error">El mínimo es $50,000</div>
           </div>
 
           <!-- Current Plate Consumption -->
           <div>
-            <label class="edomex-individual__label">Consumo Actual de Combustible *</label>
+            <label class="edomex-individual__label" for="currentPlateConsumption">Consumo Actual de Combustible *</label>
             <div class="input-affix-wrapper">
               <input
+                id="currentPlateConsumption"
                 type="number"
                 formControlName="currentPlateConsumption"
                 placeholder="500"
                 class="input input-has-suffix"
                 min="100"
                 step="50"
+                aria-describedby="currentPlateConsumptionHint"
+                [class.is-error]="hasControlError('currentPlateConsumption')"
                 data-cy="consumption"
               />
               <span class="input-affix input-affix--suffix" aria-hidden="true" style="color: var(--color-text-tertiary)">litros/mes</span>
             </div>
-            <p class="edomex-individual__hint">Promedio de litros que consumes mensualmente</p>
-            <div *ngIf="configForm.get('currentPlateConsumption')?.errors?.['required']"
+            <p id="currentPlateConsumptionHint" class="edomex-individual__hint">Promedio de litros que consumes mensualmente</p>
+            <div *ngIf="showControlError('currentPlateConsumption', 'required')"
                  class="edomex-individual__error">El consumo de combustible es obligatorio</div>
-            <div *ngIf="configForm.get('currentPlateConsumption')?.errors?.['min']"
+            <div *ngIf="showControlError('currentPlateConsumption', 'min')"
                  class="edomex-individual__error">El mínimo es 100 litros/mes</div>
           </div>
 
           <!-- Overprice Per Liter -->
           <div>
-            <label class="edomex-individual__label">Sobreprecio por Litro *</label>
+            <label class="edomex-individual__label" for="overpricePerLiter">Sobreprecio por Litro *</label>
             <div class="input-affix-wrapper">
               <span class="input-affix input-affix--prefix" aria-hidden="true" style="color: var(--color-text-tertiary)">$</span>
               <input
+                id="overpricePerLiter"
                 type="number"
                 formControlName="overpricePerLiter"
                 placeholder="2.50"
                 class="input input-has-prefix"
                 min="0.5"
                 step="0.1"
+                aria-describedby="overpricePerLiterHint"
+                [class.is-error]="hasControlError('overpricePerLiter')"
                 data-cy="overprice"
               />
             </div>
-            <p class="edomex-individual__hint">Cantidad extra por litro que destinarás al ahorro</p>
-            <div *ngIf="configForm.get('overpricePerLiter')?.errors?.['required']"
+            <p id="overpricePerLiterHint" class="edomex-individual__hint">Cantidad extra por litro que destinarás al ahorro</p>
+            <div *ngIf="showControlError('overpricePerLiter', 'required')"
                  class="edomex-individual__error">El sobreprecio por litro es obligatorio</div>
-            <div *ngIf="configForm.get('overpricePerLiter')?.errors?.['min']"
+            <div *ngIf="showControlError('overpricePerLiter', 'min')"
                  class="edomex-individual__error">El mínimo es $0.50/litro</div>
           </div>
 
@@ -162,6 +230,21 @@
       <!-- Results Panel -->
       <div class="card edomex-individual__panel" *ngIf="scenario">
         <h2 class="edomex-individual__section-title">Resultados del Simulador</h2>
+
+        <section class="edomex-individual__results-highlights">
+          <article class="edomex-individual__highlight-card">
+            <span class="edomex-individual__highlight-label">Tiempo estimado</span>
+            <span class="edomex-individual__highlight-value">{{ scenario.monthsToTarget || 0 }} meses</span>
+          </article>
+          <article class="edomex-individual__highlight-card">
+            <span class="edomex-individual__highlight-label">Ahorro mensual</span>
+            <span class="edomex-individual__highlight-value">{{ formatCurrency(scenario.monthlyContribution || 0) }}</span>
+          </article>
+          <article class="edomex-individual__highlight-card">
+            <span class="edomex-individual__highlight-label">Meta de enganche</span>
+            <span class="edomex-individual__highlight-value">{{ formatCurrency(scenario.targetAmount || 0) }}</span>
+          </article>
+        </section>
 
         <!-- Charts Section -->
         <div class="edomex-individual__charts">
@@ -244,15 +327,16 @@
         <!-- Action Buttons -->
         <div class="edomex-individual__primary-actions">
           <button
-            (click)="generatePDF()"
+            (click)="proceedToClientCreation()"
             class="btn btn-primary"
-            data-cy="edomex-pdf">
-             Descargar PDF
+            data-cy="edomex-create-client">
+             Formalizar con el cliente
           </button>
           <button
-            (click)="proceedToClientCreation()"
-            class="btn btn-primary">
-             Crear Cliente
+            (click)="generatePDF()"
+            class="btn btn-secondary"
+            data-cy="edomex-pdf">
+             Descargar PDF
           </button>
           <button
             (click)="saveDraft()"

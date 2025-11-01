@@ -1,0 +1,23 @@
+<div class="onboarding-tracker" *ngIf="snapshot as data">
+  <h4 class="onboarding-tracker__title">Avance del flujo</h4>
+  <ol class="onboarding-tracker__list" aria-label="Etapas del onboarding">
+    <li
+      *ngFor="let stage of data.stages; trackBy: trackByStage"
+      class="onboarding-tracker__stage"
+      [class.onboarding-tracker__stage--completed]="stage.status === 'completed'"
+      [class.onboarding-tracker__stage--blocked]="stage.status === 'blocked'"
+      [class.onboarding-tracker__stage--current]="stage.status === 'current'"
+    >
+      <div class="onboarding-tracker__stage-icon" aria-hidden="true">
+        <app-icon [name]="statusIcon(stage)" [size]="16"></app-icon>
+      </div>
+      <div class="onboarding-tracker__stage-body">
+        <span class="onboarding-tracker__stage-title">{{ stage.title }}</span>
+        <small *ngIf="stage.requirements.length" class="onboarding-tracker__stage-meta">
+          {{ getCompletedCount(stage) }}/{{ stage.requirements.length }} completados
+        </small>
+        <small *ngIf="stage.subtitle" class="onboarding-tracker__stage-subtitle">{{ stage.subtitle }}</small>
+      </div>
+    </li>
+  </ol>
+</div>

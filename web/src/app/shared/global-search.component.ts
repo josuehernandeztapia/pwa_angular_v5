@@ -1,5 +1,5 @@
 import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, ElementRef, ViewChild, PLATFORM_ID, Renderer2, RendererFactory2, effect, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, ViewChild, PLATFORM_ID, Renderer2, RendererFactory2, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,15 +9,16 @@ import { GlobalSearchResult, GlobalSearchService, GlobalSearchType } from '@core
 import { SearchRouterService } from '@core-services/search-router.service';
 import { environment } from '@environments/environment';
 import { IconComponent } from '@shared/icon/icon.component';
+import { DemoBadgeComponent } from './demo-badge.component';
 
 @Component({
   selector: 'app-global-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent, DemoBadgeComponent],
   templateUrl: './global-search.component.html',
   styleUrls: ['./global-search.component.scss']
 })
-export class GlobalSearchComponent {
+export class GlobalSearchComponent implements AfterViewInit {
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
   @ViewChild('container', { static: true }) containerRef?: ElementRef<HTMLDivElement>;
 
@@ -63,6 +64,25 @@ export class GlobalSearchComponent {
     this.setupGlobalShortcuts();
     this.bindFocusTrapLifecycle();
     this.scheduleMobileAutofocus();
+
+    const lastQuery = this.globalSearch.getLastQuery();
+    if (lastQuery) {
+      this.query.set(lastQuery);
+      queueMicrotask(() => this.searchTerm$.next(lastQuery));
+    } else {
+      this.results.set(this.initialResults());
+    }
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.isEnabled) {
+      return;
+    }
+
+    const input = this.searchInput?.nativeElement;
+    if (input) {
+      input.value = this.query();
+    }
   }
 
   onFocus(): void {

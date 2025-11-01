@@ -18,6 +18,7 @@
           <th>Categoría</th>
           <th>Estado</th>
           <th>Descripción</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -30,9 +31,26 @@
             </span>
           </td>
           <td>{{ flag.description }}</td>
+          <td>
+            <button
+              type="button"
+              class="admin__toggle"
+              [class.admin__toggle--enabled]="flag.enabled"
+              (click)="toggleFlag(flag)"
+              [attr.aria-label]="flag.enabled ? 'Desactivar ' + flag.key : 'Activar ' + flag.key"
+              [attr.aria-pressed]="flag.enabled"
+            >
+              <app-icon
+                [name]="flag.enabled ? 'check' : 'x'"
+                [size]="16"
+                aria-hidden="true"
+              ></app-icon>
+              {{ flag.enabled ? 'Activado' : 'Inactivo' }}
+            </button>
+          </td>
         </tr>
         <tr *ngIf="!filteredFlags().length">
-          <td colspan="4" class="admin__empty">Sin resultados para el criterio de búsqueda.</td>
+          <td colspan="5" class="admin__empty">Sin resultados para el criterio de búsqueda.</td>
         </tr>
       </tbody>
     </table>

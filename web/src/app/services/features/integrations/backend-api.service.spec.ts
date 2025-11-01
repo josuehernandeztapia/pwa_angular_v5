@@ -129,6 +129,7 @@ describe('BackendApiService', () => {
     tick();
 
     window.dispatchEvent(new Event('online'));
+    tick();
 
     const req = httpMock.expectOne('http://localhost:3000/api/clients');
     expect(req.request.method).toBe('POST');
@@ -148,6 +149,7 @@ describe('BackendApiService', () => {
     ]));
 
     window.dispatchEvent(new Event('online'));
+    tick();
 
     const firstPut = httpMock.expectOne('http://localhost:3000/api/clients/client-42');
     expect(firstPut.request.method).toBe('PUT');

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { DocumentRequirementsService } from './document-requirements.service';
 import { MarketPolicyService } from '@feature-services/configuration/market-policy.service';
-import { BusinessFlow, DocumentStatus } from '@interfaces/types';
+import { BusinessFlow, DocumentStatus, DOC_NAME_COMPROBANTE, DOC_NAME_INE, DOC_NAME_KYC_CONTAINS } from '@interfaces/types';
 
 describe('DocumentRequirementsService', () => {
   let service: DocumentRequirementsService;
@@ -54,9 +54,9 @@ describe('DocumentRequirementsService', () => {
 
   it('should validate KYC prerequisites', () => {
     const result = service.validateKycPrerequisites([
-      { name: 'INE', status: DocumentStatus.Aprobado },
-      { name: 'Comprobante de domicilio', status: DocumentStatus.Aprobado },
-      { name: 'KYC Biométrico', status: DocumentStatus.Pendiente }
+      { name: DOC_NAME_INE, status: DocumentStatus.Aprobado },
+      { name: DOC_NAME_COMPROBANTE, status: DocumentStatus.Aprobado },
+      { name: `${DOC_NAME_KYC_CONTAINS} - Metamap`, status: DocumentStatus.Pendiente }
     ] as any);
 
     expect(result.canStartKyc).toBeTrue();

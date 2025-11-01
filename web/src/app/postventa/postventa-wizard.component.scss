@@ -48,6 +48,122 @@
   }
 }
 
+.post-sale__demo {
+  border: 1px dashed rgba(59, 130, 246, 0.4);
+  border-radius: 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  padding: 1.5rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.post-sale__demo-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: #1e3a8a;
+  }
+}
+
+.post-sale__demo-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.post-sale__demo-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.post-sale__demo-incidents ul,
+.post-sale__demo-notes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.post-sale__demo-incidents li {
+  display: grid;
+  gap: 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: #fff;
+  padding: 1rem 1.25rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+  }
+}
+
+.post-sale__demo-incident-main {
+  display: grid;
+  gap: 0.35rem;
+
+  strong {
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.85rem;
+  }
+}
+
+.post-sale__demo-incident-status {
+  justify-self: start;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(34, 197, 94, 0.18);
+  color: #047857;
+
+  &.is-open {
+    background: rgba(248, 113, 113, 0.18);
+    color: #b91c1c;
+  }
+}
+
+.post-sale__demo-incident-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-self: end;
+}
+
+.post-sale__demo-notes ul li {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(191, 219, 254, 0.4);
+  color: #1e3a8a;
+}
+
 .post-sale__uploads {
   display: grid;
   gap: 1.5rem;
@@ -161,4 +277,25 @@
 .btn-primary {
   background: #2563eb;
   color: #fff;
+}
+
+.btn-secondary {
+  background: #1e3a8a;
+  color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.btn-sm {
+  padding: 0.5rem 1.1rem;
+  font-size: 0.85rem;
+}
+
+.btn-xs {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
 }

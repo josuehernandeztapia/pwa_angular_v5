@@ -1,0 +1,37 @@
+<div class="onboarding-status-banner" *ngIf="snapshot as data" [ngClass]="bannerClasses" role="status" aria-live="polite">
+  <div class="onboarding-status-banner__icon" aria-hidden="true">
+    <app-icon [name]="statusIcon" [size]="20"></app-icon>
+  </div>
+
+  <div class="onboarding-status-banner__body">
+    <div class="onboarding-status-banner__header">
+      <h4 class="onboarding-status-banner__title">{{ headline }}</h4>
+      <span class="onboarding-status-banner__counter">
+        {{ data.completedCount }}/{{ data.completedCount + data.pendingCount }}
+      </span>
+    </div>
+
+    <p class="onboarding-status-banner__description">{{ description }}</p>
+
+    <div *ngIf="contextChips.length" class="onboarding-status-banner__chips">
+      <span *ngFor="let chip of contextChips" class="onboarding-status-banner__chip">{{ chip }}</span>
+    </div>
+
+    <p *ngIf="helperText" class="onboarding-status-banner__helper">{{ helperText }}</p>
+
+    <a
+      *ngIf="helperLink"
+      class="onboarding-status-banner__link"
+      [href]="helperLink.url"
+      target="_blank"
+      rel="noopener"
+    >
+      {{ helperLink.label }}
+    </a>
+  </div>
+
+  <div class="onboarding-status-banner__metrics" aria-label="Resumen de progreso">
+    <span class="onboarding-status-banner__metric">Pendientes: {{ data.pendingCount }}</span>
+    <span class="onboarding-status-banner__metric">Completados: {{ data.completedCount }}</span>
+  </div>
+</div>

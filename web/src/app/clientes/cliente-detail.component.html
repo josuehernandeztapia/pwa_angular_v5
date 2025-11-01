@@ -1,111 +1,154 @@
-<section class="cliente-detail__layout" *ngIf="client() as cliente">
+<section class="cliente-detail" *ngIf="client() as cliente; else emptyState">
   <header class="cliente-detail__header">
     <div class="cliente-detail__identity">
       <div class="cliente-detail__avatar" [ngClass]="healthScoreClasses()">
         {{ cliente.name ? cliente.name.charAt(0) : '?' }}
       </div>
-      <div class="cliente-detail__info">
-        <h1 class="cliente-detail__name">{{ cliente.name }}</h1>
-        <p class="cliente-detail__sub">{{ cliente.email }} · {{ cliente.phone }}</p>
+      <div class="cliente-detail__identity-body">
+        <div class="cliente-detail__name-row">
+          <h1 class="cliente-detail__name">{{ cliente.name }}</h1>
+          <app-demo-badge class="cliente-detail__data-badge" [isDemo]="cliente.isDemo ?? false" size="md"></app-demo-badge>
+          <span class="cliente-status-badge" [ngClass]="getStatusBadgeClasses(cliente.status)">
+            {{ cliente.status || 'Sin estado' }}
+          </span>
+        </div>
+        <div class="cliente-detail__tags">
+          <span class="cliente-detail__tag" *ngIf="cliente.flow">{{ getFlowDisplayName(cliente.flow) }}</span>
+          <span class="cliente-detail__tag" *ngIf="cliente.market">{{ getMunicipalityName(cliente.market) }}</span>
+        </div>
+        <div class="cliente-detail__contact">
+          <span>{{ contactInfo().email || 'Sin email' }}</span>
+          <span class="cliente-detail__divider" aria-hidden="true">•</span>
+          <span>{{ contactInfo().phone || 'Sin teléfono' }}</span>
+        </div>
       </div>
-      <span class="cliente-detail__status" [ngClass]="getStatusBadgeClasses(cliente.status)">
-        {{ cliente.status }}
-      </span>
     </div>
 
     <div class="cliente-detail__actions">
-      <button type="button" class="btn btn-primary" (click)="createQuote()">Crear cotización</button>
-      <button type="button" class="btn btn-secondary" [disabled]="!canGenerateContract()" (click)="generateContract()">Generar contrato</button>
+      <button type="button" class="cliente-detail__action" (click)="contactClient(cliente, 'phone')" [disabled]="!contactInfo().phone">
+        <app-icon class="icon-16" name="phone" [size]="16"></app-icon>
+        Contactar
+      </button>
+      <button type="button" class="cliente-detail__action cliente-detail__action--ghost" (click)="contactClient(cliente, 'email')" [disabled]="!contactInfo().email">
+        <app-icon class="icon-16" name="mail" [size]="16"></app-icon>
+        Enviar correo
+      </button>
+      <button type="button" class="cliente-detail__action cliente-detail__action--ghost" (click)="contactClient(cliente, 'whatsapp')" [disabled]="!contactInfo().phone">
+        <app-icon class="icon-16" name="chat" [size]="16"></app-icon>
+        WhatsApp
+      </button>
+      <span class="cliente-detail__actions-divider" aria-hidden="true"></span>
+      <button type="button" class="cliente-detail__action cliente-detail__action--primary" (click)="createQuote()">
+        Crear cotización
+      </button>
+      <button type="button" class="cliente-detail__action" [disabled]="!canGenerateContract()" (click)="generateContract()">
+        Generar contrato
+      </button>
     </div>
   </header>
 
-  <section class="cliente-detail__overview">
-    <div class="overview-card">
-      <h2 class="overview-card__title">Resumen financiero</h2>
-      <dl class="overview-card__metrics">
-        <div class="metric">
-          <dt>Health score</dt>
-          <dd [ngClass]="healthScoreClasses()">{{ cliente.healthScore ?? 'N/A' }}</dd>
-        </div>
-        <div class="metric">
-          <dt>Documentos</dt>
-          <dd>{{ documentStats() }}</dd>
-        </div>
-        <div class="metric">
-          <dt>Flujo</dt>
-          <dd>{{ getFlowDisplayName(cliente.flow) }}</dd>
-        </div>
-        <div class="metric">
-          <dt>Mercado</dt>
-          <dd>{{ getMunicipalityName(cliente.market) }}</dd>
-        </div>
-      </dl>
-    </div>
+  <section class="cliente-detail__metrics" *ngIf="overviewMetrics().length">
+    <article class="cliente-detail__metric-card" *ngFor="let metric of overviewMetrics()">
+      <span class="cliente-detail__metric-label">{{ metric.label }}</span>
+      <span class="cliente-detail__metric-value"
+            [ngClass]="{
+              'cliente-detail__metric-value--positive': metric.accent === 'positive',
+              'cliente-detail__metric-value--warning': metric.accent === 'warning'
+            }">
+        {{ metric.value }}
+      </span>
+    </article>
+  </section>
 
-    <div class="overview-card">
-      <h2 class="overview-card__title">Progreso</h2>
-      <div class="progress-group">
-        <div class="progress-widget">
-          <div class="progress-widget__header">
-            <span class="progress-widget__label">Ahorro</span>
-            <span class="progress-widget__value">{{ savingsProgress() }} / {{ savingsGoal() | number }}</span>
-          </div>
-          <div class="progress-widget__track">
-            <div
-              class="progress-widget__bar progress-widget__bar--savings"
-              [style.width.%]="(savingsProgress() / savingsGoal()) * 100"
-            ></div>
-          </div>
-        </div>
-
-        <div class="progress-widget">
-          <div class="progress-widget__header">
-            <span class="progress-widget__label">Pagos completados</span>
-            <span class="progress-widget__value">{{ paymentProgress() }} / {{ totalPayments() }}</span>
-          </div>
-          <div class="progress-widget__track">
-            <div
-              class="progress-widget__bar progress-widget__bar--payments"
-              [style.width.%]="(paymentProgress() / totalPayments()) * 100"
-            ></div>
-          </div>
-          <p class="progress-widget__hint">Restantes: {{ remainingPayments() }}</p>
-        </div>
+  <section class="cliente-detail__progress">
+    <article class="progress-card">
+      <header class="progress-card__header">
+        <h2 class="progress-card__title">Meta de ahorro</h2>
+        <span class="progress-card__value">{{ savingsProgress() | number }} / {{ savingsGoal() | number }}</span>
+      </header>
+      <div class="progress-card__bar">
+        <span class="progress-card__fill" [style.width.%]="savingsPercent()"></span>
       </div>
+      <footer class="progress-card__footer">
+        <span class="progress-card__summary">{{ savingsPercent() }}% de la meta</span>
+        <span class="progress-card__caption">Última aportación: {{ lastContributionDate() }}</span>
+      </footer>
+    </article>
+
+    <article class="progress-card">
+      <header class="progress-card__header">
+        <h2 class="progress-card__title">Pagos completados</h2>
+        <span class="progress-card__value">{{ paymentProgress() }} / {{ totalPayments() }}</span>
+      </header>
+      <div class="progress-card__bar progress-card__bar--neutral">
+        <span class="progress-card__fill" [style.width.%]="paymentsPercent()"></span>
+      </div>
+      <footer class="progress-card__footer">
+        <span class="progress-card__summary">{{ paymentsPercent() }}% del plan</span>
+        <span class="progress-card__caption">Restan {{ remainingPayments() }}</span>
+      </footer>
+    </article>
+  </section>
+
+  <section class="cliente-detail__panels">
+    <article class="cliente-panel">
+      <header class="cliente-panel__header">
+        <h2 class="cliente-panel__title">Actividad reciente</h2>
+        <span class="cliente-panel__meta">Últimos eventos del expediente</span>
+      </header>
+      <div class="timeline" *ngIf="timelineEvents().length; else emptyTimeline">
+        @for (event of timelineEvents(); track event.id) {
+          <article class="timeline__item">
+            <div class="timeline__bullet" aria-hidden="true"></div>
+            <div class="timeline__body">
+              <h3 class="timeline__title">{{ event.message }}</h3>
+              <p class="timeline__timestamp">{{ event.timestamp | date:'mediumDate' }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    </article>
+
+    <article class="cliente-panel" *ngIf="getImportStatus() as importStatus">
+      <header class="cliente-panel__header">
+        <h2 class="cliente-panel__title">Seguimiento de importación</h2>
+        <span class="cliente-panel__meta">Estado de cada proceso</span>
+      </header>
+      <ul class="import-list">
+        @for (key of getImportStatusKeys(); track key) {
+          <li class="import-list__item">
+            <span class="import-list__label">{{ key | titlecase }}</span>
+            <span class="import-list__value">{{ getImportStatusItem(key)?.['status'] ?? 'Pendiente' }}</span>
+          </li>
+        }
+      </ul>
+    </article>
+  </section>
+
+  <section class="cliente-panel cliente-panel--avi">
+    <header class="cliente-panel__header">
+      <h2 class="cliente-panel__title">Verificación AVI</h2>
+      <span class="cliente-panel__meta">Completa la verificación biométrica para continuar</span>
+    </header>
+    <div class="cliente-panel__actions">
+      <button type="button"
+              class="cliente-detail__action cliente-detail__action--primary"
+              [disabled]="!canStartAviVerification()"
+              [attr.title]="!canStartAviVerification() ? aviBlockingMessage() : null"
+              (click)="startAviVerification()">
+        Iniciar verificación AVI
+      </button>
+      <button type="button" class="cliente-detail__action cliente-detail__action--ghost" (click)="viewDocuments()">
+        Revisar documentos
+      </button>
     </div>
-  </section>
 
-  <section class="cliente-detail__timeline">
-    <h2>Actividad reciente</h2>
-    <div class="event-feed">
-      @for (event of getEventFeed(); track event.id) {
-        <article class="event-feed__item">
-          <div class="event-feed__title">{{ event.message }}</div>
-          <div class="event-feed__timestamp">{{ event.timestamp | date: 'mediumDate' }}</div>
-        </article>
-      }
-    </div>
-  </section>
-
-  <section class="cliente-detail__import" *ngIf="getImportStatus() as importStatus">
-    <h2>Seguimiento de importación</h2>
-    <ul class="import-list">
-      @for (key of getImportStatusKeys(); track key) {
-        <li class="import-list__item">
-          <strong>{{ key | titlecase }}</strong>
-          <span class="import-list__value">
-            {{ getImportStatusItem(key)?.['status'] ?? 'Pendiente' }}
-          </span>
-        </li>
-      }
-    </ul>
-  </section>
-
-  <section class="cliente-detail__avi">
-    <h2>Verificación AVI</h2>
-    <button type="button" class="btn btn-outline" [disabled]="!canStartAviVerification()" (click)="startAviVerification()">
-      Iniciar verificación AVI
-    </button>
+    @if (aviReadiness()) {
+      <app-avi-prerequisites
+        class="cliente-panel__checklist"
+        [snapshot]="aviReadiness()">
+      </app-avi-prerequisites>
+    }
   </section>
 
   @defer (when showAviModal()) {
@@ -120,11 +163,20 @@
   }
 </section>
 
-<section class="cliente-detail__empty" *ngIf="!client()">
-  <div class="empty-state">
-    <app-icon class="empty-state__icon" name="users" [size]="48"></app-icon>
-    <h2>Cliente no encontrado</h2>
-    <p>No pudimos cargar la información solicitada.</p>
-    <a routerLink="/clientes" class="btn btn-primary">Volver a clientes</a>
+<ng-template #emptyTimeline>
+  <div class="timeline timeline--empty">
+    <app-icon class="icon-24" name="clock" [size]="24"></app-icon>
+    <p>No hay eventos registrados recientemente.</p>
   </div>
-</section>
+</ng-template>
+
+<ng-template #emptyState>
+  <section class="cliente-detail__empty">
+    <div class="empty-state">
+      <app-icon class="empty-state__icon" name="users" [size]="48"></app-icon>
+      <h2>Cliente no encontrado</h2>
+      <p>No pudimos cargar la información solicitada.</p>
+      <a routerLink="/clientes" class="btn btn-primary">Volver a clientes</a>
+    </div>
+  </section>
+</ng-template>

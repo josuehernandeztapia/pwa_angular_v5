@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -34,6 +34,24 @@ interface TandaLimits {
   max: number;
 }
 
+export type BusinessValidationSeverity = 'error' | 'warning' | 'info';
+export type PolicyHintField = 'downPayment' | 'term' | 'income';
+
+export interface BusinessValidationMessage {
+  code: string;
+  field?:
+    | 'market'
+    | 'clientType'
+    | 'downPayment'
+    | 'term'
+    | 'insurance'
+    | 'tandaMembers'
+    | 'savings';
+  severity: BusinessValidationSeverity;
+  message: string;
+  hint?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CotizadorStore {
   private readonly cotizadorEngine = inject(CotizadorEngineService);
@@ -45,6 +63,11 @@ export class CotizadorStore {
   private readonly flowContext = inject(FlowContextService, { optional: true });
   private readonly quotesApi = inject(QuotesApiService);
   private readonly documentRequirements = inject(DocumentRequirementsService, { optional: true });
+  private readonly marketLabels: Record<PolicyMarket, string> = {
+    aguascalientes: 'Aguascalientes',
+    edomex: 'EdoMex',
+    otros: 'Otros mercados'
+  };
 
   readonly currentStep = signal(1);
   readonly totalSteps = 4;
@@ -82,6 +105,7 @@ export class CotizadorStore {
   readonly isAmortizationVisible = signal(false);
 
   readonly selectedPackageContext = signal<ProductPackageContext | null>(null);
+  private readonly autoAdvanceStep = signal(false);
 
   readonly totalPrice = computed(() => {
     const pkg = this.pkg();
@@ -125,10 +149,143 @@ export class CotizadorStore {
     return Math.max(0, base + financedInsurance);
   });
 
-  readonly monthlyPayment = computed(() => {
+  private readonly lastValidMonthlyPayment = signal(0);
+
+  private readonly validationMessagesSignal = computed<BusinessValidationMessage[]>(() => {
+    const pkg = this.pkg();
+    const messages: BusinessValidationMessage[] = [];
+
+    if (!pkg) {
+      return messages;
+    }
+
+    const market = this.market();
+    const marketLabel = market ? this.getMarketLabel(market) : 'este mercado';
+    const minDownPaymentPct = pkg.minDownPaymentPercentage ?? 0;
+    const minDownPaymentPercentValue = Math.round(minDownPaymentPct * 100);
+    const totalPrice = this.totalPrice();
+    const requiredDownPayment = totalPrice * minDownPaymentPct;
+
+    if (totalPrice > 0 && minDownPaymentPct > 0) {
+      if (this.isVentaDirecta()) {
+        const directDownPayment = this.toNumber(this.downPaymentAmountDirect());
+        if (directDownPayment < requiredDownPayment - 0.5) {
+          messages.push({
+            code: 'downPayment.min.direct',
+            field: 'downPayment',
+            severity: 'error',
+            message: `El pago inicial mínimo en ${marketLabel} es ${minDownPaymentPercentValue}% (${this.financialCalc.formatCurrency(requiredDownPayment)}).`,
+            hint: 'Ajusta el monto para cumplir con la política de enganche.'
+          });
+        }
+      } else {
+        const effectiveDownPayment = this.downPayment();
+        if (effectiveDownPayment < requiredDownPayment - 0.5) {
+          messages.push({
+            code: 'downPayment.min.financing',
+            field: 'downPayment',
+            severity: 'error',
+            message: `El enganche mínimo en ${marketLabel} es ${minDownPaymentPercentValue}% (${this.financialCalc.formatCurrency(requiredDownPayment)}).`,
+            hint: 'Incrementa el enganche para poder continuar.'
+          });
+        } else if (Math.abs(effectiveDownPayment - requiredDownPayment) <= 0.5) {
+          messages.push({
+            code: 'downPayment.at-minimum',
+            field: 'downPayment',
+            severity: 'warning',
+            message: 'Estás utilizando el enganche mínimo permitido por política.',
+            hint: 'Considera incrementar el enganche para mejorar la mensualidad.'
+          });
+        }
+      }
+    }
+
+    if (!this.isVentaDirecta()) {
+      const term = this.term();
+      const allowedTerms = pkg.terms ?? [];
+      if (!term) {
+        messages.push({
+          code: 'term.required',
+          field: 'term',
+          severity: 'error',
+          message: 'Selecciona un plazo para continuar con la simulación.',
+          hint: 'Elige una opción de la lista de plazos disponibles.'
+        });
+      } else if (allowedTerms.length && !allowedTerms.includes(term)) {
+        const formattedTerms = allowedTerms.map(t => `${t} meses`).join(', ');
+        messages.push({
+          code: 'term.invalid',
+          field: 'term',
+          severity: 'error',
+          message: `El plazo seleccionado no está disponible. Opciones válidas: ${formattedTerms}.`,
+          hint: 'Selecciona uno de los plazos autorizados por el producto.'
+        });
+      }
+    }
+
+    if (!this.isVentaDirecta()) {
+      const amountToFinance = this.amountToFinance();
+      if (amountToFinance <= 0) {
+        messages.push({
+          code: 'financing.amount',
+          field: 'downPayment',
+          severity: 'warning',
+          message: 'No hay monto a financiar con la configuración actual.',
+          hint: 'Verifica enganche, seguros y componentes seleccionados.'
+        });
+      }
+    }
+
+    return messages;
+  });
+
+  private readonly policyHintsSignal = computed<Record<PolicyHintField, string>>(() => {
+    const pkg = this.pkg();
+    if (!pkg) {
+      return {} as Record<PolicyHintField, string>;
+    }
+
+    const hints: Partial<Record<PolicyHintField, string>> = {};
+    const market = this.market();
+    const marketLabel = market ? this.getMarketLabel(market) : 'este mercado';
+    const totalPrice = this.totalPrice();
+    const minDownPaymentPct = pkg.minDownPaymentPercentage ?? 0;
+
+    if (minDownPaymentPct > 0 && totalPrice > 0) {
+      const minPercent = Math.round(minDownPaymentPct * 100);
+      const minAmount = this.financialCalc.formatCurrency(totalPrice * minDownPaymentPct);
+      const maxPct = pkg.maxDownPaymentPercentage ? Math.round(pkg.maxDownPaymentPercentage * 100) : null;
+      const maxSuffix = maxPct ? ` Máximo sugerido ${maxPct}%.` : '';
+      hints.downPayment = `Política ${marketLabel}: enganche mínimo ${minPercent}% (${minAmount}).${maxSuffix}`.trim();
+    }
+
+    if (!this.isVentaDirecta()) {
+      const terms = pkg.terms ?? [];
+      if (terms.length) {
+        const termList = terms.map(term => `${term} meses`).join(', ');
+        const annualRate = pkg.rate ? (pkg.rate * 100).toFixed(2) : null;
+        const monthlyRate = pkg.rate ? ((pkg.rate / 12) * 100).toFixed(2) : null;
+        const rateNote = annualRate && monthlyRate
+          ? ` Tasa anual ${annualRate}% (mensual ${monthlyRate}%).`
+          : '';
+        hints.term = `Plazos autorizados: ${termList}.${rateNote}`.trim();
+      }
+    }
+
+    const incomePolicy = this.currentPolicyMetadata()?.income;
+    if (incomePolicy?.threshold) {
+      const incomePct = Math.round(incomePolicy.threshold * 100);
+      hints.income = `El pago mensual no debe superar ${incomePct}% del ingreso comprobable.`;
+    }
+
+    return hints as Record<PolicyHintField, string>;
+  });
+
+  private readonly rawMonthlyPayment = computed(() => {
     const amount = this.amountToFinance();
     const term = this.term();
-    const rate = this.pkg()?.rate ?? 0;
+    const pkg = this.pkg();
+    const rate = pkg?.rate ?? 0;
 
     if (amount <= 0 || term <= 0 || rate <= 0) {
       return 0;
@@ -139,15 +296,47 @@ export class CotizadorStore {
     return Math.round(payment * 100) / 100;
   });
 
+  private readonly monthlyPaymentTracker = effect(() => {
+    const payment = this.rawMonthlyPayment();
+    if (payment > 0) {
+      this.lastValidMonthlyPayment.set(payment);
+    }
+  }, { allowSignalWrites: true });
+
+  readonly monthlyPayment = computed(() => {
+    const payment = this.rawMonthlyPayment();
+    if (payment > 0) {
+      return payment;
+    }
+
+    const amount = this.amountToFinance();
+    const rate = this.pkg()?.rate ?? 0;
+    const fallback = amount > 0 && rate > 0
+      ? Math.round((amount * (rate / 12)) * 100) / 100
+      : 0;
+
+    if (fallback > 0) {
+      return fallback;
+    }
+
+    return this.lastValidMonthlyPayment();
+  });
+
   readonly firstInterest = computed(() => {
     const rate = this.pkg()?.rate ?? 0;
-    if (!rate) {
+    const term = this.term();
+    if (!rate || term <= 0) {
       return 0;
     }
     return this.amountToFinance() * (rate / 12);
   });
 
-  readonly firstPrincipal = computed(() => Math.max(0, this.monthlyPayment() - this.firstInterest()));
+  readonly firstPrincipal = computed(() => {
+    if (this.term() <= 0) {
+      return 0;
+    }
+    return Math.max(0, this.monthlyPayment() - this.firstInterest());
+  });
   readonly firstBalance = computed(() => Math.max(0, this.amountToFinance() - this.firstPrincipal()));
 
   readonly monthlySavings = computed(() => {
@@ -195,6 +384,14 @@ export class CotizadorStore {
 
   minDownPaymentRequired(): number {
     return this.minDownPaymentRequiredSignal();
+  }
+
+  validationMessages(): BusinessValidationMessage[] {
+    return this.validationMessagesSignal();
+  }
+
+  policyHint(field: PolicyHintField): string | null {
+    return this.policyHintsSignal()[field] ?? null;
   }
 
   initialize(client: Client | undefined, initialMode: SimulatorMode): void {
@@ -257,10 +454,16 @@ export class CotizadorStore {
   }
 
   setClientType(value: PolicyClientType | ''): void {
-    this.clientType.set(value);
-    if (!value && this.clientTypeOptions().length === 1) {
-      this.clientType.set(this.clientTypeOptions()[0]);
+    const previous = this.clientType();
+    const options = this.clientTypeOptions();
+    const resolvedValue = (!value && options.length === 1) ? options[0] : value;
+
+    if (previous === resolvedValue) {
+      this.persistFlowContextSnapshot('client-type-change');
+      return;
     }
+
+    this.clientType.set(resolvedValue);
 
     if (this.market() && this.clientType()) {
       this.fetchPackage();
@@ -421,11 +624,16 @@ export class CotizadorStore {
       const pkg = await firstValueFrom(this.cotizadorEngine.getProductPackageForContext(context));
       this.pkg.set(pkg);
       this.setupPackageDefaults(pkg);
+      if (this.autoAdvanceStep()) {
+        this.currentStep.set(2);
+        this.autoAdvanceStep.set(false);
+      }
       this.persistFlowContextSnapshot('package-load');
     } catch (error) {
       console.error('[CotizadorStore] Error loading package', error);
       this.toast.error(`Error al cargar el paquete para ${market}`);
       this.pkg.set(null);
+      this.autoAdvanceStep.set(false);
     } finally {
       this.isLoading.set(false);
     }
@@ -481,34 +689,73 @@ export class CotizadorStore {
   }
 
   async generatePDF(): Promise<void> {
-    const pkg = this.pkg();
-    if (!pkg) {
-      this.toast.error('Selecciona un paquete primero');
-      return;
-    }
-
-    const quote = await this.buildQuoteSnapshot('pdf');
-    if (!quote) {
-      this.toast.error('No se pudo construir la cotización para generar PDF');
-      return;
-    }
-
     try {
-      await firstValueFrom(this.quotesApi.createQuote(quote));
+      const pkg = this.pkg();
+      if (!pkg) {
+        this.toast.error('Selecciona un paquete primero');
+        return;
+      }
+
+      const quote = await this.buildQuoteSnapshot('pdf');
+      if (!quote) {
+        this.toast.error('No se pudo construir la cotización para generar PDF');
+        return;
+      }
+
+      try {
+        await firstValueFrom(this.quotesApi.createQuote(quote));
+      } catch (error) {
+        console.error('[CotizadorStore] Error registrando la cotización', error);
+        this.toast.error('No se pudo registrar la cotización');
+        return;
+      }
+
+      const pdfGenerated = await this.pdfExport
+        .generateQuotePDF(quote as any)
+        .then(() => true)
+        .catch(error => {
+          console.error('[CotizadorStore] Error al generar el PDF', error);
+          this.toast.error('No se pudo generar el PDF');
+          return false;
+        });
+
+      if (pdfGenerated) {
+        this.toast.success('PDF generado');
+      }
     } catch (error) {
-      this.toast.error('No se pudo registrar la cotización');
-    }
-
-    try {
-      await this.pdfExport.generateQuotePDF(quote as any);
-      this.toast.success('PDF generado');
-    } catch {
+      console.error('[CotizadorStore] Error inesperado al generar PDF', error);
       this.toast.error('No se pudo generar el PDF');
     }
   }
 
   goToDashboard(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  applyPresetContext(preset: { market?: PolicyMarket; clientType?: PolicyClientType; autoAdvance?: boolean }): void {
+    const desiredMarket = preset.market;
+    const desiredClientType = preset.clientType;
+    const shouldAutoAdvance = Boolean(preset.autoAdvance);
+
+    const willChangeMarket = Boolean(desiredMarket && desiredMarket !== this.market());
+    const willChangeClientType = Boolean(desiredClientType && desiredClientType !== this.clientType());
+
+    if (shouldAutoAdvance) {
+      const shouldWaitForFetch = willChangeMarket || willChangeClientType || !this.pkg();
+      if (shouldWaitForFetch) {
+        this.autoAdvanceStep.set(true);
+      } else {
+        this.currentStep.set(2);
+      }
+    }
+
+    if (willChangeMarket && desiredMarket) {
+      this.setMarket(desiredMarket);
+    }
+
+    if (willChangeClientType && desiredClientType) {
+      this.setClientType(desiredClientType);
+    }
   }
 
   persistFlowContextSnapshot(origin: string): void {
@@ -846,6 +1093,10 @@ export class CotizadorStore {
 
   formatCurrency(value: number): string {
     return this.financialCalc.formatCurrency(value);
+  }
+
+  getMarketLabel(market: PolicyMarket): string {
+    return this.marketLabels[market] ?? market;
   }
 
   private async buildQuoteSnapshot(origin: string): Promise<Quote | null> {

@@ -1,12 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+
 import { OnboardingMainComponent } from './onboarding-main.component';
 import { FlowContextService } from '@core-services/flow-context.service';
 import { OnboardingEngineService } from '@feature-services/simulador/onboarding-engine.service';
+import { OnboardingRequirementsService } from '@feature-services/onboarding/onboarding-requirements.service';
+import { AnalyticsService } from '@core-services/analytics.service';
 import { Client, BusinessFlow } from '@interfaces/types';
 
 class FlowContextStub {
   setBreadcrumbs = jasmine.createSpy('setBreadcrumbs');
+}
+
+class RequirementsServiceStub {
+  update = jasmine.createSpy('update');
+  snapshot = jasmine.createSpy('snapshot').and.returnValue(null);
+}
+
+class AnalyticsStub {
+  track = jasmine.createSpy('track');
 }
 
 const buildClient = (override: Partial<Client> = {}): Client => ({
@@ -24,17 +36,22 @@ const buildClient = (override: Partial<Client> = {}): Client => ({
 
 describe('OnboardingMainComponent', () => {
   let engine: jasmine.SpyObj<OnboardingEngineService>;
+  let requirements: RequirementsServiceStub;
 
   beforeEach(() => {
     engine = jasmine.createSpyObj('OnboardingEngineService', ['createClientFromOnboarding', 'createSavingsOpportunity']);
     engine.createClientFromOnboarding.and.returnValue(of(buildClient()));
     engine.createSavingsOpportunity.and.returnValue(of(buildClient({ id: 'saving-123', flow: BusinessFlow.CreditoColectivo })));
 
+    requirements = new RequirementsServiceStub();
+
     TestBed.configureTestingModule({
       imports: [OnboardingMainComponent],
       providers: [
         { provide: FlowContextService, useClass: FlowContextStub },
-        { provide: OnboardingEngineService, useValue: engine }
+        { provide: OnboardingEngineService, useValue: engine },
+        { provide: OnboardingRequirementsService, useValue: requirements },
+        { provide: AnalyticsService, useClass: AnalyticsStub }
       ]
     }).compileComponents();
   });
@@ -56,6 +73,7 @@ describe('OnboardingMainComponent', () => {
 
     expect(engine.createClientFromOnboarding).toHaveBeenCalled();
     expect(component.lastCreatedClient()?.name).toBe('Cliente Demo');
+    expect(requirements.update).toHaveBeenCalled();
   });
 
   it('delegates to createSavingsOpportunity for collective clients', () => {
@@ -80,6 +98,7 @@ describe('OnboardingMainComponent', () => {
       clientType: 'colectivo'
     });
     expect(component.creationState()).toBe('success');
+    expect(requirements.update).toHaveBeenCalled();
   });
 
   it('marks form as touched when invalid', () => {

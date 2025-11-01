@@ -17,6 +17,11 @@
   color: var(--color-text-primary);
   padding-left: var(--app-shell-nav-width, 280px);
   transition: padding-left var(--transition-medium, 0.3s ease);
+  --demo-banner-height: 0px;
+}
+
+.app-shell--demo {
+  --demo-banner-height: 48px;
 }
 
 .app-shell__layout {
@@ -35,8 +40,37 @@
   border-bottom: 1px solid var(--color-border-primary);
   background: var(--flat-surface-bg);
   position: sticky;
-  top: 0;
+  top: var(--demo-banner-height, 0);
   z-index: 900;
+}
+
+.app-shell__demo-banner {
+  position: sticky;
+  top: 0;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-6);
+  min-height: var(--demo-banner-height);
+  background: var(--token-color-warning-100, #fff8ec);
+  border-bottom: 1px solid var(--token-color-warning-300, #f8d9a0);
+  color: var(--token-color-warning-900, #7a4100);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+.app-shell__demo-banner-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-shell__demo-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .app-shell__topbar-start {
@@ -164,9 +198,13 @@
 
 .app-shell__quick-action[disabled],
 .app-shell__quick-action[aria-disabled='true'] {
-  opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
+  color: var(--color-text-secondary);
+  background: var(--color-neutral-100);
+  border-color: var(--color-border-secondary);
+  opacity: 0.85;
+  --icon-color: var(--color-text-secondary);
 }
 
 .app-shell__quick-action--active {
@@ -220,15 +258,7 @@
 
 .app-shell__quick-action-badge {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.25rem;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--token-surface-inverse-light-alpha-30);
-  color: inherit;
-  font-size: 0.65rem;
-  font-weight: var(--font-semibold);
+  margin-left: var(--space-2);
 }
 
 .app-shell__topbar-actions .btn {
@@ -284,7 +314,7 @@
   }
 
   .app-shell__mobile-nav {
-    display: block;
+    display: none;
     width: 100%;
   }
 }
@@ -292,6 +322,10 @@
 @media (max-width: 768px) {
   .app-shell__quick-actions {
     display: none;
+  }
+
+  .app-shell__mobile-nav {
+    display: block;
   }
 }
 

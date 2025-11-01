@@ -11,6 +11,7 @@ import { PlazoGuard } from './guards/plazo.guard';
 import { ProtectionRequiredGuard } from './guards/protection-required.guard';
 import { RoleGuard } from './guards/role.guard';
 import { TandaValidGuard } from './guards/tanda-valid.guard';
+import { DemoRouterGuard } from './guards/demo-router.guard';
 
 const baseRoutes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -36,39 +37,57 @@ const baseRoutes: Routes = [
   },
   {
     path: 'dashboard',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent),
     title: 'Dashboard - Conductores PWA'
   },
   {
+    path: 'demo-analytics',
+    canActivate: [AuthGuard, DemoRouterGuard],
+    loadComponent: () => import('./demo/demo-analytics.component').then(m => m.DemoAnalyticsComponent),
+    title: 'Demo Analytics - Conductores PWA'
+  },
+  {
+    path: 'demo/avi-test',
+    canActivate: [AuthGuard, DemoRouterGuard],
+    loadComponent: () => import('./demo/demo-avi-test.component').then(m => m.DemoAviTestComponent),
+    title: 'Test AVI Demo - Conductores PWA'
+  },
+  {
+    path: 'demo/kyc-test',
+    canActivate: [AuthGuard, DemoRouterGuard],
+    loadComponent: () => import('./demo/demo-kyc-test.component').then(m => m.DemoKycTestComponent),
+    title: 'Test KYC Demo - Conductores PWA'
+  },
+  {
     path: 'onboarding',
-    canActivate: [AuthGuard, FeatureFlagGuard],
+    canActivate: [AuthGuard, DemoRouterGuard, FeatureFlagGuard],
     data: { featureFlag: 'enableOnboardingDashboard' },
     loadComponent: () => import('./onboarding/onboarding-main.component').then(m => m.OnboardingMainComponent),
     title: 'Onboarding - Conductores PWA'
   },
   {
     path: 'nueva-oportunidad',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     loadComponent: () => import('./nueva-oportunidad/nueva-oportunidad.component').then(m => m.NuevaOportunidadComponent),
     title: 'Nueva Oportunidad - Conductores PWA'
   },
   {
     path: 'documentos',
-    canActivate: [AuthGuard, AviCompletedGuard, PlazoGuard, TandaValidGuard, ProtectionRequiredGuard],
+    canActivate: [AuthGuard, DemoRouterGuard, AviCompletedGuard, PlazoGuard, TandaValidGuard, ProtectionRequiredGuard],
     loadComponent: () => import('./documents/ui/document-upload-shell.component').then(m => m.DocumentUploadShellComponent),
     title: 'Documentos - Conductores PWA'
   },
   { path: 'document-upload', redirectTo: '/documentos', pathMatch: 'full' },
   {
     path: 'kyc-verification',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     loadComponent: () => import('./kyc/kyc-verification.component').then(m => m.KycVerificationComponent),
     title: 'Verificación biométrica - Conductores PWA'
   },
   {
     path: 'cotizador',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     children: [
       {
         path: '',
@@ -77,19 +96,29 @@ const baseRoutes: Routes = [
       },
       {
         path: 'ags-individual',
-        loadComponent: () => import('./cotizador/ags-individual/ags-individual.component').then(m => m.AgsIndividualComponent),
-        title: 'Cotizador AGS Individual - Conductores PWA'
+        loadComponent: () => import('./cotizador/cotizador-main.component').then(m => m.CotizadorMainComponent),
+        title: 'Cotizador AGS Individual - Conductores PWA',
+        data: {
+          presetMarket: 'aguascalientes',
+          presetClientType: 'individual',
+          autoAdvance: true
+        }
       },
       {
         path: 'edomex-colectivo',
-        loadComponent: () => import('./cotizador/edomex-colectivo/edomex-colectivo.component').then(m => m.EdomexColectivoComponent),
-        title: 'Cotizador EdoMex Colectivo - Conductores PWA'
+        loadComponent: () => import('./cotizador/cotizador-main.component').then(m => m.CotizadorMainComponent),
+        title: 'Cotizador EdoMex Colectivo - Conductores PWA',
+        data: {
+          presetMarket: 'edomex',
+          presetClientType: 'colectivo',
+          autoAdvance: true
+        }
       }
     ]
   },
   {
     path: 'quotation',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     children: [
       {
         path: '',
@@ -122,7 +151,7 @@ const baseRoutes: Routes = [
   },
   {
     path: 'simulador',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     children: [
       {
         path: '',
@@ -159,7 +188,7 @@ const baseRoutes: Routes = [
   },
   {
     path: 'clientes',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, DemoRouterGuard],
     children: [
       {
         path: '',

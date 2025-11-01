@@ -118,8 +118,12 @@
     animation: bottom-nav-indicator 0.3s ease;
   }
 
-  @media (min-width: 48.125rem) {
-    display: none;
+  @media (min-width: 769px) {
+    display: none !important;
+  }
+
+  @media (min-width: 1025px) {
+    display: none !important;
   }
 
   @media (prefers-color-scheme: dark) {

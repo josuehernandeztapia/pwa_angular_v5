@@ -24,6 +24,9 @@ import { IconName } from '@shared/icon/icon-definitions';
 import { AVIInterviewComponent } from '@app/avi-interview/avi-interview.component';
 import { environment } from '@environments/environment';
 import { FocusTrapService } from '@core-services/focus-trap.service';
+import { FlowCompletionService } from '@core-services/flow-completion.service';
+import { SummaryMetric } from '@shared/summary-panel.component';
+import { NavigationService } from '@core-services/navigation.service';
 
 interface CheckpointModalData {
   clientId: string;
@@ -74,7 +77,9 @@ export class InterviewCheckpointModalComponent implements OnInit, OnChanges {
     @Inject(DOCUMENT) private readonly documentRef: Document,
     @Inject(PLATFORM_ID) platformId: Object,
     rendererFactory: RendererFactory2,
-    private readonly focusTrap: FocusTrapService
+    private readonly focusTrap: FocusTrapService,
+    private readonly completion: FlowCompletionService,
+    private readonly navigation: NavigationService
   ) {
     this.renderer = rendererFactory.createRenderer(null, null);
     this.isBrowser = isPlatformBrowser(platformId);
@@ -174,11 +179,13 @@ export class InterviewCheckpointModalComponent implements OnInit, OnChanges {
     }
     this.interviewCompleted.emit(payload);
     this.continueToUpload();
+    this.presentInterviewCompletion(payload.validationResult);
   }
 
   onAdvancedInterviewCancelled(): void {
     this.isInterviewInProgress = false;
     this.errorMessage = '';
+    this.presentInterviewCancellation();
   }
 
   onRecorderError(error: any): void {
@@ -205,6 +212,121 @@ export class InterviewCheckpointModalComponent implements OnInit, OnChanges {
   continueToUpload(): void {
     this.continueUpload.emit();
     this.closeModal();
+  }
+
+  private presentInterviewCompletion(result: ValidationResultPayload['validationResult'] | undefined): void {
+    if (!result) {
+      return;
+    }
+
+    const metrics: SummaryMetric[] = [];
+
+    if (typeof result.compliance_score === 'number') {
+      const compliance = Math.round(result.compliance_score);
+      metrics.push({
+        label: 'Cumplimiento',
+        value: `${compliance}%`,
+        badge: compliance >= 80 ? 'success' : 'warning'
+      });
+    }
+
+    if (typeof result.session_duration === 'number') {
+      const minutes = Math.max(1, Math.round(result.session_duration / 60));
+      metrics.push({
+        label: 'Duración',
+        value: `${minutes} min`
+      });
+    }
+
+    const missing = Array.isArray(result.questions_missing) ? result.questions_missing.length : 0;
+    if (missing > 0) {
+      metrics.push({
+        label: 'Preguntas pendientes',
+        value: `${missing}`,
+        badge: 'warning'
+      });
+    }
+
+    const riskFlags = Array.isArray(result.risk_flags) ? result.risk_flags : [];
+    if (riskFlags.length) {
+      const hasHighRisk = riskFlags.some(flag => (flag?.severity ?? '').toLowerCase() === 'high');
+      metrics.push({
+        label: 'Alertas detectadas',
+        value: `${riskFlags.length}`,
+        badge: hasHighRisk ? 'error' : 'warning'
+      });
+    }
+
+    const nextSteps = [
+      'Genera o actualiza el contrato si los documentos están listos.',
+      'Reenvía la entrevista si necesitas reforzar alguna respuesta.'
+    ];
+
+    const clientId = this.modalData?.clientId;
+
+    this.completion.open({
+      title: 'Entrevista AVI completada',
+      description: 'Los resultados se guardaron correctamente y ya están sincronizados con el expediente.',
+      metrics,
+      nextSteps,
+      actions: [
+        {
+          id: 'go-contracts',
+          label: 'Ir a contratos',
+          kind: 'primary',
+          execute: () => clientId ? this.navigation.navigateTo('/contratos/generacion', { clientId }) : Promise.resolve()
+        },
+        {
+          id: 'retry-interview',
+          label: 'Reenviar entrevista',
+          kind: 'ghost',
+          execute: () => {
+            this.retryInterview();
+            return Promise.resolve();
+          }
+        }
+      ],
+      onComplete: () => this.navigation.refreshQuickActions()
+    });
+  }
+
+  private presentInterviewCancellation(): void {
+    const metrics: SummaryMetric[] = [
+      {
+        label: 'Intentos restantes',
+        value: this.getRemainingAttempts()
+      }
+    ];
+
+    const clientId = this.modalData?.clientId;
+
+    this.completion.open({
+      title: 'Entrevista cancelada',
+      description: 'La entrevista se detuvo. Puedes reintentar ahora o volver al expediente para reagendarla.',
+      metrics,
+      nextSteps: [
+        'Coordina una nueva entrevista con el cliente.',
+        'Documenta el motivo de la cancelación en el expediente.'
+      ],
+      actions: [
+        {
+          id: 'retry-now',
+          label: 'Reintentar entrevista',
+          kind: 'primary',
+          execute: () => {
+            this.retryInterview();
+            return Promise.resolve();
+          }
+        },
+        {
+          id: 'return-docs',
+          label: 'Volver a documentos',
+          kind: 'ghost',
+          execute: () => clientId ? this.navigation.navigateTo('/documentos', { clientId }) : Promise.resolve()
+        }
+      ],
+      onComplete: () => this.navigation.refreshQuickActions()
+    });
   }
 
   contactSupervisor(): void {

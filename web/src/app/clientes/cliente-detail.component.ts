@@ -5,7 +5,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Client, EventLog } from '@interfaces/types';
 import { ImportStatus } from '@interfaces/postventa';
 import { IconComponent } from '@shared/icon/icon.component';
+import { DemoBadgeComponent } from '@shared/demo-badge.component';
 import { AviVerificationModalComponent } from '@shared/avi-verification-modal.component';
+import { AviPrerequisitesComponent } from '@shared/avi-prerequisites.component';
+import { AviEligibilityService, AviReadinessSnapshot } from '@feature-services/avi/avi-eligibility.service';
 import { FlowContextService } from '@core-services/flow-context.service';
 import { ClientsApiService } from '@data-access/clients/clients-api.service';
 import { ToastService } from '@core-services/toast.service';
@@ -13,7 +16,7 @@ import { ToastService } from '@core-services/toast.service';
 @Component({
   selector: 'app-cliente-detail',
   standalone: true,
-  imports: [CommonModule, IconComponent, RouterModule, AviVerificationModalComponent],
+  imports: [CommonModule, IconComponent, RouterModule, AviVerificationModalComponent, DemoBadgeComponent, AviPrerequisitesComponent],
   templateUrl: './cliente-detail.component.html',
   styleUrls: ['./cliente-detail.component.scss']
 })
@@ -54,12 +57,68 @@ export class ClienteDetailComponent implements OnInit {
     const market = (this.client()?.market ?? '').toLowerCase();
     return market === 'edomex' ? 'edomex' : 'aguascalientes';
   });
+  readonly savingsPercent = computed(() => this.calculatePercent(this.savingsProgress(), this.savingsGoal()));
+  readonly paymentsPercent = computed(() => this.calculatePercent(this.paymentProgress(), this.totalPayments()));
+  readonly contactInfo = computed(() => ({
+    email: this.client()?.email ?? '',
+    phone: this.client()?.phone ?? ''
+  }));
+  readonly overviewMetrics = computed(() => {
+    const cliente = this.client();
+    if (!cliente) {
+      return [] as Array<{ label: string; value: string; accent?: 'positive' | 'warning' | 'neutral' }>;
+    }
+
+    const metrics: Array<{ label: string; value: string; accent?: 'positive' | 'warning' | 'neutral' }> = [
+      {
+        label: 'Health score',
+        value: cliente.healthScore != null ? `${cliente.healthScore}%` : 'N/A',
+        accent: cliente.healthScore != null && cliente.healthScore >= 80
+          ? 'positive'
+          : cliente.healthScore != null && cliente.healthScore < 60
+            ? 'warning'
+            : 'neutral'
+      },
+      {
+        label: 'Documentos',
+        value: this.documentStats()
+      },
+      {
+        label: 'Flujo',
+        value: this.getFlowDisplayName(cliente.flow)
+      },
+      {
+        label: 'Mercado',
+        value: this.getMunicipalityName(cliente.market)
+      }
+    ];
+
+    const nextPayment = this.nextPaymentDue();
+    if (nextPayment !== 'No registrado') {
+      metrics.push({
+        label: 'Próximo pago',
+        value: nextPayment
+      });
+    }
+
+    const lastContribution = this.lastContributionDate();
+    if (lastContribution !== 'No registrado') {
+      metrics.push({
+        label: 'Última aportación',
+        value: lastContribution
+      });
+    }
+
+    return metrics;
+  });
+  readonly timelineEvents = computed(() => this.getEventFeed());
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly clientsApi: ClientsApiService,
     private readonly toast: ToastService,
+    private readonly aviEligibility: AviEligibilityService,
     @Optional() private readonly flowContext?: FlowContextService
   ) {}
 
@@ -100,8 +159,29 @@ export class ClienteDetailComponent implements OnInit {
     });
   }
 
+  readonly aviReadiness = computed<AviReadinessSnapshot | null>(() => {
+    const current = this.client();
+    if (!current) {
+      return null;
+    }
+
+    return this.aviEligibility.evaluate({
+      documents: current.documents ?? [],
+      clientStatus: current.status ?? null,
+      showAviOverride: true
+    });
+  });
+
+  readonly aviBlockingMessage = computed(() => {
+    const readiness = this.aviReadiness();
+    if (!readiness || readiness.isEligible) {
+      return '';
+    }
+    return readiness.blockingReason ?? 'Completa los requisitos para activar AVI.';
+  });
+
   canStartAviVerification(): boolean {
-    return this.client()?.status === 'Expediente en Proceso';
+    return !!this.aviReadiness()?.isEligible;
   }
 
   startAviVerification(): void {
@@ -206,7 +286,36 @@ export class ClienteDetailComponent implements OnInit {
   }
 
   getEventFeed(): EventLog[] {
-    return this.clientEvents().slice(0, 5);
+    return this.clientEvents().slice(0, 6);
+  }
+
+  contactClient(cliente: Client, channel: 'phone' | 'email' | 'whatsapp'): void {
+    if (channel === 'phone') {
+      if (cliente.phone) {
+        window.open(`tel:${cliente.phone}`, '_self');
+      } else {
+        this.toast.error('Este cliente no tiene teléfono registrado');
+      }
+      return;
+    }
+
+    if (channel === 'email') {
+      if (cliente.email) {
+        window.open(`mailto:${cliente.email}?subject=Seguimiento Conductores PWA`, '_self');
+      } else {
+        this.toast.error('Este cliente no tiene email registrado');
+      }
+      return;
+    }
+
+    if (channel === 'whatsapp') {
+      if (cliente.phone) {
+        const sanitized = cliente.phone.replace(/[^0-9]/g, '');
+        window.open(`https://wa.me/52${sanitized}`, '_blank');
+      } else {
+        this.toast.error('Este cliente no tiene teléfono para WhatsApp');
+      }
+    }
   }
 
   // Traditional methods placeholders
@@ -276,6 +385,14 @@ export class ClienteDetailComponent implements OnInit {
     const total = this.client()?.totalPayments ?? 24;
     const status = completed >= total ? 'Pagos completados' : `${completed}/${total}`;
     return status;
+  }
+
+  private calculatePercent(current: number, goal: number): number {
+    if (!goal || goal <= 0) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(100, Math.round((current / goal) * 100)));
   }
 
 }

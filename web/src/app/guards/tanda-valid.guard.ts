@@ -56,7 +56,14 @@ export class TandaValidGuard implements CanActivate {
       return false;
     }
 
-    const redirectTree = this.router.parseUrl('/cotizador/edomex-colectivo');
+    const redirectTree = this.router.createUrlTree(['/cotizador'], {
+      queryParams: {
+        preset: 'edomex-colectivo',
+        market: 'edomex',
+        clientType: 'colectivo',
+        autoAdvance: true
+      }
+    });
 
     if (navigateOnFailure) {
       this.router.navigateByUrl(redirectTree);

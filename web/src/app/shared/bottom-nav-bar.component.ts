@@ -123,6 +123,7 @@ export class BottomNavBarComponent implements OnInit {
       return;
     }
 
+    // Only show on mobile devices (768px and below)
     this.showBottomNav = this.windowRef.innerWidth <= 768;
   }
 

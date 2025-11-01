@@ -6,6 +6,10 @@ import { Location } from '@angular/common';
 import { environment } from '@environments/environment';
 import { IconName } from '@shared/icon/icon-definitions';
 import { safeWindow } from '@services/utils/ssr/safe-window.util';
+import { COTIZADOR_CONTEXTS, getCotizadorNavigationItems, getCotizadorQuickActions, resolveCotizadorPreset } from '../../cotizador/cotizador-contexts';
+import { FlowCompletionService } from './flow-completion.service';
+import { SummaryMetric } from '@shared/summary-panel.component';
+import { PolicyClientType, PolicyMarket } from '@feature-services/configuration/market-policy.service';
 
 export interface BreadcrumbItem {
   label: string;
@@ -45,7 +49,9 @@ export interface ShellNavigationItem {
   dataCy?: string;
   badge?: number;
   featureFlag?: keyof typeof environment.features;
+  queryParams?: Record<string, any>;
   children?: ShellNavigationItem[];
+  tooltip?: string;
 }
 
 @Injectable({
@@ -195,7 +201,8 @@ export class NavigationService {
   constructor(
     private router: Router,
     private location: Location,
-    private activatedRoute: ActivatedRoute
+    private activatedRoute: ActivatedRoute,
+    private completion: FlowCompletionService
   ) {
     this.initializeNavigation();
   }
@@ -229,12 +236,31 @@ export class NavigationService {
       }
     }
 
-    // Get route configuration
-    const config = this.routeConfig[url] || {
+    const [path, queryString] = url.split('?');
+    const params = new URLSearchParams(queryString ?? '');
+    const presetParam = params.get('preset');
+    const presetContext = resolveCotizadorPreset(presetParam ?? undefined);
+
+    const defaultConfig = {
       title: 'Conductores PWA',
-      breadcrumbs: [{ label: 'Dashboard', route: '/dashboard', iconType: 'home' }],
+      breadcrumbs: [{ label: 'Dashboard', route: '/dashboard', iconType: 'home' as IconName }],
       showBackButton: false
     };
+
+    const baseConfig = this.routeConfig[path] || defaultConfig;
+    let config = this.routeConfig[url] || baseConfig;
+
+    if (path === '/cotizador' && presetContext) {
+      const baseBreadcrumbs = baseConfig.breadcrumbs ?? defaultConfig.breadcrumbs;
+      config = {
+        title: `Cotizador - ${presetContext.label}`,
+        breadcrumbs: [
+          ...baseBreadcrumbs,
+          { label: presetContext.label, iconType: presetContext.iconType, route: url }
+        ],
+        showBackButton: true
+      };
+    }
 
     // Update navigation state
     this.navigationState.next({
@@ -320,10 +346,13 @@ export class NavigationService {
         route: '/cotizador',
         iconType: 'calculator',
         dataCy: 'nav-cotizador',
-        children: [
-          { label: 'AGS Individual', route: '/cotizador/ags-individual', iconType: 'user', dataCy: 'nav-cotizador-ags' },
-          { label: 'EdoMex Colectivo', route: '/cotizador/edomex-colectivo', iconType: 'users', dataCy: 'nav-cotizador-edomex' }
-        ]
+        children: getCotizadorNavigationItems().map(context => ({
+          label: context.label,
+          route: context.route,
+          iconType: context.iconType,
+          dataCy: context.dataCy,
+          queryParams: context.queryParams
+        }))
       },
       {
         label: 'Simulador',
@@ -414,6 +443,26 @@ export class NavigationService {
                 queryParams: { source: 'quick-action' },
                 color: 'secondary' as const,
                 tooltip: 'Ir al simulador de escenarios'
+              },
+              {
+                id: 'documents-hub',
+                label: 'Documentos',
+                icon: 'document',
+                iconType: 'document',
+                route: '/documentos',
+                queryParams: { source: 'quick-action' },
+                color: 'warning' as const,
+                tooltip: 'Revisar documentación pendiente'
+              },
+              {
+                id: 'post-sale',
+                label: 'Postventa',
+                icon: 'clipboard-list',
+                iconType: 'clipboard-list',
+                route: '/postventa',
+                queryParams: { source: 'quick-action' },
+                color: 'primary' as const,
+                tooltip: 'Gestionar upselling postventa'
               }
             ]);
 
@@ -442,28 +491,22 @@ export class NavigationService {
             ]);
 
           case '/cotizador':
-            return this.markCurrentRoute(route, [
-              {
-                id: 'ags-quote',
-                label: 'AGS Individual',
-                icon: 'truck',
-                iconType: 'truck',
-                route: '/cotizador/ags-individual',
-                queryParams: { source: 'quick-action' },
-                color: 'primary' as const,
-                tooltip: 'Cotizar plan individual de Aguascalientes'
-              },
-              {
-                id: 'edomex-quote',
-                label: 'EdoMex Colectivo',
-                icon: 'handshake',
-                iconType: 'handshake',
-                route: '/cotizador/edomex-colectivo',
-                queryParams: { source: 'quick-action' },
-                color: 'success' as const,
-                tooltip: 'Cotizar plan colectivo Estado de México'
+            return this.markCurrentRoute(route, getCotizadorQuickActions().map(context => {
+              const queryParams = context.queryParams ? { ...context.queryParams } : {};
+              if (!('source' in queryParams)) {
+                queryParams['source'] = 'quick-action';
               }
-            ]);
+              return {
+                id: context.id,
+                label: context.label,
+                icon: context.iconType,
+                iconType: context.iconType,
+                route: context.route,
+                queryParams,
+                color: context.color,
+                tooltip: context.tooltip
+              };
+            }));
 
           case '/simulador':
             return this.markCurrentRoute(route, [
@@ -518,12 +561,225 @@ export class NavigationService {
           return;
         }
         if (action.route) {
-          this.navigateTo(action.route, action.queryParams);
+          this.navigateTo(action.route, action.queryParams).then(() => {
+            this.maybeShowQuickActionOverlay(action);
+          });
         } else if (action.action) {
           action.action();
         }
       }
     });
+  }
+
+  refreshQuickActions(): void {
+    const current = this.navigationState.getValue();
+    this.navigationState.next({ ...current });
+  }
+
+  private maybeShowQuickActionOverlay(action: QuickAction): void {
+    if (!action.route) {
+      return;
+    }
+
+    if (action.route.startsWith('/cotizador')) {
+      this.presentCotizadorQuickActionOverlay(action);
+      return;
+    }
+
+    if (action.route.startsWith('/simulador')) {
+      this.presentSimulatorQuickActionOverlay(action);
+      return;
+    }
+
+    if (action.route.startsWith('/documentos')) {
+      this.presentDocumentsQuickActionOverlay(action);
+      return;
+    }
+
+    if (action.route.startsWith('/postventa')) {
+      this.presentPostSaleQuickActionOverlay(action);
+    }
+  }
+
+  private presentCotizadorQuickActionOverlay(action: QuickAction): void {
+    const presetCandidate = (action.queryParams?.['preset'] as string | undefined) ?? action.id;
+    const context = resolveCotizadorPreset(presetCandidate) ?? COTIZADOR_CONTEXTS.find(item => item.id === action.id);
+
+    const metrics: SummaryMetric[] = context
+      ? [
+          { label: 'Mercado', value: this.getMarketLabel(context.market) },
+          { label: 'Tipo de cliente', value: this.getClientTypeLabel(context.clientType) }
+        ]
+      : [
+          { label: 'Contexto', value: action.label ?? 'Cotizador' }
+        ];
+
+    metrics.push({
+      label: 'Dato origen',
+      value: environment.features.enableMockData ? 'DEMO' : 'REAL',
+      badge: environment.features.enableMockData ? 'warning' : 'success'
+    });
+
+    const nextSteps = [
+      'Revisa el paquete sugerido y ajusta condiciones comerciales.',
+      'Formaliza la cotización o consulta otro preset si es necesario.'
+    ];
+
+    this.completion.open({
+      title: context ? `Cotizador listo (${context.label})` : 'Cotizador listo',
+      description: 'El cotizador se configuró con el contexto seleccionado. Continúa desde el paso de producto.',
+      metrics,
+      nextSteps,
+      actions: [
+        {
+          id: 'go-cotizador',
+          label: 'Trabajar cotización',
+          kind: 'primary',
+          execute: () => Promise.resolve()
+        },
+        {
+          id: 'open-dashboard',
+          label: 'Ver dashboard',
+          kind: 'ghost',
+          execute: () => this.navigateTo('/dashboard')
+        }
+      ]
+    });
+  }
+
+  private presentSimulatorQuickActionOverlay(action: QuickAction): void {
+    const scenarioLabel = action.label ?? 'Simulador';
+    const metrics: SummaryMetric[] = [
+      { label: 'Escenario', value: scenarioLabel },
+      {
+        label: 'Modo de datos',
+        value: environment.features.enableMockData ? 'DEMO' : 'REAL',
+        badge: environment.features.enableMockData ? 'warning' : 'success'
+      }
+    ];
+
+    const nextSteps = [
+      'Ajusta variables de enganche y plazo para comparar opciones.',
+      'Guarda el escenario y compártelo con el equipo comercial.'
+    ];
+
+    this.completion.open({
+      title: `Simulador listo (${scenarioLabel})`,
+      description: 'Configura los parámetros y guarda el escenario para tu cliente.',
+      metrics,
+      nextSteps,
+      actions: [
+        {
+          id: 'continue-simulator',
+          label: 'Continuar en simulador',
+          kind: 'primary',
+          execute: () => Promise.resolve()
+        },
+        {
+          id: 'open-dashboard',
+          label: 'Ver dashboard',
+          kind: 'ghost',
+          execute: () => this.navigateTo('/dashboard')
+        }
+      ]
+    });
+  }
+
+  private presentDocumentsQuickActionOverlay(action: QuickAction): void {
+    const metrics: SummaryMetric[] = [
+      {
+        label: 'Sección',
+        value: 'Documentos'
+      },
+      {
+        label: 'Modo de datos',
+        value: environment.features.enableMockData ? 'DEMO' : 'REAL',
+        badge: environment.features.enableMockData ? 'warning' : 'success'
+      }
+    ];
+
+    const nextSteps = [
+      'Filtra por pendientes y valida observaciones recientes.',
+      'Coordina con el equipo o cliente para subir evidencia faltante.'
+    ];
+
+    this.completion.open({
+      title: 'Expedientes listos para revisión',
+      description: 'Accede a la vista de documentos y prioriza los pendientes críticos.',
+      metrics,
+      nextSteps,
+      actions: [
+        {
+          id: 'review-documents',
+          label: 'Revisar documentos',
+          kind: 'primary',
+          execute: () => Promise.resolve()
+        },
+        {
+          id: 'view-activity',
+          label: 'Ver actividad',
+          kind: 'ghost',
+          execute: () => this.navigateTo('/dashboard', { tab: 'activity' })
+        }
+      ]
+    });
+  }
+
+  private presentPostSaleQuickActionOverlay(action: QuickAction): void {
+    const metrics: SummaryMetric[] = [
+      {
+        label: 'Gestión',
+        value: 'Postventa'
+      },
+      {
+        label: 'Modo de datos',
+        value: environment.features.enableMockData ? 'DEMO' : 'REAL',
+        badge: environment.features.enableMockData ? 'warning' : 'success'
+      }
+    ];
+
+    const nextSteps = [
+      'Captura evidencia fotográfica y genera upselling para el cliente.',
+      'Actualiza el estado de la gestión en el dashboard.'
+    ];
+
+    this.completion.open({
+      title: 'Postventa lista para gestionar',
+      description: 'Prepara la evidencia y construye la cotización de servicios adicionales.',
+      metrics,
+      nextSteps,
+      actions: [
+        {
+          id: 'open-postsale',
+          label: 'Ir a postventa',
+          kind: 'primary',
+          execute: () => Promise.resolve()
+        },
+        {
+          id: 'open-dashboard',
+          label: 'Ver dashboard',
+          kind: 'ghost',
+          execute: () => this.navigateTo('/dashboard')
+        }
+      ]
+    });
+  }
+
+  private getMarketLabel(market: PolicyMarket): string {
+    switch (market) {
+      case 'aguascalientes':
+        return 'Aguascalientes';
+      case 'edomex':
+        return 'EdoMex';
+      case 'otros':
+        return 'Otros mercados';
+      default:
+        return market;
+    }
+  }
+
+  private getClientTypeLabel(clientType: PolicyClientType): string {
+    return clientType === 'colectivo' ? 'Colectivo' : 'Individual';
   }
 
   private markCurrentRoute(currentRoute: string, actions: QuickAction[]): QuickAction[] {

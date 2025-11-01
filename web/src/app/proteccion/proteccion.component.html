@@ -10,6 +10,85 @@
     </button>
   </header>
 
+  <section
+    class="protection__demo"
+    *ngIf="isProteccionDemo()"
+    aria-label="Escenario demo de reestructuras"
+  >
+    <header class="protection__demo-header">
+      <div>
+        <span class="protection__demo-badge">Demo</span>
+        <h2>Reestructura guiada</h2>
+        <p>Explica Stepdown, diferimiento o recalendarización sin tocar contratos reales.</p>
+      </div>
+      <div class="protection__demo-actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="applyDemoScenario('stepdown')">
+          Aplicar Stepdown
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="applyDemoScenario('defer')">
+          Simular diferimiento
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="applyDemoScenario('recalendar')">
+          Recalendar demo
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="resetDemoScenario()">
+          Reiniciar demo
+        </button>
+      </div>
+    </header>
+
+    <ul class="protection__demo-notes" *ngIf="demoScenarioNotes().length">
+      <li *ngFor="let note of demoScenarioNotes()">{{ note }}</li>
+    </ul>
+    <section class="protection__demo-summary" *ngIf="demoFinanceSummary() as summary" aria-label="Impacto financiero demo">
+      <h3>Impacto financiero demo</h3>
+      <p class="protection__demo-summary-scenario">Escenario activo: <strong>{{ summary.scenarioTitle }}</strong></p>
+      <ul class="protection__demo-summary-metrics">
+        <li>
+          Pago mensual actual: <strong>{{ summary.monthlyPayment | currency:'MXN':'symbol':'1.0-0' }}</strong>
+        </li>
+        <li *ngIf="summary.monthlyGoal !== null">
+          Meta mensual: <strong>{{ summary.monthlyGoal | currency:'MXN':'symbol':'1.0-0' }}</strong>
+        </li>
+        <li *ngIf="summary.term !== null">
+          Plazo estimado: <strong>{{ summary.term }} meses</strong>
+        </li>
+      </ul>
+    </section>
+    <div class="protection__demo-finance-actions">
+      <button
+        type="button"
+        class="btn btn-secondary btn-xs"
+        (click)="simulateFinanceEvent('extra')"
+        [disabled]="isFinanceEventProcessing()"
+        [attr.aria-busy]="isFinanceEventProcessing()"
+      >
+        Registrar pago extra
+      </button>
+      <button
+        type="button"
+        class="btn btn-ghost btn-xs"
+        (click)="simulateFinanceEvent('late')"
+        [disabled]="isFinanceEventProcessing()"
+        [attr.aria-busy]="isFinanceEventProcessing()"
+      >
+        Simular atraso
+      </button>
+    </div>
+    <ul class="protection__demo-event-log" *ngIf="financeEvents().length">
+      <li *ngFor="let event of financeEvents()">
+        <div>
+          <strong>{{ event.title }}</strong>
+          <span>{{ event.description }}</span>
+        </div>
+        <div class="protection__demo-event-meta">
+          <span *ngIf="event.amountDelta">Impacto: {{ event.amountDelta | currency:'MXN':'symbol':'1.0-0' }}</span>
+          <small>{{ event.createdAt | date:'short' }}</small>
+        </div>
+      </li>
+    </ul>
+  </section>
+
   <form class="protection__form" [formGroup]="simulateForm" (ngSubmit)="simulate()">
     <label>
       <span>Contrato</span>
@@ -36,13 +115,14 @@
   </form>
 
   <p *ngIf="feedback()" class="protection__feedback">{{ feedback() }}</p>
+  <p *ngIf="isProteccionDemo() && demoMessage()" class="protection__feedback protection__feedback--demo">{{ demoMessage() }}</p>
   <p *ngIf="error()" class="protection__error">{{ error() }}</p>
 
-  <div class="protection__grid" *ngIf="scenarios().length; else emptyState">
+  <div class="protection__grid" *ngIf="uiScenarios().length; else emptyState">
     <article
-      *ngFor="let scenario of scenarios()"
+      *ngFor="let scenario of uiScenarios()"
       class="protection__card"
-      [class.protection__card--active]="selectedScenario()?.id === scenario.id"
+      [class.protection__card--active]="uiSelectedScenario()?.id === scenario.id || (!uiSelectedScenario() && uiScenarios()[0] === scenario)"
       (click)="selectScenario(scenario)"
     >
       <header>

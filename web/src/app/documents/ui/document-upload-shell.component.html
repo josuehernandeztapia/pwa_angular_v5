@@ -3,6 +3,7 @@
     <app-document-upload-header
       [completionStatus]="completionStatus"
       [pendingOfflineDocs]="pendingOfflineDocs"
+      [isDemo]="isDemoMode()"
     ></app-document-upload-header>
 
     <p *ngIf="syncMessage" class="document-upload__sync" data-cy="doc-sync-message">
@@ -32,6 +33,88 @@
       [message]="incomeBannerMessage"
       (dismiss)="dismissIncomeBanner()">
     </app-document-income-banner>
+
+    @if (isDemoMode() && demoScenarioSnapshot(); as demoScenario) {
+      <section class="document-upload__demo" aria-label="Escenario demo documentos">
+        <header class="document-upload__demo-header">
+          <div>
+            <span class="document-upload__demo-badge">Demo</span>
+            <h3>{{ demoScenario.label }}</h3>
+            <p>{{ demoScenario.description }}</p>
+        </div>
+        <div class="document-upload__demo-actions">
+          <button type="button" class="btn btn-ghost btn-sm" (click)="resetDemoScenario()" aria-label="Reiniciar escenario demo">
+            Reiniciar demo
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="exitDemoMode()" aria-label="Salir de modo demo">
+            Salir de demo
+          </button>
+        </div>
+      </header>
+      @if (demoScenario.aviDecision !== undefined) {
+        <div class="document-upload__demo-avi" aria-label="Controles demo AVI">
+          <h4 class="document-upload__demo-avi-title">Entrevista AVI demo</h4>
+          <p class="document-upload__demo-avi-status">
+            Resultado actual:
+            <span class="document-upload__demo-avi-pill" [ngClass]="getAviDecisionClass(demoAviDecision())">
+              {{ formatAviDecision(demoAviDecision()) }}
+            </span>
+            <small *ngIf="demoAviDecisionUpdatedAt() as updated"> · Actualizado {{ updated | date:'short' }}</small>
+          </p>
+          <div class="document-upload__demo-avi-actions">
+            <button
+              *ngFor="let decision of aviDecisionOptions"
+              type="button"
+              class="btn btn-ghost btn-xs document-upload__demo-avi-button"
+              [class.document-upload__demo-avi-button--active]="decision === demoAviDecision()"
+              (click)="simulateAviDecision(decision)"
+              [disabled]="isSimulatingAviDecision() || decision === demoAviDecision()">
+              {{ formatAviDecision(decision) }}
+            </button>
+          </div>
+        </div>
+      }
+      <ul *ngIf="demoScenario.documents?.length" class="document-upload__demo-docs">
+        <li *ngFor="let doc of demoScenario.documents">
+          <div>
+            <strong>{{ doc.name }}</strong>
+              <small>Estado actual: {{ doc.status }}</small>
+            </div>
+            <button type="button" class="btn btn-ghost btn-xs" (click)="toggleDemoDocument(doc)">
+              Alternar estado
+            </button>
+          </li>
+        </ul>
+      </section>
+    }
+
+    <app-demo-error-banner
+      *ngIf="isDemoMode() && demoDocumentsWithIssues().length"
+      class="document-upload__demo-banner"
+      title="Documentos con incidencias demo"
+      [description]="demoIssueDescription()"
+      actionLabel="Autocorregir pendientes"
+      [busy]="isResolvingDemoIssues()"
+      (resolve)="resolveDemoIssues()"
+    ></app-demo-error-banner>
+
+    <app-onboarding-status-banner
+      class="document-upload__status-banner"
+      *ngIf="onboardingSnapshot"
+      [snapshot]="onboardingSnapshot">
+    </app-onboarding-status-banner>
+
+    <app-onboarding-tracker
+      *ngIf="onboardingSnapshot"
+      class="document-upload__tracker"
+      [snapshot]="onboardingSnapshot">
+    </app-onboarding-tracker>
+
+    <app-onboarding-checklist
+      *ngIf="onboardingSnapshot"
+      class="document-upload__checklist"
+      [snapshot]="onboardingSnapshot">
+    </app-onboarding-checklist>
 
     <div class="document-upload__dropzone-wrapper">
       <input
@@ -108,6 +191,11 @@
               <span *ngIf="doc.group === 'member'" class="document-card__badge document-card__badge--member" data-cy="doc-member-badge">Integrante</span>
             </h3>
             <p *ngIf="doc.tooltip" class="document-card__tooltip">{{ doc.tooltip }}</p>
+            <ng-container *ngIf="!doc.tooltip && policyContext as context">
+              <ng-container *ngIf="('documentExpiry' | policyHint: { context, documentId: doc.id }) as expiryHint">
+                <p *ngIf="expiryHint" class="document-card__tooltip">{{ expiryHint }}</p>
+              </ng-container>
+            </ng-container>
           </div>
           <span
             class="document-card__status"
@@ -163,6 +251,23 @@
             [attr.data-cy]="'doc-manual-' + doc.id">
             Captura manual
           </button>
+
+          <ng-container *ngIf="isDemoMode()">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              (click)="simulateDemoDocumentIssue(doc)"
+              [disabled]="isDemoDocumentBusy(doc.id)">
+              Simular incidencia
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="autoFixDemoDocument(doc)"
+              [disabled]="isDemoDocumentBusy(doc.id)">
+              {{ isDemoDocumentBusy(doc.id) ? 'Resolviendo…' : 'Autocorregir' }}
+            </button>
+          </ng-container>
         </div>
       </article>
     </ng-template>

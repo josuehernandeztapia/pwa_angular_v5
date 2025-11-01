@@ -2,10 +2,43 @@
 <a class="skip-link" href="#main-content">Saltar al contenido</a>
 
 <ng-container *ngIf="showShell; else authLayout">
-  <div class="app-shell">
+  <div class="app-shell" [class.app-shell--demo]="isDemoMode()">
     <app-navigation class="app-shell__navigation"></app-navigation>
 
     <div class="app-shell__layout">
+      <div class="app-shell__demo-banner" *ngIf="isDemoMode()" role="status" aria-live="polite">
+        <div class="app-shell__demo-banner-label">
+          <span aria-hidden="true">📋</span>
+          <span>Modo demostración activo</span>
+        </div>
+        <div class="app-shell__demo-banner-actions">
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="goToDemoAnalytics()"
+            data-cy="demo-open-analytics"
+          >
+            Ver telemetría demo
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="openDemoGuide()"
+            data-cy="demo-open-guide"
+          >
+            Guía rápida
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            (click)="switchToRealData()"
+            data-cy="demo-switch-to-real"
+          >
+            Cambiar a datos reales
+          </button>
+        </div>
+      </div>
+
       <header class="app-shell__topbar" role="banner">
         <div class="app-shell__topbar-start">
           <div class="app-shell__org" aria-live="polite">
@@ -82,12 +115,14 @@
                   <app-icon [name]="action.iconType" [size]="16" aria-hidden="true"></app-icon>
                 </ng-container>
                 {{ action.label }}
-                <span *ngIf="action.badge !== null" class="app-shell__quick-action-badge">{{ action.badge }}</span>
+                <span class="app-shell__quick-action-badge">
+                  <app-demo-badge [isDemo]="isDemoMode()" />
+                </span>
               </button>
             </div>
           </ng-container>
           <button class="btn btn-secondary btn-sm" data-cy="date-range">Rango de fechas</button>
-          <button class="btn btn-primary btn-sm" data-cy="export">
+          <button class="btn btn-primary btn-sm" type="button" data-cy="export" (click)="handleExport()">
             Exportar
           </button>
           <button
@@ -139,6 +174,7 @@
   }
 
   <app-keyboard-shortcuts-modal></app-keyboard-shortcuts-modal>
+  <app-flow-completion-overlay></app-flow-completion-overlay>
 </ng-container>
 
 <ng-template #authLayout>

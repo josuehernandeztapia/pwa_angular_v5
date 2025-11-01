@@ -84,6 +84,8 @@
       color:var(--openai-white);text-align:center;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999
     }
 
+    .app-shell-loading--hidden{opacity:0;pointer-events:none;transition:opacity 0.3s ease;}
+
     .loading-logo{
       width:80px;height:80px;margin-bottom:24px;
       background:var(--token-surface-inverse-light-alpha-06);border-radius:8px;/* OpenAI standard */
@@ -175,19 +177,5 @@
     </noscript>
   </app-root>
 
-  <!-- Remove loading screen when app is ready -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const loader = document.getElementById('initial-loader');
-        if (loader) {
-          loader.style.opacity = '0';
-          loader.style.transition = 'opacity 0.3s ease';
-          setTimeout(() => loader.remove(), 300);
-        }
-        document.body.classList.add('app-ready');
-      }, 1000);
-    });
-  </script>
 </body>
 </html>

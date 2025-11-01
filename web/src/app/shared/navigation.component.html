@@ -118,32 +118,40 @@
   </div>
 
   <nav class="app-nav__menu">
-    <a
+    <div
       *ngFor="let item of navigationItems"
-      class="app-nav__item"
+      class="app-nav__item-group"
       [ngClass]="getNavItemClasses(item)"
-      (click)="navigate(item)"
-      [routerLink]="item.route"
-      [attr.data-testid]="getNavTestId(item.route)"
-      [attr.aria-label]="isCollapsed ? item.label : null"
-      [attr.data-cy]="item.dataCy || null"
-      routerLinkActive="is-active"
     >
-      <span class="app-nav__item-icon" aria-hidden="true">
-        <app-icon class="icon-20" [name]="item.iconType"></app-icon>
-      </span>
-      <span class="app-nav__item-label" *ngIf="!isCollapsed">{{ item.label }}</span>
-      <span class="app-nav__item-badge" *ngIf="item.badge && !isCollapsed">{{ item.badge }}</span>
+      <a
+        class="app-nav__item"
+        (click)="navigate(item)"
+        [routerLink]="item.route"
+        [queryParams]="item.queryParams || null"
+        [attr.data-testid]="getNavTestId(item.route, item.queryParams)"
+        [attr.aria-label]="isCollapsed ? item.label : null"
+        [attr.data-cy]="item.dataCy || null"
+        [attr.title]="item.tooltip || (isCollapsed ? item.label : null)"
+        routerLinkActive="is-active"
+      >
+        <span class="app-nav__item-icon" aria-hidden="true">
+          <app-icon class="icon-20" [name]="item.iconType"></app-icon>
+        </span>
+        <span class="app-nav__item-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+        <span class="app-nav__item-badge" *ngIf="item.badge && !isCollapsed">{{ item.badge }}</span>
+      </a>
 
-      <div class="app-nav__submenu" *ngIf="item.children && !isCollapsed && isActive(item.route)">
+      <div class="app-nav__submenu" *ngIf="item.children && !isCollapsed && isActive(item.route, item.queryParams)">
         <a
           *ngFor="let child of item.children"
           class="app-nav__subitem"
-          [ngClass]="{ 'is-active': isActive(child.route) }"
+          [ngClass]="{ 'is-active': isActive(child.route, child.queryParams) }"
           (click)="navigate(child); $event.stopPropagation()"
           [routerLink]="child.route"
-          [attr.data-testid]="getNavTestId(child.route)"
+          [queryParams]="child.queryParams || null"
+          [attr.data-testid]="getNavTestId(child.route, child.queryParams)"
           [attr.data-cy]="child.dataCy || null"
+          [attr.title]="child.tooltip || child.label"
         >
           <span class="app-nav__subitem-icon" aria-hidden="true">
             <app-icon class="icon-16" [name]="child.iconType" [size]="16"></app-icon>
@@ -152,7 +160,7 @@
           <span class="app-nav__item-badge" *ngIf="child.badge">{{ child.badge }}</span>
         </a>
       </div>
-    </a>
+    </div>
   </nav>
 
   <footer class="app-nav__footer">

@@ -1,0 +1,46 @@
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(255, 196, 0, 0.18), rgba(255, 126, 95, 0.25));
+  border: 1px solid rgba(255, 153, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(255, 153, 0, 0.12);
+}
+
+.demo-banner__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(255, 153, 0, 0.15);
+  color: #d97706;
+}
+
+.demo-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.demo-banner__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.demo-banner__description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.demo-banner__actions {
+  flex-shrink: 0;
+}
+
+.demo-banner[aria-busy='true'] {
+  opacity: 0.75;
+}

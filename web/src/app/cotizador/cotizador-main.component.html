@@ -1,15 +1,44 @@
 <!-- Skip Link for Accessibility -->
 <a class="skip-link" href="#cotizador-content">Saltar al contenido del cotizador</a>
 
-<div class="container section">
+<div
+  class="container section cotizador-main"
+  [class.cotizador-main--client-view]="isClientView()"
+  id="cotizador-content"
+>
   <!-- Header Section -->
   <div class="cotizador-main__section cotizador-main__section--large">
-    <h1 class="cotizador-main__title">
-      {{ client ? 'Cotizador para ' + client.name : 'Cotizador de Soluciones' }}
-    </h1>
+    <div class="cotizador-main__title-row">
+      <h1 class="cotizador-main__title">
+        {{ client ? 'Cotizador para ' + client.name : 'Cotizador de Soluciones' }}
+      </h1>
+      <div class="cotizador-main__title-actions">
+        <app-demo-badge class="cotizador-main__data-badge" [isDemo]="isDemoMode()" size="md"></app-demo-badge>
+        <button
+          type="button"
+          class="cotizador-main__client-view-btn"
+          (click)="toggleClientView()"
+          [attr.aria-pressed]="isClientView()"
+        >
+          <app-icon
+            class="cotizador-main__client-view-icon"
+            [name]="isClientView() ? 'eye-off' : 'eye'"
+            [size]="18"
+            aria-hidden="true"
+          ></app-icon>
+          {{ isClientView() ? 'Vista asesor' : 'Vista cliente' }}
+        </button>
+      </div>
+    </div>
     <p class="cotizador-main__subtitle">
       Configuración de paquetes y simulaciones financieras
     </p>
+    @if (isClientView()) {
+    <div class="cotizador-main__client-banner" role="status" aria-live="polite">
+      <app-icon name="sparkles" [size]="18" aria-hidden="true"></app-icon>
+      <span>Presentación optimizada para compartir con tu cliente. Elementos internos ocultos temporalmente.</span>
+    </div>
+    }
   </div>
 
   <app-offline-queue-banner
@@ -17,6 +46,100 @@
     endpointPrefix="/quotes"
     featureTag="cotizador"
   ></app-offline-queue-banner>
+
+  @if (isDemoMode() && demoScenarioSnapshot(); as demoScenario) {
+  <section class="cotizador-main__demo" aria-label="Escenario demo activo">
+    <header class="cotizador-main__demo-header">
+      <div>
+        <span class="cotizador-main__demo-badge">Demo</span>
+        <h3>{{ demoScenario.label }}</h3>
+        <p>{{ demoScenario.description }}</p>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="resetDemoScenario()">Reiniciar demo</button>
+    </header>
+
+    @if (demoFinanceScenarioSet(); as financeSet) {
+      <div class="cotizador-main__demo-scenarios">
+        <h4>Escenarios financieros</h4>
+        <ul>
+          <li *ngFor="let item of financeSet.scenarios">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs"
+              [class.cotizador-main__demo-scenarios-btn--active]="activeDemoFinanceScenario()?.id === item.id"
+              (click)="selectDemoFinanceScenario(item.id)"
+            >
+              {{ item.title }}
+            </button>
+          </li>
+        </ul>
+        @if (activeDemoFinanceScenario(); as selectedScenario) {
+          <div class="cotizador-main__demo-scenario-detail">
+            <p>Pago mensual demo: <strong>{{ formatCurrency(selectedScenario.pagoMensual) }}</strong></p>
+            <p>Tasa simulada: <strong>{{ selectedScenario.tasa }}%</strong></p>
+            <p *ngIf="selectedScenario.bonificacion">Bonificación aplicada: {{ formatCurrency(selectedScenario.bonificacion) }}</p>
+            <small *ngIf="selectedScenario.terminos">{{ selectedScenario.terminos }}</small>
+          </div>
+        }
+      </div>
+    }
+
+    @if (demoProtectionNotes(); as notes) {
+      <ul class="cotizador-main__demo-notes">
+        <li *ngFor="let note of notes">{{ note }}</li>
+      </ul>
+    }
+    <div class="cotizador-main__demo-actions" *ngIf="activeDemoFinanceScenario()">
+      <button
+        type="button"
+        class="btn btn-secondary btn-xs"
+        (click)="simulateFinanceEvent('extra')"
+        [disabled]="isFinanceEventProcessing()"
+        [attr.aria-busy]="isFinanceEventProcessing()"
+      >
+        Simular pago extra
+      </button>
+      <button
+        type="button"
+        class="btn btn-ghost btn-xs"
+        (click)="simulateFinanceEvent('late')"
+        [disabled]="isFinanceEventProcessing()"
+        [attr.aria-busy]="isFinanceEventProcessing()"
+      >
+        Simular pago atrasado
+      </button>
+    </div>
+    @if (financeEvents().length) {
+      <ul class="cotizador-main__demo-event-log">
+        <li *ngFor="let event of financeEvents()">
+          <div>
+            <strong>{{ event.title }}</strong>
+            <span>{{ event.description }}</span>
+          </div>
+          <div class="cotizador-main__demo-event-meta">
+            <span *ngIf="event.amountDelta">
+              Impacto: {{ event.amountDelta | currency:'MXN':'symbol':'1.0-0' }}
+            </span>
+            <small>{{ event.createdAt | date:'short' }}</small>
+          </div>
+        </li>
+      </ul>
+    }
+    @if (demoFinanceMessage()) {
+      <p class="cotizador-main__demo-message">{{ demoFinanceMessage() }}</p>
+    }
+  </section>
+  }
+
+  @if (requirementsSnapshot(); as snapshot) {
+  <section class="cotizador-main__preview" aria-label="Requisitos dinámicos">
+    <app-onboarding-status-banner class="cotizador-main__preview-banner" [snapshot]="snapshot"></app-onboarding-status-banner>
+    <div class="cotizador-main__preview-grid">
+      <app-onboarding-tracker [snapshot]="snapshot"></app-onboarding-tracker>
+      <app-onboarding-checklist [snapshot]="snapshot"></app-onboarding-checklist>
+    </div>
+  </section>
+  }
 
   <!-- Financial Summary Cards -->
   <div *ngIf="pkg" class="grid-metrics cotizador-main__section cotizador-main__section--large" role="region" aria-label="Resumen financiero" data-cy="cotizador-summary">
@@ -43,6 +166,33 @@
       </div>
     </div>
   </div>
+
+  @if (isClientView()) {
+  <section class="card cotizador-main__client-summary" role="region" aria-label="Resumen para cliente">
+    <h3 class="cotizador-main__client-summary-title">Resumen del plan</h3>
+    <ul class="cotizador-main__client-summary-list">
+      <li>
+        <span>Mercado</span>
+        <span>{{ getSelectedMarketLabel() }}</span>
+      </li>
+      <li>
+        <span>Tipo de cliente</span>
+        <span>{{ getSelectedClientTypeLabel() }}</span>
+      </li>
+      <li>
+        <span>Pago estimado</span>
+        <span>{{ formatCurrency(monthlyPayment) }}/mes</span>
+      </li>
+    </ul>
+    <p class="cotizador-main__client-summary-note">Confirma estos datos con tu asesor para ajustar paquetes o documentos requeridos.</p>
+  </section>
+  }
+
+  <div
+    class="cotizador-main__advisor-shell"
+    [class.cotizador-main__advisor-shell--hidden]="isClientView()"
+    [attr.aria-hidden]="isClientView()"
+  >
 
   <!-- Insurance Configuration -->
   <div *ngIf="!isVentaDirecta && pkg" class="card cotizador-main__section cotizador-main__section--medium">
@@ -202,7 +352,19 @@
           <div *ngIf="isVentaDirecta">
             <h3 class="cotizador-main__section-title cotizador-main__section-title--large">Paso 3: Estructura de Pago</h3>
             <div>
-              <label for="downPaymentAmount" class="label label--required">Pago Inicial</label>
+              <div class="cotizador-main__label-row">
+                <label for="downPaymentAmount" class="label label--required">Pago Inicial</label>
+                <button
+                  *ngIf="downPaymentPolicyHint"
+                  type="button"
+                  class="cotizador-main__hint"
+                  [attr.title]="downPaymentPolicyHint"
+                  [attr.aria-label]="downPaymentPolicyHint"
+                  data-cy="hint-downpayment-direct"
+                >
+                  <app-icon name="information-circle" [size]="16" aria-hidden="true"></app-icon>
+                </button>
+              </div>
               <input
                 type="number"
                 id="downPaymentAmount"
@@ -219,7 +381,19 @@
             <h3 class="cotizador-main__section-title cotizador-main__section-title--large">Paso 3: Estructura Financiera</h3>
             <div class="cotizador-main__stack cotizador-main__stack--loose">
               <div>
-                <label for="downPayment" class="label">Enganche: {{ downPaymentPercentage }}%</label>
+                <div class="cotizador-main__label-row">
+                  <label for="downPayment" class="label">Enganche: {{ downPaymentPercentage }}%</label>
+                  <button
+                    *ngIf="downPaymentPolicyHint"
+                    type="button"
+                    class="cotizador-main__hint"
+                    [attr.title]="downPaymentPolicyHint"
+                    [attr.aria-label]="downPaymentPolicyHint"
+                    data-cy="hint-downpayment"
+                  >
+                    <app-icon name="information-circle" [size]="16" aria-hidden="true"></app-icon>
+                  </button>
+                </div>
                 <input
                   type="range"
                   id="downPayment"
@@ -238,13 +412,51 @@
               </div>
 
               <div>
-                <label for="term" class="label label--required">Plazo</label>
+                <div class="cotizador-main__label-row">
+                  <label for="term" class="label label--required">Plazo</label>
+                  <button
+                    *ngIf="termPolicyHint"
+                    type="button"
+                    class="cotizador-main__hint"
+                    [attr.title]="termPolicyHint"
+                    [attr.aria-label]="termPolicyHint"
+                    data-cy="hint-term"
+                  >
+                    <app-icon name="information-circle" [size]="16" aria-hidden="true"></app-icon>
+                  </button>
+                </div>
                 <select id="term" [(ngModel)]="term" (change)="onTermChange()" class="select" title="Selecciona el plazo del financiamiento en meses" data-qa="cotizador-term">
                   <option *ngFor="let t of pkg.terms" [value]="t">{{ t }} meses</option>
                 </select>
               </div>
             </div>
           </div>
+
+          <section
+            *ngIf="currentStep === 3 && validationMessages.length"
+            class="cotizador-main__validation"
+            role="alert"
+            aria-live="polite"
+            data-cy="cotizador-validations"
+          >
+            <div
+              *ngFor="let message of validationMessages; trackBy: trackValidationMessage"
+              class="cotizador-main__validation-item"
+              [attr.data-severity]="message.severity"
+              [attr.data-field]="message.field || null"
+            >
+              <div class="cotizador-main__validation-message">
+                <app-icon
+                  class="cotizador-main__validation-icon"
+                  [name]="validationIconMap[message.severity]"
+                  [size]="16"
+                  aria-hidden="true"
+                ></app-icon>
+                <span>{{ message.message }}</span>
+              </div>
+              <p *ngIf="message.hint" class="cotizador-main__validation-hint">{{ message.hint }}</p>
+            </div>
+          </section>
         </div>
 
         <!-- Savings Mode Controls -->

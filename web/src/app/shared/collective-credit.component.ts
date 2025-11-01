@@ -6,6 +6,11 @@ import { TandaSimDraft, TandaSimulationResult, TandaMonthState, TandaSimEvent } 
 import { TandaEngineService } from '@feature-services/tanda/tanda-engine.service';
 import { ToastService } from '@core-services/toast.service';
 import { IconName } from '@shared/icon/icon-definitions';
+import { EntitySyncService } from '@core-services/entity-sync.service';
+import { FlowCompletionService } from '@core-services/flow-completion.service';
+import { SummaryMetric } from '@shared/summary-panel.component';
+import { GlobalSearchService } from '@core-services/global-search.service';
+import { NavigationService } from '@core-services/navigation.service';
 
 interface KpiCardData {
   title: string;
@@ -42,7 +47,11 @@ export class CollectiveCreditComponent implements OnInit {
 
   constructor(
     private tandaEngine: TandaEngineService,
-    private toast: ToastService
+    private toast: ToastService,
+    private completion: FlowCompletionService,
+    private entitySync: EntitySyncService,
+    private globalSearch: GlobalSearchService,
+    private navigation: NavigationService
   ) {}
 
   ngOnInit(): void {
@@ -172,7 +181,50 @@ export class CollectiveCreditComponent implements OnInit {
       this.toast.error("Primero debes correr una simulación exitosa.");
       return;
     }
-    this.toast.info(`Formalizando grupo "${this.draft.group.name}"... (Simulado)`);
+    this.entitySync.recordCollectiveSimulation(this.draft.group.name, this.draft.group.members.length);
+    const metrics: SummaryMetric[] = [
+      { label: 'Grupo', value: this.draft.group.name },
+      { label: 'Integrantes', value: `${this.draft.group.members.length}` },
+      {
+        label: 'Unidades entregadas',
+        value: `${this.result.kpis.deliveredCount} / ${this.draft.group.members.length}`
+      },
+      {
+        label: 'Primera entrega',
+        value: this.result.firstAwardT ? `Mes ${this.result.firstAwardT}` : 'Por definir'
+      }
+    ];
+
+    const nextSteps = [
+      'Genera la oportunidad colectiva con los integrantes confirmados.',
+      'Define el calendario de aportaciones y comunica la primera entrega.'
+    ];
+
+    this.completion.open({
+      title: 'Simulación colectiva lista',
+      description: 'Continúa con el proceso para formalizar el grupo y arrancar la tanda.',
+      metrics,
+      nextSteps,
+      actions: [
+        {
+          id: 'create-collective-opportunity',
+          label: 'Crear oportunidad colectiva',
+          kind: 'primary',
+          execute: () => this.toast.info('Integración con oportunidad colectiva pendiente.')
+        },
+        {
+          id: 'download-summary',
+          label: 'Descargar resumen',
+          kind: 'secondary',
+          execute: () => this.toast.info('Exportar PDF disponible en próximos sprints.'),
+          autoClose: false
+        }
+      ],
+      onComplete: () => {
+        this.globalSearch.refreshIndex(this.draft.group.name);
+        this.navigation.refreshQuickActions();
+      }
+    });
   }
 
   // Input handlers for product parameters

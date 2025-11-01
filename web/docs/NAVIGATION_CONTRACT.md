@@ -9,8 +9,8 @@
 | `/documentos` | `DocumentUploadShellComponent` | `AuthGuard`, `AviCompletedGuard`, `PlazoGuard`, `TandaValidGuard`, `ProtectionRequiredGuard` | Dashboard → Documentos |
 | `/kyc-verification` | `KycVerificationComponent` | `AuthGuard` | Dashboard → Documentos → KYC |
 | `/cotizador` | `CotizadorMainComponent` | `AuthGuard` | Dashboard → Cotizador |
-| `/cotizador/ags-individual` | `AgsIndividualComponent` | `AuthGuard` | Dashboard → Cotizador → AGS Individual |
-| `/cotizador/edomex-colectivo` | `EdomexColectivoComponent` | `AuthGuard` | Dashboard → Cotizador → EdoMex Colectivo |
+| `/cotizador?preset=ags-individual` | `CotizadorMainComponent` | `AuthGuard` | Dashboard → Cotizador → AGS Individual |
+| `/cotizador?preset=edomex-colectivo` | `CotizadorMainComponent` | `AuthGuard` | Dashboard → Cotizador → EdoMex Colectivo |
 | `/quotation` | `QuotationFlowComponent` | `AuthGuard` | Dashboard → Cotizador → Resumen |
 | `/quotation/create` | `CotizadorMainComponent` | `AuthGuard` | Dashboard → Cotizador → Crear |
 | `/quotation/new` | Redirect → `/quotation/create` | `AuthGuard` | Dashboard → Cotizador → Crear |

@@ -1,0 +1,74 @@
+<div class="onboarding-checklist" *ngIf="snapshot as data">
+  <div class="onboarding-checklist__header">
+    <h4 class="onboarding-checklist__title">Checklist dinámico</h4>
+    <span class="onboarding-checklist__progress">
+      {{ data.completedCount }}/{{ data.completedCount + data.pendingCount }} completados
+    </span>
+  </div>
+
+  <p class="onboarding-checklist__context" aria-live="polite">
+    {{ data.pendingCount ? ('Faltan ' + data.pendingCount + ' requisitos por cerrar.') : 'Checklist completo. Puedes avanzar al siguiente paso.' }}
+  </p>
+
+  <section *ngIf="documentRequirements.length" class="onboarding-checklist__section" aria-label="Documentos requeridos">
+    <h5 class="onboarding-checklist__section-title">Documentos</h5>
+    <ul class="onboarding-checklist__list">
+      <li
+        *ngFor="let requirement of documentRequirements; trackBy: trackByRequirement"
+        class="onboarding-checklist__item"
+        [ngClass]="requirementStateClasses(requirement)"
+      >
+        <div class="onboarding-checklist__item-icon" aria-hidden="true">
+          <app-icon [name]="statusIcon(requirement)" [size]="16"></app-icon>
+        </div>
+        <div class="onboarding-checklist__item-body">
+          <span class="onboarding-checklist__item-title">{{ requirement.title }}</span>
+          <small class="onboarding-checklist__item-status">{{ statusLabel(requirement) }}</small>
+          <small *ngIf="requirement.helpText" class="onboarding-checklist__item-help">{{ requirement.helpText }}</small>
+          <a
+            *ngIf="requirement.helpLink"
+            class="onboarding-checklist__item-link"
+            [href]="requirement.helpLink.url"
+            target="_blank"
+            rel="noopener"
+          >
+            {{ requirement.helpLink.label }}
+          </a>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section *ngIf="extraRequirements.length" class="onboarding-checklist__section" aria-label="Requisitos adicionales">
+    <h5 class="onboarding-checklist__section-title">Validaciones adicionales</h5>
+    <ul class="onboarding-checklist__list">
+      <li
+        *ngFor="let requirement of extraRequirements; trackBy: trackByRequirement"
+        class="onboarding-checklist__item"
+        [ngClass]="requirementStateClasses(requirement)"
+      >
+        <div class="onboarding-checklist__item-icon" aria-hidden="true">
+          <app-icon [name]="statusIcon(requirement)" [size]="16"></app-icon>
+        </div>
+        <div class="onboarding-checklist__item-body">
+          <span class="onboarding-checklist__item-title">{{ requirement.title }}</span>
+          <small class="onboarding-checklist__item-status">{{ statusLabel(requirement) }}</small>
+          <small *ngIf="requirement.helpText" class="onboarding-checklist__item-help">{{ requirement.helpText }}</small>
+          <a
+            *ngIf="requirement.helpLink"
+            class="onboarding-checklist__item-link"
+            [href]="requirement.helpLink.url"
+            target="_blank"
+            rel="noopener"
+          >
+            {{ requirement.helpLink.label }}
+          </a>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <p *ngIf="!data.pendingCount" class="onboarding-checklist__success" aria-live="polite">
+    Checklist completo y listo para avanzar.
+  </p>
+</div>

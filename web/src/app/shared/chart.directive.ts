@@ -20,6 +20,7 @@ export class ChartDirective implements AfterViewInit, OnChanges {
   private viewInitialized = false;
 
   constructor() {
+    this.elementRef.nativeElement.setAttribute('appChart', '');
     this.destroyRef.onDestroy(() => this.destroyChart());
   }
 
@@ -58,12 +59,15 @@ export class ChartDirective implements AfterViewInit, OnChanges {
   }
 
   private instantiateChart(context: CanvasRenderingContext2D, config: ChartConfiguration): Chart {
-    return new Chart(context, config);
+    const chart = new Chart(context, config);
+    this.markRendered(true);
+    return chart;
   }
 
   private destroyChart(): void {
     this.chart?.destroy();
     this.chart = undefined;
+    this.markRendered(false);
   }
 
   private ensureChartRegistered(): void {
@@ -76,5 +80,15 @@ export class ChartDirective implements AfterViewInit, OnChanges {
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  private markRendered(rendered: boolean): void {
+    const canvas = this.elementRef.nativeElement;
+    if (rendered) {
+      canvas.setAttribute('role', 'img');
+    } else {
+      canvas.removeAttribute('role');
+      canvas.removeAttribute('aria-label');
+    }
   }
 }
