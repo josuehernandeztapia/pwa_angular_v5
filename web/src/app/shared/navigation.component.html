@@ -118,11 +118,11 @@
   </div>
 
   <nav class="app-nav__menu">
-    <div
-      *ngFor="let item of navigationItems"
-      class="app-nav__item-group"
-      [ngClass]="getNavItemClasses(item)"
-    >
+    <ng-container *ngFor="let item of navigationItems">
+      <div
+        class="app-nav__item-group"
+        [ngClass]="getNavItemClasses(item)"
+      >
       <a
         class="app-nav__item"
         (click)="navigate(item)"
@@ -141,26 +141,52 @@
         <span class="app-nav__item-badge" *ngIf="item.badge && !isCollapsed">{{ item.badge }}</span>
       </a>
 
-      <div class="app-nav__submenu" *ngIf="item.children && !isCollapsed && isActive(item.route, item.queryParams)">
-        <a
-          *ngFor="let child of item.children"
-          class="app-nav__subitem"
-          [ngClass]="{ 'is-active': isActive(child.route, child.queryParams) }"
-          (click)="navigate(child); $event.stopPropagation()"
-          [routerLink]="child.route"
-          [queryParams]="child.queryParams || null"
-          [attr.data-testid]="getNavTestId(child.route, child.queryParams)"
-          [attr.data-cy]="child.dataCy || null"
-          [attr.title]="child.tooltip || child.label"
-        >
-          <span class="app-nav__subitem-icon" aria-hidden="true">
-            <app-icon class="icon-16" [name]="child.iconType" [size]="16"></app-icon>
-          </span>
-          <span class="app-nav__subitem-label">{{ child.label }}</span>
-          <span class="app-nav__item-badge" *ngIf="child.badge">{{ child.badge }}</span>
-        </a>
+        <div class="app-nav__submenu" *ngIf="item.children && !isCollapsed && isActive(item.route, item.queryParams)">
+          <a
+            *ngFor="let child of item.children"
+            class="app-nav__subitem"
+            [ngClass]="{ 'is-active': isActive(child.route, child.queryParams) }"
+            (click)="navigate(child); $event.stopPropagation()"
+            [routerLink]="child.route"
+            [queryParams]="child.queryParams || null"
+            [attr.data-testid]="getNavTestId(child.route, child.queryParams)"
+            [attr.data-cy]="child.dataCy || null"
+            [attr.title]="child.tooltip || child.label"
+          >
+            <span class="app-nav__subitem-icon" aria-hidden="true">
+              <app-icon class="icon-16" [name]="child.iconType" [size]="16"></app-icon>
+            </span>
+            <span class="app-nav__subitem-label">{{ child.label }}</span>
+            <span class="app-nav__item-badge" *ngIf="child.badge">{{ child.badge }}</span>
+          </a>
+        </div>
       </div>
-    </div>
+
+      <ng-container *ngIf="item.route === '/simulador' && demoShortcuts.length">
+        <div
+          *ngFor="let shortcut of demoShortcuts"
+          class="app-nav__item-group app-nav__item-group--demo"
+          [ngClass]="getNavItemClasses(shortcut)"
+        >
+          <a
+            class="app-nav__item"
+            (click)="navigate(shortcut)"
+            [routerLink]="shortcut.route"
+            [queryParams]="shortcut.queryParams || null"
+            [attr.data-testid]="getNavTestId(shortcut.route, shortcut.queryParams)"
+            [attr.aria-label]="isCollapsed ? shortcut.label : null"
+            [attr.data-cy]="shortcut.dataCy || null"
+            [attr.title]="shortcut.tooltip || (isCollapsed ? shortcut.label : null)"
+            routerLinkActive="is-active"
+          >
+            <span class="app-nav__item-icon" aria-hidden="true">
+              <app-icon class="icon-20" [name]="shortcut.iconType"></app-icon>
+            </span>
+            <span class="app-nav__item-label" *ngIf="!isCollapsed">{{ shortcut.label }}</span>
+          </a>
+        </div>
+      </ng-container>
+    </ng-container>
   </nav>
 
   <footer class="app-nav__footer">

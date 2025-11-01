@@ -105,13 +105,13 @@ describe('NavigationComponent (demo shortcuts)', () => {
   });
 
   it('adds demo shortcuts when demo mode is enabled', () => {
-    expect(component.navigationItems.some(item => item.dataCy === 'nav-demo-avi-test')).toBeFalse();
+    expect(component.demoShortcuts.length).toBe(0);
 
     demoMode.enableDemoMode();
     fixture.detectChanges();
 
-    const aviShortcut = component.navigationItems.find(item => item.dataCy === 'nav-demo-avi-test');
-    const kycShortcut = component.navigationItems.find(item => item.dataCy === 'nav-demo-kyc-test');
+    const aviShortcut = component.demoShortcuts.find(item => item.dataCy === 'nav-demo-avi-test');
+    const kycShortcut = component.demoShortcuts.find(item => item.dataCy === 'nav-demo-kyc-test');
 
     expect(aviShortcut).toBeDefined();
     expect(kycShortcut).toBeDefined();
@@ -123,7 +123,7 @@ describe('NavigationComponent (demo shortcuts)', () => {
     demoMode.enableDemoMode();
     fixture.detectChanges();
 
-    const aviItem = component.navigationItems.find(item => item.dataCy === 'nav-demo-avi-test');
+    const aviItem = component.demoShortcuts.find(item => item.dataCy === 'nav-demo-avi-test');
     expect(aviItem).toBeDefined();
 
     component.navigate(aviItem!);
