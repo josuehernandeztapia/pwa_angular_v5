@@ -50,6 +50,7 @@ export class NavigationComponent implements OnInit {
   private readonly windowRef: (Window & typeof globalThis) | null;
 
   navigationItems: NavigationItem[] = [];
+  demoShortcuts: NavigationItem[] = [];
   private baseNavigationItems: ShellNavigationItem[] = [];
   private offlinePendingCount = 0;
   private documentsPendingCount = 0;
@@ -167,22 +168,8 @@ export class NavigationComponent implements OnInit {
   }
 
   private updateNavigationItems(): void {
-    let items = this.baseNavigationItems.map(item => this.decorateNavigationItem(item));
-
-    if (this.demoMode.isDemoMode()) {
-      const demoShortcuts = this.buildDemoShortcuts();
-      if (demoShortcuts.length) {
-        const insertIndex = items.findIndex(item => item.route === '/simulador');
-        const position = insertIndex >= 0 ? insertIndex + 1 : items.length;
-        items = [
-          ...items.slice(0, position),
-          ...demoShortcuts,
-          ...items.slice(position)
-        ];
-      }
-    }
-
-    this.navigationItems = items;
+    this.navigationItems = this.baseNavigationItems.map(item => this.decorateNavigationItem(item));
+    this.demoShortcuts = this.demoMode.isDemoMode() ? this.buildDemoShortcuts() : [];
   }
 
   private decorateNavigationItem(item: ShellNavigationItem): NavigationItem {
@@ -209,21 +196,21 @@ export class NavigationComponent implements OnInit {
     return [
       {
         label: 'AVI Test',
-        route: '/documentos',
+        route: '/demo/avi-test',
         iconType: 'microphone',
         dataCy: 'nav-demo-avi-test',
         tooltip: 'Simula y prueba el flujo demo de AVI en un solo click',
-        queryParams: { enableDemo: 'true', demo: 'avi-perfecto', source: 'avi-test' },
+        queryParams: { enableDemo: 'true', source: 'avi-test' },
         demoScenario: 'avi-perfecto'
       },
       {
         label: 'KYC Test',
-        route: '/documentos',
+        route: '/demo/kyc-test',
         iconType: 'shield-check',
         dataCy: 'nav-demo-kyc-test',
         tooltip: 'Simula y prueba el flujo demo de KYC en un solo click',
-        queryParams: { enableDemo: 'true', demo: 'errores-documentos', source: 'kyc-test' },
-        demoScenario: 'errores-documentos'
+        queryParams: { enableDemo: 'true', source: 'kyc-test' },
+        demoScenario: 'kyc-demo'
       }
     ];
   }
@@ -249,7 +236,7 @@ export class NavigationComponent implements OnInit {
     if (item.demoScenario) {
       this.demoMode.enableDemoMode();
       this.demoMode.setScenario(item.demoScenario);
-      const eventName = item.demoScenario === 'avi-perfecto' ? 'demo_avi_shortcut' : 'demo_kyc_shortcut';
+      const eventName = item.demoScenario === 'avi-perfecto' ? 'avi_test_shortcut' : 'kyc_test_shortcut';
       this.demoAnalytics.track(eventName, {
         scenario: item.demoScenario,
         route: item.route,
