@@ -15,7 +15,7 @@ import { DemoModeService } from '@core-services/demo-mode.service';
 import { DemoSeedService } from '@services/demo/demo-seed.service';
 import { DemoWorkflowService } from '@services/demo/demo-workflow.service';
 import { DemoAnalyticsService } from '@services/demo/demo-analytics.service';
-import { OnboardingRequirementsSnapshot } from '@feature-services/onboarding/onboarding-requirements.models';
+import { OnboardingRequirementsSnapshot, AviDocumentMatchSnapshot, AviDocumentMatchOverride, RequirementContext } from '@feature-services/onboarding/onboarding-requirements.models';
 import { DemoAviDecision } from '@services/demo/demo-scenarios';
 
 @Component({
@@ -84,7 +84,9 @@ export class OnboardingMainComponent {
   readonly demoAviDecisionUpdatedAt = computed(() => this.demoScenarioSnapshot()?.aviDecisionUpdatedAt ?? null);
   readonly aviDecisionOptions: DemoAviDecision[] = ['GO', 'REVIEW', 'NO_GO'];
   readonly isSimulatingAviDecision = signal(false);
+  readonly activeDemoDocumentMatchOption = computed(() => this.demoScenarioSnapshot()?.activeDocumentMatchOption ?? null);
   private lastRequirementsTelemetryKey: string | null = null;
+  private lastDocumentMatchTelemetryKey: string | null = null;
 
   constructor() {
     this.flowContext.setBreadcrumbs(['Dashboard', 'Onboarding']);
@@ -121,6 +123,14 @@ export class OnboardingMainComponent {
         scenario: scenarioId,
         feature: 'onboarding'
       });
+    });
+
+    effect(() => {
+      const snapshot = this.requirementsSnapshot();
+      if (!snapshot?.aviDocumentMatch) {
+        return;
+      }
+      this.trackDocumentMatchTelemetry(snapshot.aviDocumentMatch, snapshot.context, snapshot.aviDocumentMatchOverride ?? null);
     });
   }
 
@@ -217,6 +227,119 @@ export class OnboardingMainComponent {
       this.demoWorkflow.simulateAviDecision(scenario, decision);
     } finally {
       this.isSimulatingAviDecision.set(false);
+    }
+  }
+
+  selectDemoDocumentMatch(optionId: string): void {
+    if (!this.isDemo()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    if (!scenario || optionId === this.activeDemoDocumentMatchOption()) {
+      return;
+    }
+    this.demoWorkflow.setDocumentMatchOption(scenario, optionId);
+  }
+
+  getDemoDocumentMatchSummary(optionId: string | null): string {
+    const options = this.demoScenarioSnapshot()?.documentMatchOptions ?? [];
+    if (!options.length) {
+      return 'Selecciona un estado demo para la coincidencia de datos.';
+    }
+    const match = options.find(option => option.id === optionId);
+    return (match ?? options[0]).summary;
+  }
+
+  handleAviOverride(event: { decision: 'accepted' | 'forced'; comment: string }): void {
+    const comment = event.comment.trim();
+    if (!comment) {
+      return;
+    }
+
+    const override: AviDocumentMatchOverride = {
+      decision: event.decision,
+      comment,
+      forcedAt: Date.now(),
+      forcedBy: null
+    };
+
+    this.onboardingRequirements.setAviManualOverride(override);
+
+    const snapshot = this.onboardingRequirements.snapshot();
+    if (snapshot?.aviDocumentMatch) {
+      this.trackDocumentMatchTelemetry(snapshot.aviDocumentMatch, snapshot.context, snapshot.aviDocumentMatchOverride ?? null);
+    }
+
+    const telemetryPayload = {
+      origin: 'onboarding',
+      decision: event.decision,
+      commentLength: override.comment.length
+    };
+
+    if (this.isDemo()) {
+      this.demoAnalytics.track('avi_document_override', telemetryPayload);
+    } else {
+      this.analytics.track('avi_document_override', telemetryPayload);
+    }
+  }
+
+  handleAviOverrideClear(): void {
+    this.onboardingRequirements.setAviManualOverride(null);
+
+    const snapshot = this.onboardingRequirements.snapshot();
+    if (snapshot?.aviDocumentMatch) {
+      this.trackDocumentMatchTelemetry(snapshot.aviDocumentMatch, snapshot.context, snapshot.aviDocumentMatchOverride ?? null);
+    }
+
+    const payload = { origin: 'onboarding' };
+    if (this.isDemo()) {
+      this.demoAnalytics.track('avi_document_override_cleared', payload);
+    } else {
+      this.analytics.track('avi_document_override_cleared', payload);
+    }
+  }
+
+  private trackDocumentMatchTelemetry(
+    match: AviDocumentMatchSnapshot,
+    context: RequirementContext,
+    override: AviDocumentMatchOverride | null
+  ): void {
+    const mismatches = match.fields
+      .filter(field => field.status === 'mismatch')
+      .map(field => field.id)
+      .sort();
+
+    const key = [
+      'onboarding',
+      context.market,
+      match.status,
+      Math.round(match.score * 100),
+      mismatches.join(','),
+      override?.decision ?? 'none'
+    ].join('|');
+
+    if (this.lastDocumentMatchTelemetryKey === key) {
+      return;
+    }
+
+    this.lastDocumentMatchTelemetryKey = key;
+
+    const payload = {
+      origin: 'onboarding',
+      status: match.status,
+      score: Math.round(match.score * 100) / 100,
+      mismatches,
+      hasOverride: !!override,
+      overrideDecision: override?.decision ?? null,
+      market: context.market,
+      saleType: context.saleType,
+      clientType: context.clientType
+    };
+
+    if (this.isDemo()) {
+      this.demoAnalytics.track('avi_document_match', payload);
+    } else {
+      this.analytics.track('avi_document_match', payload);
     }
   }
 

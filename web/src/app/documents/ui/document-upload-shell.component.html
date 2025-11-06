@@ -74,6 +74,25 @@
           </div>
         </div>
       }
+      @if (demoScenario.documentMatchOptions?.length) {
+        <div class="document-upload__demo-consistency" aria-label="Simulación coincidencia documentos y AVI">
+          <h4 class="document-upload__demo-consistency-title">Comparación documentos ↔ AVI</h4>
+          <p class="document-upload__demo-consistency-summary">
+            {{ getDemoDocumentMatchSummary(activeDemoDocumentMatchOption()) }}
+          </p>
+          <div class="document-upload__demo-consistency-actions">
+            <button
+              *ngFor="let option of demoScenario.documentMatchOptions"
+              type="button"
+              class="btn btn-ghost btn-xs document-upload__demo-consistency-button"
+              [class.document-upload__demo-consistency-button--active]="option.id === activeDemoDocumentMatchOption()"
+              (click)="selectDemoDocumentMatch(option.id)"
+              [disabled]="option.id === activeDemoDocumentMatchOption()">
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+      }
       <ul *ngIf="demoScenario.documents?.length" class="document-upload__demo-docs">
         <li *ngFor="let doc of demoScenario.documents">
           <div>
@@ -113,7 +132,9 @@
     <app-onboarding-checklist
       *ngIf="onboardingSnapshot"
       class="document-upload__checklist"
-      [snapshot]="onboardingSnapshot">
+      [snapshot]="onboardingSnapshot"
+      (aviOverrideSubmitted)="handleAviOverride($event)"
+      (aviOverrideCleared)="handleAviOverrideClear()">
     </app-onboarding-checklist>
 
     <div class="document-upload__dropzone-wrapper">
@@ -176,6 +197,39 @@
       <span class="document-upload__loading-line document-upload__loading-line--wide"></span>
       <span class="document-upload__loading-line document-upload__loading-line--narrow"></span>
     </div>
+
+    <section
+      *ngIf="dataConsistencyState() as consistency"
+      class="document-upload__consistency"
+      aria-label="Validación de datos vs entrevista AVI"
+      role="status"
+    >
+      <header class="document-upload__consistency-header">
+        <app-icon class="document-upload__consistency-icon" [name]="getConsistencyIcon(consistency)" [size]="18"></app-icon>
+        <div>
+          <h3 class="document-upload__consistency-title">Coincidencia documentos ↔ AVI</h3>
+          <p class="document-upload__consistency-summary">{{ getConsistencySummary(consistency) }}</p>
+        </div>
+      </header>
+      <ul class="document-upload__consistency-list">
+        <li *ngFor="let field of consistency.fields" [class]="'document-upload__consistency-item document-upload__consistency-item--' + field.status">
+          <div class="document-upload__consistency-field">
+            <span class="document-upload__consistency-label">{{ getConsistencyFieldLabel(field.id) }}</span>
+            <span class="document-upload__consistency-status">{{ getConsistencyFieldStatus(field) }}</span>
+          </div>
+          <div class="document-upload__consistency-values">
+            <div>
+              <small>Documento</small>
+              <p>{{ field.documentValue || 'Sin dato' }}</p>
+            </div>
+            <div>
+              <small>Entrevista AVI</small>
+              <p>{{ field.aviValue || 'Sin dato' }}</p>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
 
     <ng-template #documentCard let-doc>
       <article

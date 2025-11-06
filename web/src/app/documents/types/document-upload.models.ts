@@ -2,6 +2,7 @@ import { MarketPolicyContext, MarketPolicyMetadata, TandaPolicyMetadata } from '
 import { TandaFlowContextState } from '@feature-services/tanda/tanda-validation.service';
 import { ContractContextSnapshot } from '@interfaces/contract-context';
 import { BusinessFlow, Document, DocumentStatus } from '@interfaces/types';
+import { AviDocumentMatchSnapshot, AviDocumentMatchOverride } from '@feature-services/onboarding/onboarding-requirements.models';
 
 export interface FlowContext {
   clientId?: string;
@@ -86,6 +87,8 @@ export interface DocumentFlowContextState {
   tandaState?: TandaState;
   tandaValidation?: TandaFlowContextState | null;
   contractContext?: ContractContextSnapshot;
+  aviDocumentMatch?: AviDocumentMatchSnapshot | null;
+  aviDocumentMatchOverride?: AviDocumentMatchOverride | null;
 }
 
 export interface DocumentPersistedDoc extends Document {

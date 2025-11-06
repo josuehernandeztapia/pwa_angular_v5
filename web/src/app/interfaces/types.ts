@@ -72,6 +72,15 @@ export interface Document {
   verificationId?: string;
   verificationScore?: number;
   reviewNotes?: string;
+  // OCR data for AVI-Document matching
+  ocrData?: {
+    text?: string;
+    confidence: number;
+    extractedFields?: Record<string, any>;
+    documentType?: string;
+    fields?: Record<string, any>;
+    extractedAt?: number;
+  };
 }
 
 export interface EventLog {

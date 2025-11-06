@@ -12,6 +12,7 @@ import { OCRProgress, OCRResult, OCRService } from '@feature-services/documents/
 import { VoiceValidationService } from '@feature-services/avi/voice-validation.service';
 import { AviEligibilityService, AviReadinessSnapshot } from '@feature-services/avi/avi-eligibility.service';
 import { IconComponent } from '@shared/icon/icon.component';
+import { IconName } from '@shared/icon/icon-definitions';
 import { DocumentUploadHeaderComponent } from './document-upload-header.component';
 import { DocumentStatusBannerComponent } from './document-status-banner.component';
 import { DocumentProtectionBannerComponent } from './document-protection-banner.component';
@@ -42,7 +43,7 @@ import { EntitySyncService } from '@core-services/entity-sync.service';
 import { ContractContextSnapshot } from '@interfaces/contract-context';
 import { ProtectionFlowContextState } from '@feature-services/risk/protection-workflow.service';
 import { OnboardingRequirementsService } from '@feature-services/onboarding/onboarding-requirements.service';
-import { OnboardingAviSessionState, OnboardingRequirementsSnapshot } from '@feature-services/onboarding/onboarding-requirements.models';
+import { OnboardingAviSessionState, OnboardingRequirementsSnapshot, AviDocumentMatchSnapshot, AviDocumentMatchFieldSnapshot, DocumentMatchStatus, AviDocumentMatchOverride } from '@feature-services/onboarding/onboarding-requirements.models';
 import { OnboardingStatusBannerComponent } from '@shared/onboarding-status-banner.component';
 import { OnboardingTrackerComponent } from '@shared/onboarding-tracker.component';
 import { OnboardingChecklistComponent } from '@shared/onboarding-checklist.component';
@@ -55,6 +56,23 @@ import { PolicyHintPipe } from '@shared/policy-hint.pipe';
 import { DemoErrorBannerComponent } from '@shared/demo-error-banner.component';
 
 type AuditLogEntry = { timestamp: Date; docName: string; action: string; meta?: any };
+
+interface OcrInsights {
+  fullName: string | null;
+  fullNameConfidence: number;
+  curp: string | null;
+  curpConfidence: number;
+  address: string | null;
+  addressConfidence: number;
+}
+
+interface AviInsights {
+  fullName: string | null;
+  curp: string | null;
+  address: string | null;
+  transcript: string | null;
+  decision: string | null;
+}
 
 @Component({
   selector: 'app-document-upload-shell',
@@ -129,12 +147,15 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     }
     return `${preview} con incidencias demo.`;
   });
+  readonly dataConsistencyState = signal<AviDocumentMatchSnapshot | null>(null);
+  private aviDocumentMatch: AviDocumentMatchSnapshot | null = null;
   readonly demoAviDecision = computed(() => this.demoScenarioSnapshot()?.aviDecision ?? null);
   readonly demoAviDecisionUpdatedAt = computed(() => this.demoScenarioSnapshot()?.aviDecisionUpdatedAt ?? null);
   readonly aviDecisionOptions: DemoAviDecision[] = ['GO', 'REVIEW', 'NO_GO'];
   readonly isResolvingDemoIssues = signal(false);
   readonly demoDocumentBusy = signal<string | null>(null);
   readonly isSimulatingAviDecision = signal(false);
+  readonly activeDemoDocumentMatchOption = computed(() => this.demoScenarioSnapshot()?.activeDocumentMatchOption ?? null);
   private readonly demoWatcher = effect(() => {
     if (!this.isDemoMode()) {
       return;
@@ -156,6 +177,16 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       } as FlowContext;
     }
 
+    if (Object.prototype.hasOwnProperty.call(snapshot, 'aviDocumentMatch')) {
+      this.aviDocumentMatch = snapshot.aviDocumentMatch ? this.deepClone(snapshot.aviDocumentMatch) : null;
+      this.dataConsistencyState.set(this.aviDocumentMatch);
+    } else {
+      this.evaluateDataConsistency();
+    }
+
+    this.syncOnboardingSnapshot();
+    this.trackDocumentMatchTelemetry('documents');
+
     this.demoAnalytics.track('scenario_active', {
       scenario,
       feature: 'documents'
@@ -173,6 +204,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
   private hasLoadedServerDocuments = false;
   private hasShownCompletionOverlay = false;
   private lastDocumentProgressOverlayAt = 0;
+  private lastDocumentMatchTelemetryKey: string | null = null;
 
   @Input() flowContext!: FlowContext;
   @Output() flowComplete = new EventEmitter<any>();
@@ -374,6 +406,26 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     }
   }
 
+  selectDemoDocumentMatch(optionId: string): void {
+    if (!this.isDemoMode()) {
+      return;
+    }
+    const scenario = this.activeDemoScenario();
+    if (!scenario || optionId === this.activeDemoDocumentMatchOption()) {
+      return;
+    }
+    this.demoWorkflow.setDocumentMatchOption(scenario, optionId);
+  }
+
+  getDemoDocumentMatchSummary(optionId: string | null): string {
+    const options = this.demoScenarioSnapshot()?.documentMatchOptions ?? [];
+    if (!options.length) {
+      return 'Selecciona un estado demo para la coincidencia de datos.';
+    }
+    const match = options.find(option => option.id === optionId);
+    return (match ?? options[0]).summary;
+  }
+
   getAviDecisionClass(decision: DemoAviDecision | null): string {
     switch (decision) {
       case 'GO':
@@ -384,6 +436,48 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         return 'document-upload__demo-avi-pill--no-go';
       default:
         return 'document-upload__demo-avi-pill--pending';
+    }
+  }
+
+  handleAviOverride(event: { decision: 'accepted' | 'forced'; comment: string }): void {
+    const comment = event.comment.trim();
+    if (!comment) {
+      return;
+    }
+
+    const override: AviDocumentMatchOverride = {
+      decision: event.decision,
+      comment,
+      forcedAt: Date.now(),
+      forcedBy: null
+    };
+
+    this.onboardingRequirements.setAviManualOverride(override);
+    this.trackDocumentMatchTelemetry('documents');
+    this.persistFlowState();
+
+    const telemetryPayload = {
+      origin: 'documents',
+      decision: event.decision,
+      commentLength: override.comment.length
+    };
+
+    if (this.isDemoMode()) {
+      this.demoAnalytics.track('avi_document_override', telemetryPayload);
+    } else {
+      this.analytics.track('avi_document_override', telemetryPayload);
+    }
+  }
+
+  handleAviOverrideClear(): void {
+    this.onboardingRequirements.setAviManualOverride(null);
+    this.trackDocumentMatchTelemetry('documents');
+    this.persistFlowState();
+
+    if (this.isDemoMode()) {
+      this.demoAnalytics.track('avi_document_override_cleared', { origin: 'documents' });
+    } else {
+      this.analytics.track('avi_document_override_cleared', { origin: 'documents' });
     }
   }
 
@@ -980,6 +1074,297 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     return `Sesión de verificación con ${clientName} (${market}). Documentos validados ${completed}. Registro generado ${timestamp}.`;
   }
 
+  private applyOcrExtraction(document: Document, result: OCRResult): void {
+    if (!document) {
+      return;
+    }
+
+    const extracted = result.extractedData as { documentType?: string; fields?: Record<string, string>; confidence?: number } | undefined;
+    const documentType = extracted?.documentType ?? document.name;
+    const fields = extracted?.fields ?? {};
+    const confidence = extracted?.confidence ?? result.confidence ?? 0.5;
+
+    document.ocrData = {
+      documentType,
+      fields,
+      confidence,
+      extractedAt: Date.now()
+    };
+  }
+
+  private evaluateDataConsistency(): void {
+    const ocrInsights = this.collectOcrInsights();
+    const aviInsights = this.collectAviInsights();
+    const snapshot = this.buildMatchSnapshot(ocrInsights, aviInsights);
+    this.aviDocumentMatch = snapshot;
+    this.dataConsistencyState.set(snapshot);
+    this.trackDocumentMatchTelemetry('documents');
+  }
+
+  private collectOcrInsights(): OcrInsights {
+    const insights: OcrInsights = {
+      fullName: null,
+      fullNameConfidence: 0,
+      curp: null,
+      curpConfidence: 0,
+      address: null,
+      addressConfidence: 0
+    };
+
+    const assign = (
+      currentValue: string | null,
+      currentConfidence: number,
+      candidate: string | undefined,
+      confidence: number
+    ): { value: string | null; confidence: number } => {
+      if (!candidate) {
+        return { value: currentValue, confidence: currentConfidence };
+      }
+      if (!currentValue || confidence > currentConfidence) {
+        return { value: candidate.trim(), confidence };
+      }
+      return { value: currentValue, confidence: currentConfidence };
+    };
+
+    for (const doc of this.requiredDocuments) {
+      const data = doc.ocrData;
+      if (!data) {
+        continue;
+      }
+
+      const type = data.documentType?.toUpperCase() ?? doc.name.toUpperCase();
+      const fields = data.fields ?? {};
+
+      if (type.includes('INE')) {
+        const combinedName = [fields['nombre'], fields['apellidos']].filter(Boolean).join(' ').trim();
+        const nameAssignment = assign(insights.fullName, insights.fullNameConfidence, combinedName || fields['nombre'], data.confidence);
+        insights.fullName = nameAssignment.value;
+        insights.fullNameConfidence = nameAssignment.confidence;
+
+        const curpAssignment = assign(insights.curp, insights.curpConfidence, fields['curp'], data.confidence);
+        insights.curp = curpAssignment.value;
+        insights.curpConfidence = curpAssignment.confidence;
+      }
+
+      if (type.includes('COMPROBANTE')) {
+        const addressAssignment = assign(insights.address, insights.addressConfidence, fields['direccion'], data.confidence);
+        insights.address = addressAssignment.value;
+        insights.addressConfidence = addressAssignment.confidence;
+      }
+    }
+
+    return insights;
+  }
+
+  private collectAviInsights(): AviInsights {
+    const transcript = typeof this.aviAnalysis?.transcript === 'string' ? this.aviAnalysis?.transcript : null;
+    const fallbackName = this.flowContext?.clientName
+      ?? this.demoScenarioSnapshot()?.client?.name
+      ?? null;
+
+    const nameFromTranscript = transcript ? this.extractNameFromTranscript(transcript) : null;
+    const curpMatch = transcript?.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}/i);
+    const addressMatch = transcript?.match(/(CALLE|DOMICILIO|DIRECCIÓN)[:\s]+([^\.]+)/i);
+
+    return {
+      fullName: nameFromTranscript ?? fallbackName,
+      curp: curpMatch ? curpMatch[0].toUpperCase() : null,
+      address: addressMatch ? addressMatch[2].trim() : null,
+      transcript,
+      decision: typeof this.aviAnalysis?.decision === 'string' ? this.aviAnalysis.decision : null
+    };
+  }
+
+  private buildMatchSnapshot(ocr: OcrInsights, avi: AviInsights): AviDocumentMatchSnapshot | null {
+    const fields: AviDocumentMatchFieldSnapshot[] = [];
+
+    fields.push(this.evaluateMatchField('fullName', ocr.fullName, avi.fullName, ocr.fullNameConfidence, 0.82));
+    fields.push(this.evaluateMatchField('curp', ocr.curp, avi.curp, ocr.curpConfidence, 1));
+    fields.push(this.evaluateMatchField('address', ocr.address, avi.address, ocr.addressConfidence, 0.7));
+
+    const informative = fields.filter(field => field.status !== 'insufficient');
+    if (informative.length === 0) {
+      return null;
+    }
+
+    const mismatches = informative.filter(field => field.status === 'mismatch');
+    const matches = informative.filter(field => field.status === 'match');
+    const score = informative.reduce((sum, field) => sum + field.similarity * (0.5 + field.confidence / 2), 0) / informative.length;
+
+    let status: DocumentMatchStatus;
+    if (mismatches.length > 0) {
+      status = 'mismatch';
+    } else if (matches.length > 0) {
+      status = 'match';
+    } else {
+      status = 'insufficient';
+    }
+
+    return {
+      status,
+      score: Number.isFinite(score) ? score : 0,
+      evaluatedAt: Date.now(),
+      fields
+    };
+  }
+
+  private evaluateMatchField(
+    id: AviDocumentMatchFieldSnapshot['id'],
+    documentValue: string | null,
+    aviValue: string | null,
+    documentConfidence: number,
+    threshold: number
+  ): AviDocumentMatchFieldSnapshot {
+    if (!documentValue || !aviValue) {
+      return {
+        id,
+        documentValue: documentValue ?? null,
+        aviValue: aviValue ?? null,
+        similarity: 0,
+        status: 'insufficient',
+        confidence: documentConfidence
+      };
+    }
+
+    const normalizedDoc = this.normalizeComparable(documentValue);
+    const normalizedAvi = this.normalizeComparable(aviValue);
+    let similarity = 0;
+
+    if (id === 'curp') {
+      similarity = normalizedDoc === normalizedAvi ? 1 : 0;
+    } else {
+      similarity = this.calculateSimilarity(normalizedDoc, normalizedAvi);
+    }
+
+    const status: DocumentMatchStatus = similarity >= threshold ? 'match' : 'mismatch';
+
+    return {
+      id,
+      documentValue,
+      aviValue,
+      similarity,
+      status,
+      confidence: documentConfidence
+    };
+  }
+
+  private extractNameFromTranscript(transcript: string): string | null {
+    const nameMatch = transcript.match(/con\s+([^()]+)\s*\(/i);
+    if (nameMatch && nameMatch[1]) {
+      return nameMatch[1].trim();
+    }
+    return null;
+  }
+
+  private normalizeComparable(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private calculateSimilarity(a: string, b: string): number {
+    if (!a || !b) {
+      return 0;
+    }
+    if (a === b) {
+      return 1;
+    }
+
+    const distance = this.levenshteinDistance(a, b);
+    const maxLength = Math.max(a.length, b.length);
+    if (maxLength === 0) {
+      return 1;
+    }
+    return 1 - distance / maxLength;
+  }
+
+  private levenshteinDistance(a: string, b: string): number {
+    const rows = a.length + 1;
+    const cols = b.length + 1;
+    const matrix: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+    for (let i = 0; i < rows; i++) {
+      matrix[i][0] = i;
+    }
+    for (let j = 0; j < cols; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i < rows; i++) {
+      for (let j = 1; j < cols; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    return matrix[a.length][b.length];
+  }
+
+  getConsistencyIcon(snapshot: AviDocumentMatchSnapshot | null): IconName {
+    if (!snapshot) {
+      return 'information-circle';
+    }
+    switch (snapshot.status) {
+      case 'match':
+        return 'badge-check';
+      case 'mismatch':
+        return 'alert-triangle';
+      default:
+        return 'information-circle';
+    }
+  }
+
+  getConsistencySummary(snapshot: AviDocumentMatchSnapshot | null): string {
+    if (!snapshot) {
+      return 'Aún no hay datos suficientes para validar coincidencias.';
+    }
+
+    const score = Math.round(snapshot.score * 100);
+    switch (snapshot.status) {
+      case 'match':
+        return `Datos coinciden (${score}% de similitud).`;
+      case 'mismatch':
+        return `Revisa las discrepancias detectadas (${score}% de similitud).`;
+      default:
+        return 'Esperando resultados de OCR o entrevista AVI para comparar.';
+    }
+  }
+
+  getConsistencyFieldLabel(fieldId: AviDocumentMatchFieldSnapshot['id']): string {
+    switch (fieldId) {
+      case 'fullName':
+        return 'Nombre completo';
+      case 'curp':
+        return 'CURP';
+      case 'address':
+        return 'Domicilio';
+      default:
+        return fieldId;
+    }
+  }
+
+  getConsistencyFieldStatus(field: AviDocumentMatchFieldSnapshot): string {
+    switch (field.status) {
+      case 'match':
+        return 'Coincide';
+      case 'mismatch':
+        return 'No coincide';
+      default:
+        return 'Sin datos suficientes';
+    }
+  }
+
   private cloneVoiceState(state: VoiceState): VoiceState {
     return {
       ...state,
@@ -1311,6 +1696,11 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         this.lastTandaConfigKey = this.configKeyForState(stored.tandaValidation);
         this.tandaService.setValidation(stored.tandaValidation);
       }
+      if ('aviDocumentMatch' in stored) {
+        this.aviDocumentMatch = stored.aviDocumentMatch ? this.deepClone(stored.aviDocumentMatch) : null;
+        this.dataConsistencyState.set(this.aviDocumentMatch);
+      }
+      this.evaluateDataConsistency();
       return stored.flowContext;
     }
 
@@ -1458,6 +1848,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     const voiceStateSnapshot = this.cloneVoiceState(this.voiceService.state());
     const ocrStateSnapshot = this.cloneOcrState(this.ocrFacade.ocrState());
     const tandaStateSnapshot = this.cloneTandaSnapshot(this.tandaService.tandaState());
+    const aviDocumentMatchSnapshot = this.deepClone(this.aviDocumentMatch);
+    const aviOverrideSnapshot = this.deepClone(this.onboardingRequirements.getAviManualOverride());
 
     const payload: DocumentFlowContextState = {
       flowContext: flowContextSnapshot,
@@ -1491,7 +1883,9 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       ocrState: ocrStateSnapshot,
       tandaState: tandaStateSnapshot,
       tandaValidation: tandaStateSnapshot.validation ?? null,
-      contractContext: contractContext ? { ...contractContext } : undefined
+      contractContext: contractContext ? { ...contractContext } : undefined,
+      aviDocumentMatch: aviDocumentMatchSnapshot ?? null,
+      aviDocumentMatchOverride: aviOverrideSnapshot ?? null
     };
     this.flowContextService.saveContext(this.contextKey, payload, {
       breadcrumbs: this.buildBreadcrumbs()
@@ -2198,6 +2592,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       // Extract text with OCR
       const result = await this.ocrService.extractTextFromImage(file, document.name);
       this.ocrFacade.setResult(result);
+      this.applyOcrExtraction(document, result);
+      this.evaluateDataConsistency();
 
       // Show OCR preview for user confirmation
       this.currentUploadingDoc = document;
@@ -2371,6 +2767,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         sessionId: result.sessionId,
         fallbackUsed: result.fallbackUsed
       }, result.decision);
+      this.evaluateDataConsistency();
       this.syncOnboardingSnapshot();
 
       this.analytics.track('avi_recording_completed', {
@@ -2387,6 +2784,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         message,
       });
       this.voiceService.updateAnalysis({ status: 'error', message });
+      this.evaluateDataConsistency();
       this.syncOnboardingSnapshot();
       this.errorBoundary.reportNetworkTimeout({
         message: 'No se pudo procesar la validación de voz',
@@ -2528,6 +2926,7 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
     this.persistFlowState();
     this.maybeOpenCompletionOverlay();
     this.syncEntityDocumentProgress(previousStatus, nextStatus);
+    this.evaluateDataConsistency();
     if (triggerSync) {
       this.syncOnboardingSnapshot();
     }
@@ -2556,7 +2955,8 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
       aviSession: this.buildAviSessionState(),
       aviReadiness: this.showAVI ? this.aviReadiness : null,
       flowContext: this.flowContext,
-      documentTemplates
+      documentTemplates,
+      aviDocumentMatch: this.aviDocumentMatch
     });
 
     this.recordRequirementsTelemetry(this.onboardingRequirements.snapshot(), 'documents');
@@ -2597,6 +2997,54 @@ export class DocumentUploadShellComponent implements OnInit, OnDestroy {
         saleType: snapshot.context.saleType,
         clientType: snapshot.context.clientType
       });
+    }
+  }
+
+  private trackDocumentMatchTelemetry(origin: 'documents' | 'onboarding'): void {
+    const match = this.aviDocumentMatch;
+    if (!match) {
+      return;
+    }
+
+    const mismatches = match.fields
+      .filter(field => field.status === 'mismatch')
+      .map(field => field.id)
+      .sort();
+
+    const override = this.onboardingRequirements.getAviManualOverride();
+
+    const key = [
+      origin,
+      match.status,
+      Math.round(match.score * 100),
+      mismatches.join(','),
+      override?.decision ?? 'none'
+    ].join('|');
+
+    if (this.lastDocumentMatchTelemetryKey === key) {
+      return;
+    }
+
+    this.lastDocumentMatchTelemetryKey = key;
+
+    const payload = {
+      origin,
+      status: match.status,
+      score: Math.round(match.score * 100) / 100,
+      mismatches,
+      hasOverride: !!override,
+      overrideDecision: override?.decision ?? null,
+      market: this.flowContext?.market ?? null,
+      saleType: this.flowContext?.saleType ?? null,
+      clientType: this.flowContext?.clientType ?? null,
+      businessFlow: this.flowContext?.businessFlow ?? null,
+      clientId: this.flowContext?.clientId ?? null
+    };
+
+    if (this.isDemoMode()) {
+      this.demoAnalytics.track('avi_document_match', payload);
+    } else {
+      this.analytics.track('avi_document_match', payload);
     }
   }
 

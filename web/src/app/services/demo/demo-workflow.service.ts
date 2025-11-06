@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { DocumentStatus } from '@interfaces/types';
+import { AviDocumentMatchSnapshot } from '@feature-services/onboarding/onboarding-requirements.models';
 
 import { DemoScenarioId, DemoAviDecision } from './demo-scenarios';
 import { DemoSeedService } from './demo-seed.service';
@@ -162,6 +163,33 @@ export class DemoWorkflowService {
     });
   }
 
+  setDocumentMatchOption(scenario: DemoScenarioId, optionId: string): void {
+    const snapshot = this.seeds.getScenario(scenario);
+    const option = snapshot.documentMatchOptions?.find(item => item.id === optionId);
+    if (!option) {
+      return;
+    }
+
+    const matchSnapshot = this.cloneMatchSnapshot(option.snapshot ?? null);
+
+    this.seeds.updateScenario(scenario, current => ({
+      ...current,
+      aviDocumentMatch: matchSnapshot,
+      activeDocumentMatchOption: option.id,
+      onboardingUpdate: current.onboardingUpdate
+        ? {
+            ...current.onboardingUpdate,
+            aviDocumentMatch: matchSnapshot
+          }
+        : current.onboardingUpdate
+    }));
+
+    this.analytics.trackDocumentMatchOption({
+      scenario,
+      optionId: option.id
+    });
+  }
+
   private areAllDocumentsApproved(scenario: DemoScenarioId): boolean {
     const docs = this.seeds.getScenario(scenario).documents;
     if (!docs?.length) {
@@ -182,5 +210,15 @@ export class DemoWorkflowService {
 
   private simulateLatency(ms = 300): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private cloneMatchSnapshot(snapshot: AviDocumentMatchSnapshot | null): AviDocumentMatchSnapshot | null {
+    if (!snapshot) {
+      return null;
+    }
+    return {
+      ...snapshot,
+      fields: snapshot.fields.map(field => ({ ...field }))
+    };
   }
 }

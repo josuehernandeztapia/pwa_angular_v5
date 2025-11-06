@@ -73,6 +73,13 @@ export class DemoAnalyticsService {
     });
   }
 
+  trackDocumentMatchOption(details: { scenario?: string | null; optionId: string }): void {
+    this.track('document_match_option', {
+      scenario: details.scenario ?? this.resolveScenario(),
+      optionId: details.optionId
+    });
+  }
+
   trackScenarioReset(scenario: string): void {
     this.track('scenario_reset', { scenario });
   }

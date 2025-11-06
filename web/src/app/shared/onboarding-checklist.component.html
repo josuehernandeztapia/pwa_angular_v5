@@ -34,6 +34,53 @@
           >
             {{ requirement.helpLink.label }}
           </a>
+          <ng-container *ngIf="isAviRequirement(requirement)">
+            <div *ngIf="aviOverride(requirement) as override" class="onboarding-checklist__avi-override">
+              <p class="onboarding-checklist__avi-override-status">
+                {{ override.decision === 'accepted' ? 'Aceptado manualmente' : 'Forzado manualmente' }} ·
+                {{ override.forcedAt | date:'medium' }}
+              </p>
+              <p *ngIf="override.comment" class="onboarding-checklist__avi-override-comment">“{{ override.comment }}”</p>
+              <button type="button" class="btn btn-ghost btn-xs" (click)="onAviOverrideClear()">
+                Revertir decisión
+              </button>
+            </div>
+            <div *ngIf="shouldShowAviOverrideForm(requirement)" class="onboarding-checklist__avi-form">
+              <label class="onboarding-checklist__avi-label" [attr.for]="'avi-override-' + requirement.id">
+                Comentario para decisión manual
+              </label>
+              <textarea
+                class="onboarding-checklist__avi-textarea"
+                [attr.id]="'avi-override-' + requirement.id"
+                name="aviOverrideComment"
+                [(ngModel)]="aviOverrideComment"
+                [attr.maxlength]="aviOverrideCommentMaxLength"
+                rows="3"
+                placeholder="Explica por qué aceptas la discrepancia"
+              ></textarea>
+              <div class="onboarding-checklist__avi-hint">
+                {{ aviOverrideComment.trim().length }}/{{ aviOverrideCommentMaxLength }} caracteres
+              </div>
+              <div class="onboarding-checklist__avi-buttons">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs"
+                  (click)="onAviOverrideSubmit('accepted')"
+                  [disabled]="!canSubmitAviOverride()"
+                >
+                  Marcar como aceptado
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-xs"
+                  (click)="onAviOverrideSubmit('forced')"
+                  [disabled]="!canSubmitAviOverride()"
+                >
+                  Forzar aprobación
+                </button>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </li>
     </ul>

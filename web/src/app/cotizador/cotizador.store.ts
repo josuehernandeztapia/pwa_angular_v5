@@ -710,14 +710,14 @@ export class CotizadorStore {
         return;
       }
 
-      const pdfGenerated = await this.pdfExport
-        .generateQuotePDF(quote as any)
-        .then(() => true)
-        .catch(error => {
-          console.error('[CotizadorStore] Error al generar el PDF', error);
-          this.toast.error('No se pudo generar el PDF');
-          return false;
-        });
+      let pdfGenerated = false;
+      try {
+        await this.pdfExport.generateQuotePDF(quote as any);
+        pdfGenerated = true;
+      } catch (error) {
+        console.error('[CotizadorStore] Error al generar el PDF', error);
+        this.toast.error('No se pudo generar el PDF');
+      }
 
       if (pdfGenerated) {
         this.toast.success('PDF generado');
@@ -854,7 +854,7 @@ export class CotizadorStore {
 
 
   private persistDocumentContextSnapshot(snapshot: {
-    quotationData: any;
+    quotationData?: any;
     policyContext?: MarketPolicyContext | undefined;
     saleType: 'contado' | 'financiero';
     businessFlow: BusinessFlow;
@@ -868,12 +868,13 @@ export class CotizadorStore {
       return;
     }
 
-    const normalizedMarket = normalizeMarketKey(snapshot.quotationData?.market ?? snapshot.market ?? this.market() ?? 'aguascalientes');
-    const clientType = (snapshot.quotationData?.clientType ?? snapshot.policyContext?.clientType ?? 'individual') as PolicyClientType;
+    const quotationData = snapshot.quotationData ?? {};
+    const normalizedMarket = normalizeMarketKey(quotationData.market ?? snapshot.market ?? this.market() ?? 'aguascalientes');
+    const clientType = (quotationData.clientType ?? snapshot.policyContext?.clientType ?? 'individual') as PolicyClientType;
     const mathValidation: MathValidationSnapshot = {
-      principal: snapshot.quotationData?.amountToFinance ?? this.amountToFinance(),
+      principal: quotationData.amountToFinance ?? this.amountToFinance(),
       monthlyPayment: snapshot.monthlyPayment,
-      term: snapshot.quotationData?.term ?? this.term(),
+      term: quotationData.term ?? this.term(),
       annualRate: this.pkg()?.rate,
       expectedMonthlyPayment: snapshot.monthlyPayment,
       withinTolerance: true,
@@ -890,7 +891,7 @@ export class CotizadorStore {
         requiresIncomeProof: snapshot.requiresIncomeProof,
         monthlyPayment: snapshot.monthlyPayment,
         incomeThreshold: snapshot.incomeThreshold,
-        quotationData: snapshot.quotationData
+        quotationData
       },
       policyContext: snapshot.policyContext,
       mathValidation

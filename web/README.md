@@ -10,6 +10,8 @@ Consulta [`../README.md`](../README.md) para instrucciones de instalación, desp
   [`docs/LAB_STATUS.md`](docs/LAB_STATUS.md) si necesitas trabajar con ellos.
 - Para rutas legacy pendientes (por ejemplo `/quotation`), consulta
   [`docs/LEGACY_ROUTES.md`](docs/LEGACY_ROUTES.md).
+- La comparación automática OCR ↔ AVI y el override manual se describen en
+  [`docs/AVI_DOCUMENT_MATCH.md`](docs/AVI_DOCUMENT_MATCH.md).
 
 ## QA Checklist - Top Tier Angular
 

@@ -3,6 +3,7 @@ import { of } from 'rxjs';
 
 import { OnboardingRequirementsService } from './onboarding-requirements.service';
 import { Document } from '@interfaces/types';
+import { AviDocumentMatchSnapshot } from './onboarding-requirements.models';
 
 class DocumentRequirementsServiceStub {
   getDocumentRequirements = jasmine.createSpy('getDocumentRequirements').and.callFake(() =>
@@ -26,7 +27,7 @@ class DocumentRequirementsServiceStub {
 class AviEligibilityServiceStub {
   evaluate() {
     return {
-      isAviRequired: false,
+      isAviRequired: true,
       isEligible: true,
       completionRatio: 1,
       completedCount: 0,
@@ -64,7 +65,7 @@ describe('OnboardingRequirementsService', () => {
       documents: []
     });
 
-    expect(service.snapshot()).toBeNull();
+    expect(service.snapshot()).toBeTruthy();
 
     tick();
 
@@ -91,5 +92,78 @@ describe('OnboardingRequirementsService', () => {
     expect(snapshot).toBeTruthy();
     const completed = snapshot!.documents.filter(doc => doc.status === 'completed');
     expect(completed.length).toBeGreaterThanOrEqual(2);
+  }));
+
+  it('blocks AVI requirement when document comparison fails', fakeAsync(() => {
+    const documents: Document[] = [
+      { id: 'doc-ine', name: 'INE anverso/reverso', status: 'Aprobado' } as any,
+      { id: 'doc-proof', name: 'Comprobante de domicilio', status: 'Aprobado' } as any,
+      { id: 'doc-kyc', name: 'Verificación Biométrica', status: 'Pendiente' } as any
+    ];
+
+    const match: AviDocumentMatchSnapshot = {
+      status: 'mismatch',
+      score: 0.42,
+      evaluatedAt: Date.now(),
+      fields: [
+        { id: 'fullName', documentValue: 'Cliente Demo', aviValue: 'Cliente Demo', similarity: 1, status: 'match', confidence: 0.9 },
+        { id: 'curp', documentValue: 'DEMO010101HDFRRN00', aviValue: 'DEMO999999HDFRRN00', similarity: 0, status: 'mismatch', confidence: 0.8 },
+        { id: 'address', documentValue: null, aviValue: null, similarity: 0, status: 'insufficient', confidence: 0 }
+      ]
+    };
+
+    service.update({
+      context: baseContext,
+      documents,
+      aviDocumentMatch: match
+    });
+
+    tick();
+
+    const snapshot = service.snapshot();
+    expect(snapshot?.aviRequirement?.status).toBe('blocked');
+    expect(snapshot?.aviRequirement?.metadata?.['documentMatch']).toEqual(match);
+  }));
+
+  it('marks AVI requirement as completed when manual override is applied', fakeAsync(() => {
+    const documents: Document[] = [
+      { id: 'doc-ine', name: 'INE anverso/reverso', status: 'Aprobado' } as any,
+      { id: 'doc-proof', name: 'Comprobante de domicilio', status: 'Aprobado' } as any,
+      { id: 'doc-kyc', name: 'Verificación Biométrica', status: 'Pendiente' } as any
+    ];
+
+    const match: AviDocumentMatchSnapshot = {
+      status: 'mismatch',
+      score: 0.51,
+      evaluatedAt: Date.now(),
+      fields: [
+        { id: 'fullName', documentValue: 'Cliente Demo', aviValue: 'Cliente Demo', similarity: 1, status: 'match', confidence: 0.9 },
+        { id: 'curp', documentValue: 'DEMO010101HDFRRN00', aviValue: 'DEMO999999HDFRRN00', similarity: 0, status: 'mismatch', confidence: 0.8 }
+      ]
+    };
+
+    service.update({
+      context: baseContext,
+      documents,
+      aviDocumentMatch: match
+    });
+
+    tick();
+
+    expect(service.snapshot()?.aviRequirement?.status).toBe('blocked');
+
+    service.setAviManualOverride({
+      decision: 'forced',
+      comment: 'Validado directamente con cliente',
+      forcedAt: Date.now(),
+      forcedBy: 'asesor-test'
+    });
+
+    const overrideSnapshot = service.snapshot();
+    expect(overrideSnapshot?.aviRequirement?.status).toBe('completed');
+    expect(overrideSnapshot?.aviRequirement?.metadata?.['documentMatchOverride']).toEqual(jasmine.objectContaining({
+      decision: 'forced',
+      comment: 'Validado directamente con cliente'
+    }));
   }));
 });

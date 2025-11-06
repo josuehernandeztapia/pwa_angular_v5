@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { OnboardingChecklistComponent } from './onboarding-checklist.component';
-import { OnboardingRequirementsSnapshot, OnboardingRequirement } from '@feature-services/onboarding/onboarding-requirements.models';
+import { OnboardingRequirementsSnapshot, OnboardingRequirement, AviDocumentMatchSnapshot } from '@feature-services/onboarding/onboarding-requirements.models';
 
 describe('OnboardingChecklistComponent', () => {
   let fixture: ComponentFixture<OnboardingChecklistComponent>;
@@ -52,5 +52,53 @@ describe('OnboardingChecklistComponent', () => {
     const items = fixture.nativeElement.querySelectorAll('.onboarding-checklist__item');
     expect(items.length).toBeGreaterThan(0);
     expect(items[0].textContent).toContain('doc-ine');
+  });
+
+  it('shows manual override form when AVI requirement has mismatches', () => {
+    const snapshot = buildSnapshot();
+    const match: AviDocumentMatchSnapshot = {
+      status: 'mismatch',
+      score: 0.42,
+      evaluatedAt: Date.now(),
+      fields: []
+    };
+    snapshot.aviRequirement = {
+      ...buildRequirement('avi-interview', 'blocked', 'avi'),
+      metadata: {
+        documentMatch: match
+      }
+    };
+
+    component.snapshot = snapshot;
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.onboarding-checklist__avi-form')).toBeTruthy();
+  });
+
+  it('shows override summary when AVI requirement was forced', () => {
+    const snapshot = buildSnapshot();
+    const match: AviDocumentMatchSnapshot = {
+      status: 'mismatch',
+      score: 0.42,
+      evaluatedAt: Date.now(),
+      fields: []
+    };
+    snapshot.aviRequirement = {
+      ...buildRequirement('avi-interview', 'completed', 'avi'),
+      metadata: {
+        documentMatch: match,
+        documentMatchOverride: {
+          decision: 'forced',
+          comment: 'Validado manualmente',
+          forcedAt: Date.now()
+        }
+      }
+    };
+
+    component.snapshot = snapshot;
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.onboarding-checklist__avi-override')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.onboarding-checklist__avi-form')).toBeFalsy();
   });
 });

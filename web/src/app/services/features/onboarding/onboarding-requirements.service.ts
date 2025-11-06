@@ -17,7 +17,9 @@ import {
   OnboardingStage,
   OnboardingAviSessionState,
   RequirementHelpLink,
-  OnboardingTelemetryOrigin
+  OnboardingTelemetryOrigin,
+  AviDocumentMatchSnapshot,
+  AviDocumentMatchOverride
 } from './onboarding-requirements.models';
 
 const DEFAULT_HELP_LINKS: Record<string, RequirementHelpLink> = {
@@ -52,6 +54,8 @@ export class OnboardingRequirementsService {
   private readonly completionSignal = signal<DocumentCompletionStatus | null>(null);
   private readonly aviSessionSignal = signal<OnboardingAviSessionState | null>(null);
   private readonly aviReadinessSignal = signal<AviReadinessSnapshot | null>(null);
+  private readonly aviDocumentMatchSignal = signal<AviDocumentMatchSnapshot | null>(null);
+  private readonly aviManualOverrideSignal = signal<AviDocumentMatchOverride | null>(null);
   private readonly snapshotSignal = signal<OnboardingRequirementsSnapshot | null>(null);
   private readonly telemetryKeys = new Map<OnboardingTelemetryOrigin, string>();
   private readonly flowContextKey = 'onboarding-requirements';
@@ -66,7 +70,9 @@ export class OnboardingRequirementsService {
     private readonly aviEligibility: AviEligibilityService,
     @Optional() private readonly flowContext?: FlowContextService,
     @Optional() private readonly analytics?: AnalyticsService
-  ) {}
+  ) {
+    this.restorePersistedSnapshot();
+  }
 
   update(update: OnboardingRequirementsUpdate): void {
     const nextContext: RequirementContext = {
@@ -112,7 +118,20 @@ export class OnboardingRequirementsService {
       }
     }
 
+    if (update.aviDocumentMatch !== undefined) {
+      this.aviDocumentMatchSignal.set(update.aviDocumentMatch ?? null);
+    }
+
+    if (update.aviManualOverride !== undefined) {
+      this.aviManualOverrideSignal.set(update.aviManualOverride ?? null);
+    }
+
     const contextKey = this.buildContextKey(nextContext);
+    const hasContextChanged = previousKey && previousKey !== contextKey;
+
+    if (hasContextChanged) {
+      this.aviManualOverrideSignal.set(null);
+    }
 
     if (update.documentTemplates) {
       this.templatesSignal.set(this.cloneDocuments(update.documentTemplates));
@@ -125,6 +144,15 @@ export class OnboardingRequirementsService {
         this.recomputeSnapshot();
       }
     }
+  }
+
+  setAviManualOverride(override: AviDocumentMatchOverride | null): void {
+    this.aviManualOverrideSignal.set(override);
+    this.recomputeSnapshot();
+  }
+
+  getAviManualOverride(): AviDocumentMatchOverride | null {
+    return this.aviManualOverrideSignal();
   }
 
   private requestTemplates(): void {
@@ -194,13 +222,15 @@ export class OnboardingRequirementsService {
     const completion = this.completionSignal();
     const aviReadiness = this.aviReadinessSignal();
     const aviSession = this.aviSessionSignal();
+    const aviDocumentMatch = this.aviDocumentMatchSignal();
+    const aviOverride = this.aviManualOverrideSignal();
 
     const documentRequirements = templates.length
       ? templates.map(template => this.buildDocumentRequirement(template, documents, policyMetadata))
       : documents.map(doc => this.buildDocumentRequirement(doc, documents, policyMetadata));
 
     const kycRequirement = this.buildKycRequirement(documents, documentRequirements, policyMetadata);
-    const aviRequirement = this.buildAviRequirement(aviReadiness, aviSession);
+    const aviRequirement = this.buildAviRequirement(aviReadiness, aviSession, aviDocumentMatch, aviOverride);
     const incomeRequirement = this.buildIncomeRequirement(policyMetadata, documentRequirements, documents, completion);
     const protectionRequirement = this.buildProtectionRequirement(policyMetadata, completion);
     const tandaRequirement = this.buildTandaRequirement(policyMetadata, completion);
@@ -248,7 +278,9 @@ export class OnboardingRequirementsService {
       stages,
       pendingRequirements: pending,
       pendingCount: pending.length,
-      completedCount
+      completedCount,
+      aviDocumentMatch: aviDocumentMatch ?? null,
+      aviDocumentMatchOverride: aviOverride ?? null
     };
 
     this.snapshotSignal.set(snapshot);
@@ -318,7 +350,9 @@ export class OnboardingRequirementsService {
 
   private buildAviRequirement(
     readiness: AviReadinessSnapshot | null,
-    session: OnboardingAviSessionState | null
+    session: OnboardingAviSessionState | null,
+    match: AviDocumentMatchSnapshot | null,
+    override: AviDocumentMatchOverride | null
   ): OnboardingRequirement | null {
     if (!readiness || !readiness.isAviRequired) {
       return null;
@@ -335,9 +369,32 @@ export class OnboardingRequirementsService {
       status = 'blocked';
     }
 
-    const helpText = readiness.blockingReason || (sessionStatus === 'completed' && session?.decision
+    let helpText = readiness.blockingReason || (sessionStatus === 'completed' && session?.decision
       ? `Decisión final: ${session.decision}`
       : undefined);
+
+    if (match) {
+      if (match.status === 'mismatch') {
+        status = 'blocked';
+      } else if (match.status === 'insufficient' && status === 'completed') {
+        status = 'pending';
+      }
+
+      const matchSummary = this.describeDocumentMatch(match);
+      if (matchSummary) {
+        helpText = helpText ? `${helpText} ${matchSummary}` : matchSummary;
+      }
+    }
+
+    if (override) {
+      status = 'completed';
+      const label = override.decision === 'accepted'
+        ? 'Aceptado manualmente'
+        : 'Forzado manualmente';
+      const comment = override.comment ? ` (${override.comment})` : '';
+      const overrideMessage = `${label}${comment}`;
+      helpText = helpText ? `${helpText} ${overrideMessage}` : overrideMessage;
+    }
 
     return {
       id: 'avi-interview',
@@ -349,7 +406,9 @@ export class OnboardingRequirementsService {
       helpLink: this.resolveHelpLink('avi-interview'),
       metadata: {
         completionRatio: readiness.completionRatio,
-        pending: readiness.pendingCount
+        pending: readiness.pendingCount,
+        documentMatch: match ?? undefined,
+        documentMatchOverride: override ?? undefined
       }
     };
   }
@@ -437,6 +496,47 @@ export class OnboardingRequirementsService {
         completion: completion?.allComplete ?? false
       }
     };
+  }
+
+  private describeDocumentMatch(match: AviDocumentMatchSnapshot | null): string | undefined {
+    if (!match) {
+      return undefined;
+    }
+
+    if (match.status === 'insufficient') {
+      return 'Esperando información de OCR o entrevista para validar coincidencias.';
+    }
+
+    if (match.status === 'match') {
+      return `Datos coinciden (${Math.round(match.score * 100)}% de similitud).`;
+    }
+
+    const mismatches = match.fields
+      .filter(field => field.status === 'mismatch')
+      .map(field => this.formatMatchFieldLabel(field.id));
+
+    if (mismatches.length === 0) {
+      return 'Se detectaron discrepancias entre documentos y entrevista.';
+    }
+
+    if (mismatches.length === 1) {
+      return `Revisa el campo ${mismatches[0]}.`;
+    }
+
+    return `Revisa los campos ${mismatches.join(', ')}.`;
+  }
+
+  private formatMatchFieldLabel(id: AviDocumentMatchSnapshot['fields'][number]['id']): string {
+    switch (id) {
+      case 'fullName':
+        return 'Nombre completo';
+      case 'curp':
+        return 'CURP';
+      case 'address':
+        return 'Domicilio';
+      default:
+        return id;
+    }
   }
 
   private buildStages(config: {
@@ -581,6 +681,31 @@ export class OnboardingRequirementsService {
       }
     } catch (error) {
       console.warn('[OnboardingRequirements] Failed to persist snapshot', error);
+    }
+  }
+
+  private restorePersistedSnapshot(): void {
+    if (!this.flowContext) {
+      return;
+    }
+
+    const stored = this.flowContext.getContextData<OnboardingRequirementsSnapshot>(this.flowContextKey);
+    if (!stored) {
+      return;
+    }
+
+    const snapshot = this.cloneSnapshot(stored);
+    this.contextSignal.set(snapshot.context);
+    this.snapshotSignal.set(snapshot);
+    this.aviDocumentMatchSignal.set(snapshot.aviDocumentMatch ?? null);
+    this.aviManualOverrideSignal.set(snapshot.aviDocumentMatchOverride ?? null);
+  }
+
+  private cloneSnapshot(snapshot: OnboardingRequirementsSnapshot): OnboardingRequirementsSnapshot {
+    try {
+      return structuredClone(snapshot);
+    } catch {
+      return JSON.parse(JSON.stringify(snapshot)) as OnboardingRequirementsSnapshot;
     }
   }
 

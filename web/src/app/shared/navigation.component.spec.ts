@@ -6,19 +6,28 @@ import { NavigationService, ShellNavigationItem } from '@core-services/navigatio
 import { FlowContextService } from '@core-services/flow-context.service';
 import { DemoModeService } from '@core-services/demo-mode.service';
 import { DemoAnalyticsService } from '@services/demo/demo-analytics.service';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { RouterTestingModule } from '@angular/router/testing';
 import { signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 import { DemoScenarioId } from '@services/demo/demo-scenarios';
 
 class PushNotificationStub {
+  readonly notificationHistory = of([]);
+  readonly permission = new BehaviorSubject<NotificationPermission>('default');
+  readonly pushSupported = true;
+
   getUnreadCount() {
     return of(0);
   }
 
   initializeNotifications() {
     return Promise.resolve();
+  }
+
+  requestPermission(): Promise<NotificationPermission> {
+    const next = 'granted' as NotificationPermission;
+    this.permission.next(next);
+    return Promise.resolve(next);
   }
 }
 
@@ -55,16 +64,19 @@ class NavigationServiceStub {
 
 class DemoModeStub {
   private readonly demoSignal = signal(false);
+  private readonly demoSubject = new BehaviorSubject<boolean>(this.demoSignal());
   readonly isDemoMode = this.demoSignal.asReadonly();
-  readonly isDemoMode$ = toObservable(this.demoSignal);
+  readonly isDemoMode$ = this.demoSubject.asObservable();
   activeScenario: DemoScenarioId | null = null;
 
   enableDemoMode(): void {
     this.demoSignal.set(true);
+    this.demoSubject.next(true);
   }
 
   enableRealData(): void {
     this.demoSignal.set(false);
+    this.demoSubject.next(false);
   }
 
   setScenario(id: DemoScenarioId | null): void {

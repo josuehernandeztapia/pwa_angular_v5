@@ -221,6 +221,47 @@
     color: #1d4ed8;
   }
 
+  &__demo-consistency {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8, 8px);
+    margin-top: var(--space-12, 12px);
+    padding: var(--space-12, 12px) var(--space-16, 16px);
+    border-radius: 12px;
+    border: 1px dashed rgba(37, 99, 235, 0.25);
+    background: rgba(37, 99, 235, 0.08);
+  }
+
+  &__demo-consistency-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1d4ed8;
+  }
+
+  &__demo-consistency-summary {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--token-color-text-secondary, #475569);
+  }
+
+  &__demo-consistency-actions {
+    display: flex;
+    gap: var(--space-8, 8px);
+    flex-wrap: wrap;
+  }
+
+  &__demo-consistency-button {
+    border: 1px solid transparent;
+    transition: border-color var(--transition-quick, 0.2s ease);
+  }
+
+  &__demo-consistency-button--active {
+    border-color: rgba(37, 99, 235, 0.35);
+    background: rgba(37, 99, 235, 0.12);
+    color: #1d4ed8;
+  }
+
   &__tracker {
     margin-bottom: var(--space-16, 16px);
   }
@@ -432,7 +473,109 @@
     margin-top: var(--space-24, 24px);
   }
 
-  @media (prefers-color-scheme: dark) {
+    &__consistency {
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__consistency-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  &__consistency-icon {
+    color: var(--brand-primary-600);
+  }
+
+  &__consistency-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  &__consistency-summary {
+    font-size: 0.85rem;
+    margin: 0.1rem 0 0;
+    color: var(--text-muted);
+  }
+
+  &__consistency-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  &__consistency-item {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    display: grid;
+    gap: 0.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  &__consistency-item--mismatch {
+    border-color: rgba(220, 38, 38, 0.35);
+    background: rgba(254, 242, 242, 0.9);
+  }
+
+  &__consistency-item--match {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(240, 253, 244, 0.9);
+  }
+
+  &__consistency-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__consistency-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  &__consistency-status {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  &__consistency-values {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    font-size: 0.8rem;
+  }
+
+  &__consistency-values div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  &__consistency-values small {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  &__consistency-values p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+
+@media (prefers-color-scheme: dark) {
     &__card {
       background: var(--neutral-900, var(--openai-gray-800));
       border-color: var(--neutral-700, var(--openai-gray-600));
@@ -467,12 +610,21 @@
       color: var(--neutral-400, var(--openai-gray-400));
     }
 
-    &__pending {
-      color: var(--token-surface-elevated);
+    &__demo-consistency {
+      background: rgba(30, 64, 175, 0.28);
+      border-color: rgba(96, 165, 250, 0.4);
     }
 
-    &__queued {
-      color: var(--token-surface-accent-strong);
+    &__demo-consistency-title {
+      color: rgba(191, 219, 254, 0.95);
+    }
+
+    &__demo-consistency-summary {
+      color: var(--neutral-300, var(--openai-gray-300));
+    }
+
+    &__demo-consistency-button--active {
+      color: rgba(191, 219, 254, 0.95);
     }
 
     &__dropzone {
@@ -505,6 +657,26 @@
 
     &__item-type {
       color: var(--neutral-300, var(--openai-gray-200));
+    }
+
+    &__consistency {
+      background: rgba(30, 64, 175, 0.25);
+      border-color: rgba(96, 165, 250, 0.4);
+    }
+
+    &__consistency-item {
+      background: rgba(15, 23, 42, 0.9);
+      border-color: rgba(148, 163, 184, 0.2);
+    }
+
+    &__consistency-item--mismatch {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(248, 113, 113, 0.35);
+    }
+
+    &__consistency-item--match {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(52, 211, 153, 0.35);
     }
   }
 }

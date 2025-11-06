@@ -52,6 +52,25 @@
           </div>
         </div>
       }
+      @if (demoScenario.documentMatchOptions?.length) {
+        <div class="onboarding__demo-consistency">
+          <h4 class="onboarding__demo-consistency-title">Comparación documentos ↔ AVI</h4>
+          <p class="onboarding__demo-consistency-summary">
+            {{ getDemoDocumentMatchSummary(activeDemoDocumentMatchOption()) }}
+          </p>
+          <div class="onboarding__demo-consistency-actions">
+            <button
+              *ngFor="let option of demoScenario.documentMatchOptions"
+              type="button"
+              class="btn btn-ghost btn-xs onboarding__demo-consistency-button"
+              [class.onboarding__demo-consistency-button--active]="option.id === activeDemoDocumentMatchOption()"
+              (click)="selectDemoDocumentMatch(option.id)"
+              [disabled]="option.id === activeDemoDocumentMatchOption()">
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+      }
 
       <ul *ngIf="demoScenario.documents?.length" class="onboarding__demo-docs">
         <li *ngFor="let doc of demoScenario.documents">
@@ -73,7 +92,11 @@
       <app-onboarding-status-banner class="onboarding__preview-banner" [snapshot]="snapshot"></app-onboarding-status-banner>
       <div class="onboarding__preview-grid">
         <app-onboarding-tracker [snapshot]="snapshot"></app-onboarding-tracker>
-        <app-onboarding-checklist [snapshot]="snapshot"></app-onboarding-checklist>
+        <app-onboarding-checklist
+          [snapshot]="snapshot"
+          (aviOverrideSubmitted)="handleAviOverride($event)"
+          (aviOverrideCleared)="handleAviOverrideClear()"
+        ></app-onboarding-checklist>
       </div>
     </section>
   }

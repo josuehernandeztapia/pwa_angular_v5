@@ -1,6 +1,6 @@
 import { BusinessFlow, Client, Document, DocumentStatus } from '@interfaces/types';
 import { FlowContext } from '@app/documents/types/document-upload.models';
-import { OnboardingRequirementsUpdate } from '@feature-services/onboarding/onboarding-requirements.models';
+import { OnboardingRequirementsUpdate, AviDocumentMatchSnapshot } from '@feature-services/onboarding/onboarding-requirements.models';
 import { TandaGroupDelivery, TandaMemberDelivery, TandaDeliverySchedule } from '@interfaces/tanda';
 import { ProtectionScenario, ProtectionType } from '@interfaces/protection';
 
@@ -71,6 +71,9 @@ export interface DemoScenarioMetadata {
   aviDecision?: DemoAviDecision | null;
   aviDecisionUpdatedAt?: number | null;
   financeEvents?: DemoFinanceEvent[];
+  aviDocumentMatch?: AviDocumentMatchSnapshot | null;
+  documentMatchOptions?: DemoDocumentMatchOption[];
+  activeDocumentMatchOption?: string | null;
 }
 
 export interface DemoFinanceScenario {
@@ -94,6 +97,89 @@ export interface DemoFavoriteSeed {
   route: string;
   category: 'cliente' | 'cotizador' | 'documentos' | 'postventa' | 'reportes';
 }
+
+export interface DemoDocumentMatchOption {
+  id: 'match' | 'mismatch' | 'insufficient';
+  label: string;
+  summary: string;
+  snapshot: AviDocumentMatchSnapshot | null;
+}
+
+const cloneMatchSnapshot = (snapshot: AviDocumentMatchSnapshot | null): AviDocumentMatchSnapshot | null => {
+  if (!snapshot) {
+    return null;
+  }
+  return {
+    ...snapshot,
+    fields: snapshot.fields.map(field => ({ ...field }))
+  };
+};
+
+const createDemoDocumentMatchSnapshot = (variant: 'match' | 'mismatch' | 'insufficient'): AviDocumentMatchSnapshot => {
+  const evaluatedAt = Date.now();
+  switch (variant) {
+    case 'match':
+      return {
+        status: 'match',
+        score: 0.96,
+        evaluatedAt,
+        fields: [
+          { id: 'fullName', documentValue: 'Roberto Demo AVI', aviValue: 'Roberto Demo AVI', similarity: 0.98, status: 'match', confidence: 0.92 },
+          { id: 'curp', documentValue: 'DEMR830101HDFLNR07', aviValue: 'DEMR830101HDFLNR07', similarity: 1, status: 'match', confidence: 0.95 },
+          { id: 'address', documentValue: 'Av. Demo 123, Naucalpan, Edo. Mex', aviValue: 'Av. Demo 123, Naucalpan, Edo. Mex', similarity: 0.94, status: 'match', confidence: 0.88 }
+        ]
+      };
+    case 'mismatch':
+      return {
+        status: 'mismatch',
+        score: 0.54,
+        evaluatedAt,
+        fields: [
+          { id: 'fullName', documentValue: 'Roberto Demo AVI', aviValue: 'Roberto Demo Avi', similarity: 0.95, status: 'match', confidence: 0.9 },
+          { id: 'curp', documentValue: 'DEMR830101HDFLNR07', aviValue: 'DEMR830101HDFRRN07', similarity: 0, status: 'mismatch', confidence: 0.8 },
+          { id: 'address', documentValue: 'Av. Demo 123, Naucalpan, Edo. Mex', aviValue: 'Calle Demo 456, Toluca, Edo. Mex', similarity: 0.42, status: 'mismatch', confidence: 0.75 }
+        ]
+      };
+    default:
+      return {
+        status: 'insufficient',
+        score: 0.18,
+        evaluatedAt,
+        fields: [
+          { id: 'fullName', documentValue: null, aviValue: 'Roberto Demo AVI', similarity: 0, status: 'insufficient', confidence: 0.1 },
+          { id: 'curp', documentValue: null, aviValue: null, similarity: 0, status: 'insufficient', confidence: 0 },
+          { id: 'address', documentValue: 'Av. Demo 123, Naucalpan, Edo. Mex', aviValue: null, similarity: 0, status: 'insufficient', confidence: 0.15 }
+        ]
+      };
+  }
+};
+
+const buildDocumentMatchOptions = (): DemoDocumentMatchOption[] => [
+  {
+    id: 'match',
+    label: 'Coincidencia total',
+    summary: 'Datos consistentes, se puede completar la verificación automáticamente.',
+    snapshot: createDemoDocumentMatchSnapshot('match')
+  },
+  {
+    id: 'mismatch',
+    label: 'Revisión manual',
+    summary: 'Simula discrepancias en CURP y domicilio que bloquean el expediente.',
+    snapshot: createDemoDocumentMatchSnapshot('mismatch')
+  },
+  {
+    id: 'insufficient',
+    label: 'Sin datos suficientes',
+    summary: 'Falta información de OCR o entrevista para comparar.',
+    snapshot: createDemoDocumentMatchSnapshot('insufficient')
+  }
+];
+
+const cloneDocumentMatchOptions = (options: DemoDocumentMatchOption[]): DemoDocumentMatchOption[] =>
+  options.map(option => ({
+    ...option,
+    snapshot: cloneMatchSnapshot(option.snapshot)
+  }));
 
 const aviPerfectoDocuments: Document[] = [
   {
@@ -165,6 +251,11 @@ const aviPerfectoContext: FlowContext = {
   }
 };
 
+const aviPerfectoMatchOptions = buildDocumentMatchOptions();
+const aviPerfectoDefaultMatch = cloneMatchSnapshot(
+  aviPerfectoMatchOptions.find(option => option.id === 'match')?.snapshot ?? null
+);
+
 const aviPerfectoOnboarding: OnboardingRequirementsUpdate = {
   context: {
     market: 'aguascalientes',
@@ -173,7 +264,8 @@ const aviPerfectoOnboarding: OnboardingRequirementsUpdate = {
     businessFlow: BusinessFlow.VentaPlazo,
     requiresIncomeProof: true
   },
-  documents: aviPerfectoDocuments
+  documents: aviPerfectoDocuments,
+  aviDocumentMatch: cloneMatchSnapshot(aviPerfectoDefaultMatch)
 };
 
 const errorDocsDocuments: Document[] = [
@@ -235,6 +327,11 @@ const errorDocsContext: FlowContext = {
   }
 };
 
+const errorDocsMatchOptions = buildDocumentMatchOptions();
+const errorDocsDefaultMatch = cloneMatchSnapshot(
+  errorDocsMatchOptions.find(option => option.id === 'mismatch')?.snapshot ?? null
+);
+
 const errorDocsOnboarding: OnboardingRequirementsUpdate = {
   context: {
     market: 'edomex',
@@ -243,7 +340,8 @@ const errorDocsOnboarding: OnboardingRequirementsUpdate = {
     businessFlow: BusinessFlow.AhorroProgramado,
     requiresIncomeProof: true
   },
-  documents: errorDocsDocuments
+  documents: errorDocsDocuments,
+  aviDocumentMatch: cloneMatchSnapshot(errorDocsDefaultMatch)
 };
 
 const kycDemoDocuments: Document[] = [
@@ -623,6 +721,9 @@ export const DEMO_SCENARIOS: Record<DemoScenarioId, DemoScenarioMetadata> = {
     flowContext: aviPerfectoContext,
     documents: aviPerfectoDocuments,
     onboardingUpdate: aviPerfectoOnboarding,
+    documentMatchOptions: cloneDocumentMatchOptions(aviPerfectoMatchOptions),
+    activeDocumentMatchOption: 'match',
+    aviDocumentMatch: cloneMatchSnapshot(aviPerfectoDefaultMatch),
     protectionNotes: ['Puedes alternar estado de documentos para mostrar bloqueos demo.', 'AVI se puede simular como éxito o fallo.'],
     aviDecision: 'GO',
     aviDecisionUpdatedAt: null,
@@ -638,6 +739,9 @@ export const DEMO_SCENARIOS: Record<DemoScenarioId, DemoScenarioMetadata> = {
     flowContext: errorDocsContext,
     documents: errorDocsDocuments,
     onboardingUpdate: errorDocsOnboarding,
+    documentMatchOptions: cloneDocumentMatchOptions(errorDocsMatchOptions),
+    activeDocumentMatchOption: 'mismatch',
+    aviDocumentMatch: cloneMatchSnapshot(errorDocsDefaultMatch),
     protectionNotes: ['Checklist muestra razones de rechazo.', 'Incluye acciones para corregir y ver telemetría.']
   },
   'kyc-demo': {

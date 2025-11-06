@@ -9,6 +9,31 @@ export type RequirementKind = 'document' | 'kyc' | 'avi' | 'income' | 'tanda' | 
 
 export type OnboardingTelemetryOrigin = 'documents' | 'onboarding' | 'cotizador';
 
+export type DocumentMatchStatus = 'match' | 'mismatch' | 'insufficient';
+
+export interface AviDocumentMatchFieldSnapshot {
+  id: 'fullName' | 'curp' | 'address';
+  documentValue: string | null;
+  aviValue: string | null;
+  similarity: number;
+  status: DocumentMatchStatus;
+  confidence: number;
+}
+
+export interface AviDocumentMatchSnapshot {
+  status: DocumentMatchStatus;
+  score: number;
+  evaluatedAt: number;
+  fields: AviDocumentMatchFieldSnapshot[];
+}
+
+export interface AviDocumentMatchOverride {
+  decision: 'accepted' | 'forced';
+  comment: string;
+  forcedBy?: string | null;
+  forcedAt: number;
+}
+
 export interface RequirementHelpLink {
   label: string;
   url: string;
@@ -47,6 +72,8 @@ export interface OnboardingRequirementsSnapshot {
   pendingRequirements: OnboardingRequirement[];
   pendingCount: number;
   completedCount: number;
+  aviDocumentMatch?: AviDocumentMatchSnapshot | null;
+  aviDocumentMatchOverride?: AviDocumentMatchOverride | null;
 }
 
 export interface RequirementContext {
@@ -78,4 +105,6 @@ export interface OnboardingRequirementsUpdate {
   incomeVerified?: boolean;
   tandaValidated?: boolean;
   documentTemplates?: Document[];
+  aviDocumentMatch?: AviDocumentMatchSnapshot | null;
+  aviManualOverride?: AviDocumentMatchOverride | null;
 }
